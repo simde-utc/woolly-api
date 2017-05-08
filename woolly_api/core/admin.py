@@ -10,6 +10,7 @@ from core.forms import WoollyUserCreationForm, WoollyUserChangeForm
 
 # Register your models here.
 
+
 class UserAdmin(BaseUserAdmin):
 	form = WoollyUserChangeForm
 	add_form = WoollyUserCreationForm
