@@ -12,7 +12,7 @@ class WoollyUserCreationForm(forms.ModelForm):
 
     class Meta:
         model = WoollyUser
-        fields = ('login',)
+        fields = ('login','type',)
 
     def clean_password2(self):
         # Check that the two password entries match
@@ -39,7 +39,7 @@ class WoollyUserChangeForm(forms.ModelForm):
 
     class Meta:
         model = WoollyUser
-        fields = ('login', 'password', 'is_active', 'is_admin')
+        fields = ('login', 'password','type', 'is_active', 'is_admin')
 
     def clean_password(self):
         # Regardless of what the user provides, return the initial value.
