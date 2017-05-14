@@ -16,7 +16,7 @@ class WoollyUserManager(BaseUserManager):
     def create_superuser(self, login, password, **other_fields):
         user = self.create_user(login,
                                 password=password,
-                                **other_fields,
+                                **other_fields
                                 )
         user.is_admin = True
         user.save(using=self._db)

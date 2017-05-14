@@ -7,5 +7,3 @@ class OrderLine(models.Model):
 	item = models.ForeignKey(Item, on_delete=models.CASCADE)
 	order = models.ForeignKey(Order, on_delete=models.CASCADE)
 	quantity = models.IntegerField()
-	# à étudier
-	# price =

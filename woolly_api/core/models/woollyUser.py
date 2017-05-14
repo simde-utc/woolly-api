@@ -2,11 +2,11 @@ from django.contrib.auth.models import AbstractBaseUser
 from django.db import models
 
 from core.models.woollyUserManager import WoollyUserManager
-
+from core.models.woollyUserType import WoollyUserType
 
 class WoollyUser(AbstractBaseUser):
     login = models.CharField(max_length=253, unique=True)
-
+    type = models.ForeignKey(WoollyUserType, on_delete=None, blank=True)
     # required by Django.admin
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)

@@ -8,30 +8,31 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from core.models import WoollyUser
 from core.forms import WoollyUserCreationForm, WoollyUserChangeForm
 
-# Register your models here.
+from core.models import WoollyUserType
 
 
 class UserAdmin(BaseUserAdmin):
 	form = WoollyUserChangeForm
 	add_form = WoollyUserCreationForm
 
-	list_display = ('login', 'is_admin')
+	list_display = ('login', 'is_admin','type')
 	list_filter = ('is_admin',)
 	fieldsets = (
-		(None, {'fields' : ('login', 'password')}),
+		(None, {'fields' : ('login', 'password','type')}),
 		('Permissions', {'fields': ('is_admin',)}),
 	)
-	
+
 	add_fieldsets = (
 		(None, {
 			'classes' : ('wide'),
-			'fields': ('login', 'password1', 'password2')}
+			'fields': ('login', 'password1', 'password2','type.name')}
 		),
 	)
 	search_fields = ('login',)
 	ordering = ('login',)
 	filter_horizontal = ()
-	
+
 admin.site.register(WoollyUser, UserAdmin)
+admin.site.register(WoollyUserType)
 
 admin.site.unregister(Group)
