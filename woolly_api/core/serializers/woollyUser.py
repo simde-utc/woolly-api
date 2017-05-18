@@ -1,13 +1,17 @@
 from rest_framework import serializers
-from core.models import WoollyUser
+from core.models import WoollyUser, WoollyUserType
 
 
 class WoollyUserSerializer(serializers.Serializer):
 
-    login = serializers.CharField(read_only=True, allow_blank=False, max_length=100)
+    login = serializers.CharField(allow_blank=False, max_length=253, required=True)
+    password = serializers.CharField(required=True)
 
-    is_active = serializers.BooleanField(required=False)
-    is_admin = serializers.BooleanField(required=False)
+    class Meta:
+        """Meta class to map serializer's fields with the model fields."""
+        model = WoollyUser
+        fields = ('id', 'login', 'last_login', 'type_id',  'password', 'is_active', 'is_admin', )
+        write_only_fields = ('password',)
 
     def create(self, validated_data):
         """

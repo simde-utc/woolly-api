@@ -2,7 +2,6 @@ from rest_framework import generics
 from core.serializers import ItemSerializer
 from core.models import Item
 from rest_framework import permissions
-from core.permissions import IsOwner
 
 
 class CreateItemView(generics.ListCreateAPIView):
@@ -12,7 +11,7 @@ class CreateItemView(generics.ListCreateAPIView):
     permission_classes = (permissions.IsAuthenticated, )
 
     def perform_create(self, serializer):
-        """Save the post data when creating a new bucketlist."""
+        """Save the post data when creating a new item"""
         serializer.save()
 
 class ItemDetailsView(generics.RetrieveUpdateDestroyAPIView):

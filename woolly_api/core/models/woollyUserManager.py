@@ -1,5 +1,5 @@
 from django.contrib.auth.models import BaseUserManager
-
+from core.models.woollyUserType import WoollyUserType
 
 class WoollyUserManager(BaseUserManager):
     # required by Django
