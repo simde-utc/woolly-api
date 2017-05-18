@@ -1,10 +1,11 @@
 from django.conf.urls import url, include
 from rest_framework.urlpatterns import format_suffix_patterns
-from .views import CreateOrderView, CreateItemView, ItemDetailsView, OrderDetailsView
+from .views import CreateOrderView, CreateItemView, ItemDetailsView, OrderDetailsView, CreateWoollyUserView
 
 urlpatterns = {
     url(r'^auth/', include('rest_framework.urls',
                                namespace='rest_framework')),
+    url(r'^users/', CreateWoollyUserView.as_view(), name="users"),
     url(r'^orders/$', CreateOrderView.as_view(), name="orders"),
     url(r'^items/$', CreateItemView.as_view(), name="items"),
     url(r'^items/(?P<pk>[0-9]+)/$',

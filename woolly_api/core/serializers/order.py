@@ -1,11 +1,11 @@
 from rest_framework import serializers
-from core.models import Order
+from core.models import Order, Item
 
 
 class OrderSerializer(serializers.ModelSerializer):
     """Serializer to map the Model instance into JSON format."""
     items = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
-    #items = ItemSerializer(many=True, queryset=Item.objects.all())
+    # items = ItemSerializer(many=True, queryset=Item.objects.all())
     user = serializers.ReadOnlyField(source='user.login')
     class Meta:
         """Meta class to map serializer's fields with the model fields."""
