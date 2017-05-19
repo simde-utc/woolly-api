@@ -15,7 +15,6 @@ class CreateOrderView(generics.ListCreateAPIView):
         """Save the post data when creating a new bucketlist."""
         serializer.save(user=self.request.user)
 
-
 class OrderDetailsView(generics.RetrieveUpdateDestroyAPIView):
     """This class handles the http GET, PUT and DELETE requests."""
     queryset = Order.objects.all()

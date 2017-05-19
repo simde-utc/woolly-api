@@ -1,12 +1,14 @@
 from rest_framework import serializers
 from core.models import Order, Item
+from core.serializers import ItemSerializer
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    """Serializer to map the Model instance into JSON format."""
-    items = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
-    # items = ItemSerializer(many=True, queryset=Item.objects.all())
+    items = ItemSerializer(many=True, read_only= True)
+    # Allow the API to send the items hyperlink
+    #items = serializers.HyperlinkedRelatedField(many=True, view_name='item-detail', read_only=True)
     user = serializers.ReadOnlyField(source='user.login')
+
     class Meta:
         """Meta class to map serializer's fields with the model fields."""
         model = Order

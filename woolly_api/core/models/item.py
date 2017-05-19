@@ -8,5 +8,5 @@ class Item(models.Model):
 	description = models.CharField(max_length=1000)
 	remaining_quantity = models.IntegerField()
 	initial_quantity = models.IntegerField()
-	#item_group = models.ForeignKey(ItemGroup, on_delete=None)
+	item_group = models.ForeignKey(ItemGroup, on_delete=None)
 	#specifications = models.ManyToManyField(WoollyUserType, through='ItemSpecifications')
