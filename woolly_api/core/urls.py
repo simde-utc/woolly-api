@@ -3,6 +3,7 @@ from rest_framework.urlpatterns import format_suffix_patterns
 from .views import CreateOrderView, CreateItemView, ItemDetailsView, OrderDetailsView, CreateWoollyUserView
 import cas.views
 import cas.backends
+import cas.middleware
 urlpatterns = {
     url(r'^auth/', include('rest_framework.urls',
                                namespace='rest_framework')),

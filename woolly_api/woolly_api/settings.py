@@ -126,8 +126,16 @@ STATIC_URL = '/static/'
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'cas.backends.CASBackend',
+    'core.backends.UpdatedCASBackend',
 )
 
+REST_FRAMEWORK ={
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
+    )
+}
+
 CAS_SERVER_URL = 'https://cas.utc.fr/cas/'
+CAS_LOGOUT_COMPLETELY = True
+CAS_PROVIDE_URL_TO_LOGOUT = True
 CAS_AUTO_CREATE_USER = True
