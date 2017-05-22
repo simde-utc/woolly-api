@@ -38,8 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'cas',
     'core',
+    'cas',
 ]
 
 MIDDLEWARE = [
@@ -130,3 +130,4 @@ AUTHENTICATION_BACKENDS = (
 )
 
 CAS_SERVER_URL = 'https://cas.utc.fr/cas/'
+CAS_AUTO_CREATE_USER = True
