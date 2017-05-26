@@ -1,6 +1,6 @@
+from core.models.woollyUserType import WoollyUserType
 from core.models.woollyUser import WoollyUser
 from core.models.woollyUserManager import WoollyUserManager
-from core.models.woollyUserType import WoollyUserType
 from core.models.association import Association
 from core.models.associationMember import AssociationMember
 from core.models.paymentMethod import PaymentMethod

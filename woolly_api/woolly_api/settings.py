@@ -126,7 +126,7 @@ STATIC_URL = '/static/'
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'core.backends.UpdatedCASBackend',
+    'core.backends.GingerCASBackend',
 )
 
 REST_FRAMEWORK ={
@@ -135,7 +135,12 @@ REST_FRAMEWORK ={
     )
 }
 
+# CAS config
 CAS_SERVER_URL = 'https://cas.utc.fr/cas/'
 CAS_LOGOUT_COMPLETELY = True
 CAS_PROVIDE_URL_TO_LOGOUT = True
 CAS_AUTO_CREATE_USER = True
+
+# Ginger config
+GINGER_KEY = 'f4f93ae5c15a841251ad54ed90c1b639'
+GINGER_SERVER_URL = 'https://assos.utc.fr/ginger/v1/'
