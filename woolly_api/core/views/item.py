@@ -1,6 +1,6 @@
 from rest_framework import generics
-from core.serializers import ItemSerializer
-from core.models import Item
+from core.serializers.item import ItemSerializer
+from core.models.item import Item
 from rest_framework import permissions
 
 

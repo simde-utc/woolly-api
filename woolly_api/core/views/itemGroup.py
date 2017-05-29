@@ -1,6 +1,6 @@
 from rest_framework import generics
 from core.serializers.itemGroup import ItemGroupSerializer
-from core.models import ItemGroup
+from core.models.itemGroup import ItemGroup
 from rest_framework import permissions
 
 
