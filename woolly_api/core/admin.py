@@ -8,7 +8,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from core.models import WoollyUser
 from core.forms import WoollyUserCreationForm, WoollyUserChangeForm
 
-from core.models import WoollyUserType
+from core.models import WoollyUserType, Item, ItemGroup, ItemSpecifications, Order, OrderLine
 
 
 class UserAdmin(BaseUserAdmin):
@@ -34,5 +34,10 @@ class UserAdmin(BaseUserAdmin):
 
 admin.site.register(WoollyUser, UserAdmin)
 admin.site.register(WoollyUserType)
+admin.site.register(Item)
+admin.site.register(ItemGroup)
+admin.site.register(ItemSpecifications)
+admin.site.register(Order)
+admin.site.register(OrderLine)
 
 admin.site.unregister(Group)
