@@ -22,7 +22,7 @@ urlpatterns = {
     url(r'^items/(?P<pk>[0-9]+)/$',
         ItemDetailsView.as_view(), name="item-detail"),
     url(r'^orders/(?P<pk>[0-9]+)/$',
-        OrderDetailsView.as_view(), name="order-details"),\
+        OrderDetailsView.as_view(), name="order-details"),
     url(r'^login/$', cas.views.login, name='login'),
     url(r'^logout/$', cas.views.logout, name='logout'),
 }
