@@ -8,6 +8,7 @@ from rest_framework_json_api.views import RelationshipView
 from .models import Item, ItemSpecifications, Association, Sale, WoollyUserType
 from .serializers import ItemSerializer, WoollyUserTypeSerializer, ItemSpecificationsSerializer2, SaleSerializer, AssociationSerializer
 
+
 @api_view(['GET'])
 def api_root(request, format=None):
     return Response({
