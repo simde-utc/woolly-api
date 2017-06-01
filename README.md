@@ -70,7 +70,7 @@ You can now play with the server on [localhost:8000](http://localhost:8000)
 You can have the routes list in the sales app, under sales/url.py.
 To connect through the CAS, please use [localhost:8000/login](http://localhost:8000/login) and [localhost:8000/logout](http://localhost:8000/logout) to logout.
 
-By default, your user has default rights, you will need to modify the WoollyUser table in the db.sqlite3 file in order to set yourself as an admin and use the [admin pannek](http://localhost:8000/admin).
+By default, your user has default rights, you will need to modify the WoollyUser table in the db.sqlite3 file in order to set yourself as an admin and use the [admin pannel](http://localhost:8000/admin).
 
 
 ## Deployment
@@ -94,7 +94,7 @@ Deploy server using : https://docs.djangoproject.com/en/1.11/howto/deployment/ws
 * **[Thomas Barizien](https://github.com/tbarizien)** - *Initial work*
 * **[Florian Cartier](https://github.com/FCartier)** - *Initial work*
 
-See also the list of [contributors](https://github.com/simde-utc/woolly-api.git/contributors) who participated in this project.
+See also the list of [contributors](https://github.com/simde-utc/woolly-api/graphs/contributors) who participated in this project.
 
 ## License
 
