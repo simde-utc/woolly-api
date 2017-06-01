@@ -38,9 +38,16 @@ class ItemSpecificationsSerializer2(serializers.ModelSerializer):
         self_link_view_name='itemSpecification-relationships'
     )
 
+    included_serializers = {
+        'woolly_user_type': WoollyUserTypeSerializer,
+    }  
+
     class Meta:
         model = ItemSpecifications
         fields = ('id', 'woolly_user_type', 'price', 'quantity')
+
+    class JSONAPIMeta:
+        included_resources = ['woolly_user_type']
 
 
 class ItemSerializer(serializers.ModelSerializer):
@@ -54,10 +61,17 @@ class ItemSerializer(serializers.ModelSerializer):
         self_link_view_name='item-relationships'
     )
 
+    included_serializers = {
+        'specifications': ItemSpecificationsSerializer,
+    }
+
     class Meta:
         model = Item
         fields = ('id', 'name', 'description', 'remaining_quantity',
                   'initial_quantity', 'specifications')
+
+    class JSONAPIMeta:
+        included_resources = ['specifications']
 
 
 class SaleSerializer(serializers.ModelSerializer):
@@ -71,11 +85,18 @@ class SaleSerializer(serializers.ModelSerializer):
         self_link_view_name='sale-relationships'
     )
 
+    included_serializers = {
+        'items': ItemSerializer,
+    }
+
     class Meta:
         model = Sale
         fields = ('id', 'name', 'description', 'creation_date', 'begin_date',
                   'end_date', 'max_payment_date', 'max_item_quantity', 'asso',
                   'items')
+
+    class JSONAPIMeta:
+        included_resources = ['items']
 
 
 class AssociationSerializer(serializers.ModelSerializer):
@@ -88,6 +109,13 @@ class AssociationSerializer(serializers.ModelSerializer):
         self_link_view_name='association-relationships'
     )
 
+    included_serializers = {
+        'sales': SaleSerializer,
+    }
+
     class Meta:
         model = Association
         fields = ('id', 'name', 'bank_account', 'sales')
+
+    class JSONAPIMeta:
+        included_resources = ['sales']

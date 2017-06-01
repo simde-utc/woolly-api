@@ -1,7 +1,9 @@
 from django.conf.urls import url, include
 from rest_framework.urlpatterns import format_suffix_patterns
 
-from .views import WoollyUserTypeViewSet, SaleViewSet, AssociationViewSet, ItemViewSet, ItemSpecificationsViewSet, AssociationRelationshipView, SaleRelationshipView, ItemSpecificationsRelationshipView, WoollyUserTypeRelationshipView, AssociationRelationshipView, ItemRelationshipView
+from .views import WoollyUserTypeViewSet, SaleViewSet, AssociationViewSet, ItemViewSet, ItemSpecificationsViewSet
+from .views import AssociationRelationshipView, SaleRelationshipView, ItemSpecificationsRelationshipView
+from .views import WoollyUserTypeRelationshipView, AssociationRelationshipView, ItemRelationshipView
 
 usertype_list = WoollyUserTypeViewSet.as_view({
     'get': 'list',

@@ -9,6 +9,15 @@ class Association(models.Model):
         resource_name = "associations"
 
 
+class PaymentMethod(models.Model):
+    """Define the payment options"""
+    name = models.CharField(max_length=200)
+    api_url = models.CharField(max_length=500)
+
+    class JSONAPIMeta:
+        resource_name = "paymentmethods"
+
+
 class Sale(models.Model):
     name = models.CharField(max_length=200)
     description = models.CharField(max_length=1000)
@@ -47,8 +56,6 @@ class Item(models.Model):
     # ,blank=True)
     sale = models.ForeignKey(
         Sale, on_delete=models.CASCADE, related_name='items')
-    # specifications = models.ManyToManyField(
-    #    WoollyUserType, through='ItemSpecifications')
 
     class JSONAPIMeta:
         resource_name = "items"
@@ -64,3 +71,23 @@ class ItemSpecifications(models.Model):
 
     class JSONAPIMeta:
         resource_name = "itemspecifications"
+
+
+class Order(models.Model):
+    quantity = models.IntegerField()
+    status = models.CharField(max_length=50)
+    date = models.DateField()
+
+    class JSONAPIMeta:
+        resource_name = "orders"
+
+
+class OrderLine(models.Model):
+    item = models.ForeignKey(
+        Item, on_delete=models.CASCADE)
+    order = models.ForeignKey(
+        Order, on_delete=models.CASCADE, related_name='items')
+    quantity = models.IntegerField()
+
+    class JSONAPIMeta:
+        resource_name = "orderlines"
