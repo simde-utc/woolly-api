@@ -1,10 +1,48 @@
 from django.contrib.auth.models import AbstractBaseUser
+from django.contrib.auth.models import BaseUserManager
 from django.db import models
 
-from core.models.woollyUserManager import WoollyUserManager
-from core.models.woollyUserType import WoollyUserType
 
 import datetime
+
+class WoollyUserType(models.Model):
+	COTISANT = 'cotisant'
+	NON_COTISANT = 'non-cotisant'
+	TREMPLIN = 'tremplin'
+	EXTERIEUR = 'exterieur'
+	name = models.CharField(max_length=50, unique=True)
+
+	@staticmethod
+	def init_values():
+		"""
+		initialize the different possible WoollyUserType in DB
+		"""
+		values = [WoollyUserType.COTISANT, WoollyUserType.NON_COTISANT, WoollyUserType.TREMPLIN, WoollyUserType.EXTERIEUR]
+		for value in values:
+			n = WoollyUserType(name=value)
+			n.save()
+
+
+class WoollyUserManager(BaseUserManager):
+    # required by Django
+    def create_user(self, login, password=None, **other_fields):
+        if not login:
+            raise ValueError('The given login must be set')
+        user = self.model(login=login,
+                          **other_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    # required by Django
+    def create_superuser(self, login, password, **other_fields):
+        user = self.create_user(login,
+                                password=password,
+                                **other_fields
+                                )
+        user.is_admin = True
+        user.save(using=self._db)
+        return user
 
 
 class WoollyUser(AbstractBaseUser):
@@ -54,3 +92,4 @@ class WoollyUser(AbstractBaseUser):
 
 	# check set_unusable_password() for authentication against
 	# external source
+

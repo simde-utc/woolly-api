@@ -38,8 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'core',
     'cas',
+    'core',
+    'authentication',
     'sales',
 ]
 
@@ -104,7 +105,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-AUTH_USER_MODEL = 'core.WoollyUser'
+AUTH_USER_MODEL = 'authentication.WoollyUser'
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
@@ -127,7 +128,7 @@ STATIC_URL = '/static/'
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'core.backends.GingerCASBackend',
+    'authentication.backends.GingerCASBackend',
 )
 
 REST_FRAMEWORK = {

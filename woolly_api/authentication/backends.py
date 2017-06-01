@@ -6,8 +6,7 @@ from urllib.parse import urlencode, urljoin
 from urllib.request import urlopen
 import json
 import datetime
-from core.models import WoollyUserType
-
+from authentication.models import WoollyUserType
 
 
 class UpdatedCASBackend(CASBackend):
@@ -49,6 +48,7 @@ class UpdatedCASBackend(CASBackend):
 		:return: a configured user
 		"""
 		return user
+
 
 class GingerCASBackend(UpdatedCASBackend):
 	"""
