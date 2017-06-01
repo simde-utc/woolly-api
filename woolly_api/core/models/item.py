@@ -1,6 +1,5 @@
 from django.db import models
 from core.models.itemGroup import ItemGroup
-from core.models.woollyUserType import WoollyUserType
 
 
 class Item(models.Model):

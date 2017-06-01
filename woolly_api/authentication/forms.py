@@ -1,8 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 
-from core.models import WoollyUser
-from core.models import WoollyUserType
+from authentication.models import WoollyUser
 
 class WoollyUserCreationForm(forms.ModelForm):
     """A form for creating new users. Includes all the required

@@ -1,5 +1,5 @@
 from django.db import models
-from core.models.woollyUserType import WoollyUserType
+from authentication.models import WoollyUserType
 from core.models.item import Item
 
 

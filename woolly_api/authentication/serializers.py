@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from core.models import WoollyUser, WoollyUserType
+from authentication.models import WoollyUser
 
 
 class WoollyUserSerializer(serializers.Serializer):
