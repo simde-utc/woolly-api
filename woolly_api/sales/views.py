@@ -1,8 +1,20 @@
 from rest_framework import viewsets
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+
 from rest_framework_json_api.views import RelationshipView
 
 from .models import Item, ItemSpecifications, Association, Sale, WoollyUserType
 from .serializers import ItemSerializer, WoollyUserTypeSerializer, ItemSpecificationsSerializer2, SaleSerializer, AssociationSerializer
+
+@api_view(['GET'])
+def api_root(request, format=None):
+    return Response({
+        'assos': reverse('association-list', request=request, format=format),
+        'sales': reverse('sale-list', request=request, format=format),
+        'items': reverse('item-list', request=request, format=format),
+    })
 
 
 class AssociationViewSet(viewsets.ModelViewSet):

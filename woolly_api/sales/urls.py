@@ -3,7 +3,7 @@ from rest_framework.urlpatterns import format_suffix_patterns
 
 from .views import WoollyUserTypeViewSet, SaleViewSet, AssociationViewSet, ItemViewSet, ItemSpecificationsViewSet
 from .views import AssociationRelationshipView, SaleRelationshipView, ItemSpecificationsRelationshipView
-from .views import WoollyUserTypeRelationshipView, AssociationRelationshipView, ItemRelationshipView
+from .views import WoollyUserTypeRelationshipView, AssociationRelationshipView, ItemRelationshipView, api_root
 
 usertype_list = WoollyUserTypeViewSet.as_view({
     'get': 'list',
@@ -61,16 +61,24 @@ itemSpecifications_detail = ItemSpecificationsViewSet.as_view({
 })
 
 urlpatterns = [
+    # Root
+    url(r'^$', api_root),
+    # Associations
     url(r'^assos/$', association_list, name='association-list'),
     url(r'^sales/$', sale_list, name='sale-list'),
+    url(r'^sales/(?P<pk>[0-9]+)$', sale_detail, name='sale-detail'),
+    # Items
+    url(r'^items/$', item_list, name='item-list'),
+    url(r'^items/(?P<pk>[0-9]+)$', item_detail, name='item-detail'),
     url(r'^sales/(?P<sale_pk>[0-9]+)/items/$', item_list, name='item-list'),
+
+    # Spec
     url(r'^items/(?P<item_pk>[0-9]+)/spec/$',
         itemSpecifications_list, name='itemSpecification-list'),
     url(r'^spec/(?P<itemspec_pk>[0-9]+)/utype/$',
         usertype_list, name='usertype-list'),
     url(r'^assos/(?P<pk>[0-9]+)/$',
         association_detail, name='association-detail'),
-    url(r'^sales/(?P<pk>[0-9]+)$', sale_detail, name='sale-detail'),
     url(r'^assos/(?P<association_pk>[0-9]+)/sales/$',
         sale_list, name='sale-list'),
     url(r'^assos/(?P<association_pk>[0-9]+)/sales/(?P<pk>[0-9]+)$',
