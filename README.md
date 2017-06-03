@@ -28,7 +28,7 @@ Installing Django and the useful librairies
 pip install django==1.11.1
 pip install djangorestframework==3.6.3
 pip install django-cas-client==1.3.0
-pip install djangorestframework-jsonapi==2.0.0-beta.1
+pip install djangorestframework-jsonapi==2.2.0
 ```
 
 ### Installing
