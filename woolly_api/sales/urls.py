@@ -1,9 +1,10 @@
 from django.conf.urls import url, include
 from rest_framework.urlpatterns import format_suffix_patterns
 
-from .views import WoollyUserTypeViewSet, SaleViewSet, AssociationViewSet, ItemViewSet, ItemSpecificationsViewSet
+from .views import SaleViewSet, AssociationViewSet, ItemViewSet, ItemSpecificationsViewSet
 from .views import AssociationRelationshipView, SaleRelationshipView, ItemSpecificationsRelationshipView
-from .views import WoollyUserTypeRelationshipView, AssociationRelationshipView, ItemRelationshipView, api_root
+from .views import AssociationRelationshipView, ItemRelationshipView, api_root
+from authentication.views import WoollyUserTypeViewSet
 
 usertype_list = WoollyUserTypeViewSet.as_view({
     'get': 'list',
@@ -77,6 +78,10 @@ urlpatterns = [
         itemSpecifications_list, name='itemSpecification-list'),
     url(r'^spec/(?P<itemspec_pk>[0-9]+)/utype/$',
         usertype_list, name='usertype-list'),
+    url(r'^utype/$',
+        usertype_list, name='usertype-list'),
+    url(r'^utype/(?P<pk>[0-9]+)/$',
+        usertype_detail, name='usertype-detail'),
     url(r'^assos/(?P<pk>[0-9]+)/$',
         association_detail, name='association-detail'),
     url(r'^assos/(?P<association_pk>[0-9]+)/sales/$',

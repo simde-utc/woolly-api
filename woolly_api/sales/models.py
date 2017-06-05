@@ -1,4 +1,5 @@
 from django.db import models
+from authentication.models import WoollyUserType
 
 
 class Association(models.Model):
@@ -36,11 +37,11 @@ class Sale(models.Model):
 
 # Should be in a Authentication app
 
-class WoollyUserType(models.Model):
-    name = models.CharField(max_length=50, unique=True)
+# class WoollyUserType(models.Model):
+#    name = models.CharField(max_length=50, unique=True)
 
-    class JSONAPIMeta:
-        resource_name = "woollyusertypes"
+#    class JSONAPIMeta:
+#        resource_name = "woollyusertypes"
 ###
 
 # class ItemGroup(models.Model):

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from authentication.models import WoollyUser
+from authentication.models import WoollyUser, WoollyUserType
 
 
 class WoollyUserSerializer(serializers.Serializer):
@@ -18,3 +18,9 @@ class WoollyUserSerializer(serializers.Serializer):
         Create and return a new `WoollyUser` instance, given the validated data.
         """
         return WoollyUser.objects.create(**validated_data)
+
+
+class WoollyUserTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WoollyUserType
+        fields = ('id', 'name')

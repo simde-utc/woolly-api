@@ -1,13 +1,15 @@
-from .models import Sale, Item, ItemSpecifications, Association, WoollyUserType
+from .models import Sale, Item, ItemSpecifications, Association
 from rest_framework_json_api import serializers
 from rest_framework_json_api.relations import ResourceRelatedField
-
-
+from authentication.models import WoollyUserType
+from authentication.serializers import WoollyUserTypeSerializer
+"""
 class WoollyUserTypeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = WoollyUserType
         fields = ('id', 'name')
+"""
 
 
 class ItemSpecificationsSerializer(serializers.ModelSerializer):
@@ -40,7 +42,7 @@ class ItemSpecificationsSerializer2(serializers.ModelSerializer):
 
     included_serializers = {
         'woolly_user_type': WoollyUserTypeSerializer,
-    }  
+    }
 
     class Meta:
         model = ItemSpecifications

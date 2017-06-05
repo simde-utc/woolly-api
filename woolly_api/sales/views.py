@@ -5,8 +5,10 @@ from rest_framework.reverse import reverse
 
 from rest_framework_json_api.views import RelationshipView
 
-from .models import Item, ItemSpecifications, Association, Sale, WoollyUserType
-from .serializers import ItemSerializer, WoollyUserTypeSerializer, ItemSpecificationsSerializer2, SaleSerializer, AssociationSerializer
+from .models import Item, ItemSpecifications, Association, Sale
+from .serializers import ItemSerializer, ItemSpecificationsSerializer2, SaleSerializer, AssociationSerializer
+from authentication.models import WoollyUserType
+from authentication.serializers import WoollyUserTypeSerializer
 
 
 @api_view(['GET'])
@@ -108,30 +110,6 @@ class ItemViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class WoollyUserTypeViewSet(viewsets.ModelViewSet):
-    queryset = WoollyUserType.objects.all()
-    serializer_class = WoollyUserTypeSerializer
-    """
-    def perform_create(self, serializer):
-        serializer.save(
-            sale_id=self.kwargs['sale_pk']
-        )
-    """
-
-    def get_queryset(self):
-        queryset = self.queryset
-
-        # if this viewset is accessed via the 'association-detail' route,
-        # it wll have been passed the `association_pk` kwarg and the queryset
-        # needs to be filtered accordingly; if it was accessed via the
-        # unnested '/portes' route, the queryset should include all Portes
-        if 'itemspec_pk' in self.kwargs:
-            itemspec_pk = self.kwargs['itemspec_pk']
-            queryset = queryset.filter(specs__pk=itemspec_pk)
-
-        return queryset
-
-
 class ItemRelationshipView(RelationshipView):
     queryset = Item.objects
 
@@ -142,10 +120,6 @@ class SaleRelationshipView(RelationshipView):
 
 class ItemSpecificationsRelationshipView(RelationshipView):
     queryset = ItemSpecifications.objects
-
-
-class WoollyUserTypeRelationshipView(RelationshipView):
-    queryset = WoollyUserType.objects
 
 
 class AssociationRelationshipView(RelationshipView):
