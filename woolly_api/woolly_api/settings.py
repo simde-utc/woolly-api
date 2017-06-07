@@ -160,3 +160,9 @@ CAS_AUTO_CREATE_USER = True
 # Ginger config
 GINGER_KEY = 'f4f93ae5c15a841251ad54ed90c1b639'
 GINGER_SERVER_URL = 'https://assos.utc.fr/ginger/v1/'
+
+# cross-domain XHR config
+XS_SHARING_ALLOWED_ORIGINS = {
+    "http://localhost:4200/",
+}
+XS_SHARING_ALLOWED_METHODS = ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE']
