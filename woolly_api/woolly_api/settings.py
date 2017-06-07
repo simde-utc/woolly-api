@@ -48,9 +48,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -166,9 +166,7 @@ GINGER_KEY = 'f4f93ae5c15a841251ad54ed90c1b639'
 GINGER_SERVER_URL = 'https://assos.utc.fr/ginger/v1/'
 
 # CORS headers config
-CORS_ORIGIN_WHITELIST = (
-    'localhost:4200'
-)
+CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_METHODS = (
     'DELETE',
     'GET',
@@ -177,9 +175,7 @@ CORS_ALLOW_METHODS = (
     'POST',
     'PUT',
 )
-CORS_ALLOW_HEADERS = default_headers + (
-    'sessionid',
-)
+
 CORS_ALLOW_CREDENTIALS = True
 # necessary in addition to the whitelist for protected requests
 CSRF_TRUSTED_ORIGINS = (
