@@ -12,6 +12,7 @@ from .serializers import ItemSerializer, ItemSpecificationsSerializer, Associati
 from .serializers import OrderSerializer, OrderLineSerializer, SaleSerializer
 from authentication.models import WoollyUserType
 from authentication.serializers import WoollyUserTypeSerializer
+from .permissions import IsOwnerOrReadOnly
 import pdb
 
 @api_view(['GET'])
@@ -21,8 +22,9 @@ def api_root(request, format=None):
         'sales': reverse('sale-list', request=request, format=format),
         'items': reverse('item-list', request=request, format=format),
         'specs': reverse('itemSpecification-list', request=request, format=format),
-        'usertypes': reverse('usertype-list', request=request, format=format),
+        'woollyusertypes': reverse('usertype-list', request=request, format=format),
         'orders': reverse('order-list', request=request, format=format),
+        'orderlines': reverse('orderline-list', request=request, format=format),
     })
 
 
@@ -31,17 +33,17 @@ class AssociationViewSet(viewsets.ModelViewSet):
     serializer_class = AssociationSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
+
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, IsOwnerOrReadOnly,)
 
-    """ TODO : Add the user at the creation
+
     def perform_create(self, serializer):
         serializer.save(
-            association_id=self.kwargs['association_pk']
+            owner=self.request.user
         )
-    """
 
     def get_queryset(self):
         queryset = self.queryset

@@ -1,16 +1,32 @@
-from rest_framework import serializers
 from authentication.models import WoollyUser, WoollyUserType
+from rest_framework_json_api import serializers
+from rest_framework_json_api.relations import ResourceRelatedField
+
+class WoollyUserTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WoollyUserType
+        fields = ('id', 'name')
 
 
 class WoollyUserSerializer(serializers.Serializer):
 
     login = serializers.CharField(allow_blank=False, max_length=253, required=True)
     password = serializers.CharField(required=True)
+    type = ResourceRelatedField(
+        queryset=WoollyUserType.objects,
+        related_link_view_name='user-type-list',
+        related_link_url_kwarg='user_pk',
+        self_link_view_name='user-relationships'
+    )
+
+    included_serializers = {
+        'type': WoollyUserTypeSerializer,
+    }
 
     class Meta:
         """Meta class to map serializer's fields with the model fields."""
         model = WoollyUser
-        fields = ('id', 'login', 'last_login', 'type_id',  'password', 'is_active', 'is_admin', )
+        fields = ('id', 'login', 'last_login', 'type_id',  'password', 'is_active', 'is_admin', 'type')
         write_only_fields = ('password',)
 
     def create(self, validated_data):
@@ -19,8 +35,5 @@ class WoollyUserSerializer(serializers.Serializer):
         """
         return WoollyUser.objects.create(**validated_data)
 
-
-class WoollyUserTypeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = WoollyUserType
-        fields = ('id', 'name')
+    class JSONAPIMeta:
+        included_resources = ['type']

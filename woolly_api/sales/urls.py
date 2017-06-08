@@ -125,25 +125,35 @@ urlpatterns = [
         item_detail, name='item-detail'),
 
     # Spec
-    url(r'^specs/$', itemSpecifications_list, name='itemSpecification-list'),
-    url(r'^specs/(?P<pk>[0-9]+)$', itemSpecifications_detail,
+    url(r'^itemspecifications/$', itemSpecifications_list, name='itemSpecification-list'),
+    url(r'^itemspecifications/(?P<pk>[0-9]+)$', itemSpecifications_detail,
         name='itemSpecification-detail'),
-    url(r'^items/(?P<item_pk>[0-9]+)/spec/$',
+    url(r'^items/(?P<item_pk>[0-9]+)/itemspecifications/$',
         itemSpecifications_list, name='itemSpecification-list'),
-    url(r'^spec/(?P<itemspec_pk>[0-9]+)/utype/$',
+    url(r'^itemspecifications/(?P<itemspec_pk>[0-9]+)/woollyusertypes/$',
         usertype_list, name='usertype-list'),
 
     # User Type
-    url(r'^utype/$',
+    url(r'^woollyusertypes/$',
         usertype_list, name='usertype-list'),
-    url(r'^utype/(?P<pk>[0-9]+)/$',
+    url(r'^woollyusertypes/(?P<pk>[0-9]+)/$',
         usertype_detail, name='usertype-detail'),
 
     # Orders
+    url(r'^users/(?P<woollyuser_pk>[0-9]+)/orders/$',
+        order_list, name='order-list'),
+    url(r'^users/(?P<woollyuser_pk>[0-9]+)/orders/(?P<pk>[0-9]+)$',
+        order_detail, name='order-detail'),
     url(r'^orders/$',
         order_list, name='order-list'),
     url(r'^orders/(?P<pk>[0-9]+)/$',
         order_detail, name='order-detail'),
+
+    # OrderLines
+    url(r'^orderlines/$',
+        orderline_list, name='orderline-list'),
+    url(r'^orderlines/(?P<pk>[0-9]+)/$',
+        orderline_detail, name='orderline-detail'),
     url(r'^orders/(?P<order_pk>[0-9]+)/lines/$',
         orderline_list, name='orderline-list'),
     url(r'^orders/(?P<order_pk>[0-9]+)/lines/(?P<pk>[0-9]+)$',
@@ -152,10 +162,6 @@ urlpatterns = [
         orderlineitem_list, name='orderlineitem-list'),
     url(r'^orderlines/(?P<orderline_pk>[0-9]+)/lines/(?P<pk>[0-9]+)$',
         orderlineitem_detail, name='orderlineitem-detail'),
-    # url(r'^orders/(?P<order_pk>[0-9]+)/lines/(?P<orderline_pk>[0-9]+)/items$',
-    #    item_list, name='item-list'),
-    # url(r'^orders/(?P<order_pk>[0-9]+)/lines/(?P<orderline_pk>[0-9]+)/items/(?P<pk>[0-9]+)$',
-    #    item_detail, name='item-detail'),
 
     # Relationships views for the related links
     url(

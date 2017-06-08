@@ -84,7 +84,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ('id', 'status', 'quantity', 'date', 'items')
+        fields = ('id', 'status', 'date', 'items')
 
     class JSONAPIMeta:
         included_resources = ['items']

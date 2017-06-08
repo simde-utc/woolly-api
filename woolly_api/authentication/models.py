@@ -55,7 +55,7 @@ class WoollyUser(AbstractBaseUser):
     login = models.CharField(max_length=253, unique=True, blank=False)
 
     type = models.ForeignKey(
-        WoollyUserType, on_delete=None, null=False, default=4)
+        WoollyUserType, on_delete=None, null=False, default=4, related_name='users')
 
     last_name = models.CharField(max_length=100, blank=True)
     first_name = models.CharField(max_length=100, blank=True)
@@ -96,6 +96,9 @@ class WoollyUser(AbstractBaseUser):
         if not self.pk and self.has_usable_password() is False:
             self.set_password(self.password)
         super(WoollyUser, self).save(*args, **kwargs)
+
+    class JSONAPIMeta:
+        resource_name = "woollyusers"
 
     # check set_unusable_password() for authentication against
     # external source

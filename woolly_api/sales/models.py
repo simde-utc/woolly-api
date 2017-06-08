@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 from authentication.models import WoollyUserType
 
 
@@ -64,7 +65,10 @@ class ItemSpecifications(models.Model):
 
 
 class Order(models.Model):
-    quantity = models.IntegerField()
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='orders',
+        on_delete=models.CASCADE)
     status = models.CharField(max_length=50)
     date = models.DateField()
 
