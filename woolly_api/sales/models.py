@@ -35,15 +35,6 @@ class Sale(models.Model):
         resource_name = "sales"
 
 
-# Should be in a Authentication app
-
-# class WoollyUserType(models.Model):
-#    name = models.CharField(max_length=50, unique=True)
-
-#    class JSONAPIMeta:
-#        resource_name = "woollyusertypes"
-###
-
 # class ItemGroup(models.Model):
 # name = models.CharField(max_length=200)
 
@@ -53,8 +44,6 @@ class Item(models.Model):
     description = models.CharField(max_length=1000)
     remaining_quantity = models.IntegerField()
     initial_quantity = models.IntegerField()
-    # group = models.ForeignKey(ItemGroup, on_delete=None, related_name='items'
-    # ,blank=True)
     sale = models.ForeignKey(
         Sale, on_delete=models.CASCADE, related_name='items')
 
@@ -85,7 +74,7 @@ class Order(models.Model):
 
 class OrderLine(models.Model):
     item = models.ForeignKey(
-        Item, on_delete=models.CASCADE)
+        Item, on_delete=models.CASCADE, related_name='order_item_line')
     order = models.ForeignKey(
         Order, on_delete=models.CASCADE, related_name='items')
     quantity = models.IntegerField()

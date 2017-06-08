@@ -1,38 +1,11 @@
-from .models import Sale, Item, ItemSpecifications, Association
+from .models import Sale, Item, ItemSpecifications, Association, Order, OrderLine
 from rest_framework_json_api import serializers
 from rest_framework_json_api.relations import ResourceRelatedField
 from authentication.models import WoollyUserType
 from authentication.serializers import WoollyUserTypeSerializer
-"""
-class WoollyUserTypeSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = WoollyUserType
-        fields = ('id', 'name')
-"""
 
 
 class ItemSpecificationsSerializer(serializers.ModelSerializer):
-    # Pour une raison inconnue, la view plante quand on rajoute les champs
-    # price et quantity en disant qu'il n'existe pas dans la classe WoollyUserType
-    # usertype = serializers.CharField(source='woolly_user_type.name') -> fait
-    # egalement planter la view
-    # usertype = WoollyUserTypeSerializer(many=False, read_only=True)
-    woolly_user_type = ResourceRelatedField(
-        queryset=WoollyUserType.objects,
-        related_link_view_name='usertype-list',
-        related_link_url_kwarg='itemspec_pk',
-        self_link_view_name='itemSpecification-relationships'
-    )
-
-    class Meta:
-        model = ItemSpecifications
-        fields = ('id', 'woolly_user_type')
-
-
-class ItemSpecificationsSerializer2(serializers.ModelSerializer):
-    # Faite pour essayer de regler le probleme du dessus
-    # usertype = WoollyUserTypeSerializer(many=False, read_only=True)
     woolly_user_type = ResourceRelatedField(
         queryset=WoollyUserType.objects,
         related_link_view_name='usertype-list',
@@ -53,8 +26,6 @@ class ItemSpecificationsSerializer2(serializers.ModelSerializer):
 
 
 class ItemSerializer(serializers.ModelSerializer):
-    # itemGroup = ItemGroupSerializer(required=False, read_only=True)
-    # specifications = ItemSpecificationsSerializer(many=True, read_only=True)
     specifications = ResourceRelatedField(
         queryset=ItemSpecifications.objects,
         many=True,
@@ -76,8 +47,50 @@ class ItemSerializer(serializers.ModelSerializer):
         included_resources = ['specifications']
 
 
+class OrderLineSerializer(serializers.ModelSerializer):
+    order = serializers.ReadOnlyField(source='order.id')
+
+    item = ResourceRelatedField(
+        queryset=Item.objects,
+        related_link_view_name='orderlineitem-list',
+        related_link_url_kwarg='orderline_pk',
+        self_link_view_name='orderline-relationships'
+    )
+
+    included_serializers = {
+        'item': ItemSerializer,
+    }
+
+    class Meta:
+        model = OrderLine
+        fields = ('id', 'order', 'item', 'quantity')
+
+    class JSONAPIMeta:
+        included_resources = ['item']
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    items = ResourceRelatedField(
+        queryset=OrderLine.objects,
+        many=True,
+        related_link_view_name='orderline-list',
+        related_link_url_kwarg='order_pk',
+        self_link_view_name='order-relationships'
+    )
+
+    included_serializers = {
+        'items': OrderLineSerializer,
+    }
+
+    class Meta:
+        model = Order
+        fields = ('id', 'status', 'quantity', 'date', 'items')
+
+    class JSONAPIMeta:
+        included_resources = ['items']
+
+
 class SaleSerializer(serializers.ModelSerializer):
-    # items = ItemSerializer(many=True, read_only=True)
     asso = serializers.ReadOnlyField(source='association.name')
     items = ResourceRelatedField(
         queryset=Item.objects,
@@ -102,7 +115,6 @@ class SaleSerializer(serializers.ModelSerializer):
 
 
 class AssociationSerializer(serializers.ModelSerializer):
-    # sales = SaleSerializer(many=True, read_only=True)
     sales = ResourceRelatedField(
         queryset=Sale.objects,
         many=True,
