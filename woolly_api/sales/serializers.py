@@ -1,8 +1,28 @@
-from .models import Sale, Item, ItemSpecifications, Association, Order, OrderLine
+from .models import Sale, Item, ItemSpecifications, Association, Order
+from .models import OrderLine, PaymentMethod
 from rest_framework_json_api import serializers
 from rest_framework_json_api.relations import ResourceRelatedField
 from authentication.models import WoollyUserType
 from authentication.serializers import WoollyUserTypeSerializer
+
+
+class PaymentMethodSerializer(serializers.ModelSerializer):
+    """
+    sales = ResourceRelatedField(
+        queryset=Sale.objects,
+        many=True,
+        related_link_view_name='sale-payment-list',
+        related_link_url_kwarg='payment_pk',
+        self_link_view_name='paymentmethod-relationships'
+    )
+    """
+    class Meta:
+        model = PaymentMethod
+        fields = ('id', 'name', 'api_url')
+    """
+    class JSONAPIMeta:
+        included_resources = ['sales']
+    """
 
 
 class ItemSpecificationsSerializer(serializers.ModelSerializer):
@@ -99,19 +119,28 @@ class SaleSerializer(serializers.ModelSerializer):
         related_link_url_kwarg='sale_pk',
         self_link_view_name='sale-relationships'
     )
-
+    """
+    payment_methods = ResourceRelatedField(
+        queryset=PaymentMethod.objects,
+        many=True,
+        related_link_view_name='paymentmethod-list',
+        related_link_url_kwarg='sale_pk',
+        self_link_view_name='sale-relationships'
+    )
+    """
     included_serializers = {
         'items': ItemSerializer,
+        'payment_methods': PaymentMethodSerializer
     }
 
     class Meta:
         model = Sale
         fields = ('id', 'name', 'description', 'creation_date', 'begin_date',
                   'end_date', 'max_payment_date', 'max_item_quantity', 'asso',
-                  'items')
+                  'items', 'payment_methods')
 
     class JSONAPIMeta:
-        included_resources = ['items']
+        included_resources = ['items', 'payment_methods']
 
 
 class AssociationSerializer(serializers.ModelSerializer):

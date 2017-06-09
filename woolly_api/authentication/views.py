@@ -2,7 +2,7 @@ from rest_framework.generics import CreateAPIView
 from authentication.serializers import WoollyUserSerializer, WoollyUserTypeSerializer
 from authentication.models import WoollyUserType, WoollyUser
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from sales.permissions import IsOwnerOrReadOnly
+from sales.permissions import IsOwner
 from rest_framework import viewsets
 from rest_framework_json_api.views import RelationshipView
 

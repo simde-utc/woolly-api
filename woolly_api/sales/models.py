@@ -21,7 +21,7 @@ class Association(models.Model):
 class PaymentMethod(models.Model):
     """Define the payment options"""
     name = models.CharField(max_length=200)
-    api_url = models.CharField(max_length=500)
+    api_url = models.CharField(max_length=500, blank=True)
 
     class JSONAPIMeta:
         resource_name = "paymentmethods"
@@ -35,7 +35,13 @@ class Sale(models.Model):
     end_date = models.DateField()
     max_payment_date = models.DateField()
     max_item_quantity = models.IntegerField()
-    # payment_methods = models.ManyToManyField(PaymentMethod)
+
+    payment_methods = models.ForeignKey(
+        PaymentMethod,
+        on_delete=None,
+        related_name='sales',
+        blank=True)
+
     association = models.ForeignKey(
         Association, on_delete=None, related_name='sales', blank=True)
 

@@ -8,12 +8,12 @@ from rest_framework import permissions
 
 from rest_framework_json_api.views import RelationshipView
 
-from .models import Item, ItemSpecifications, Association, Sale, Order, OrderLine
+from .models import Item, ItemSpecifications, Association, Sale, Order, OrderLine, PaymentMethod
 from .serializers import ItemSerializer, ItemSpecificationsSerializer, AssociationSerializer
-from .serializers import OrderSerializer, OrderLineSerializer, SaleSerializer
+from .serializers import OrderSerializer, OrderLineSerializer, SaleSerializer, PaymentMethodSerializer
 from authentication.models import WoollyUserType
 from authentication.serializers import WoollyUserTypeSerializer
-from .permissions import IsOwnerOrReadOnly
+from .permissions import IsOwner
 import pdb
 
 @api_view(['GET'])
@@ -26,6 +26,7 @@ def api_root(request, format=None):
         'woollyusertypes': reverse('usertype-list', request=request, format=format),
         'orders': reverse('order-list', request=request, format=format),
         'orderlines': reverse('orderline-list', request=request, format=format),
+        'paymentmethods': reverse('paymentmethod-list', request=request, format=format),
     })
 
 
@@ -35,11 +36,25 @@ class AssociationViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
 
+class PaymentMethodViewSet(viewsets.ModelViewSet):
+    queryset = PaymentMethod.objects.all()
+    serializer_class = PaymentMethodSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        queryset = self.queryset
+
+        if 'sale_pk' in self.kwargs:
+            sale_pk = self.kwargs['sale_pk']
+            queryset = queryset.filter(sales__pk=sale_pk)
+
+        return queryset
+
+
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    permission_classes = (permissions.IsAuthenticated, IsOwnerOrReadOnly,)
-
+    permission_classes = (permissions.IsAuthenticated, IsOwner,)
 
     def perform_create(self, serializer):
         serializer.save(
@@ -84,7 +99,8 @@ class SaleViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(
-            association_id=self.kwargs['association_pk']
+            association_id=self.kwargs['association_pk'],
+            payment_method_id=self.kwargs['paymentmethod_pk']
         )
 
     def get_queryset(self):
@@ -97,6 +113,10 @@ class SaleViewSet(viewsets.ModelViewSet):
         if 'association_pk' in self.kwargs:
             association_pk = self.kwargs['association_pk']
             queryset = queryset.filter(association__pk=association_pk)
+
+        if 'payment_pk' in self.kwargs:
+            payment_pk = self.kwargs['payment_pk']
+            queryset = queryset.filter(payment_methods__pk=payment_pk)      
 
         return queryset
 
@@ -187,3 +207,7 @@ class ItemSpecificationsRelationshipView(RelationshipView):
 
 class AssociationRelationshipView(RelationshipView):
     queryset = Association.objects
+
+
+class PaymentMethodRelationshipView(RelationshipView):
+    queryset = PaymentMethod.objects

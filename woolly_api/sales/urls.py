@@ -6,7 +6,7 @@ from .views import AssociationRelationshipView, SaleRelationshipView
 from .views import ItemSpecificationsRelationshipView, OrderRelationshipView
 from .views import AssociationRelationshipView, ItemRelationshipView, api_root
 from .views import OrderViewSet, OrderLineViewSet, OrderLineRelationshipView
-from .views import OrderLineItemViewSet
+from .views import OrderLineItemViewSet, PaymentMethodViewSet, PaymentMethodRelationshipView
 from authentication.views import WoollyUserTypeViewSet
 
 usertype_list = WoollyUserTypeViewSet.as_view({
@@ -97,6 +97,17 @@ orderlineitem_detail = OrderLineItemViewSet.as_view({
     'delete': 'destroy'
 })
 
+paymentmethod_list = PaymentMethodViewSet.as_view({
+    'get': 'list',
+    'post': 'create'
+})
+paymentmethod_detail = PaymentMethodViewSet.as_view({
+    'get': 'retrieve',
+    'put': 'update',
+    'patch': 'partial_update',
+    'delete': 'destroy'
+})
+
 
 urlpatterns = [
     # Root
@@ -114,6 +125,10 @@ urlpatterns = [
         sale_list, name='sale-list'),
     url(r'^assos/(?P<association_pk>[0-9]+)/sales/(?P<pk>[0-9]+)$',
         sale_detail, name='sale-detail'),
+    url(r'^paymentmethods/(?P<payment_pk>[0-9]+)/sales/$',
+        sale_list, name='sale-payment-list'),
+    url(r'^paymentmethods/(?P<payment_pk>[0-9]+)/sales/(?P<pk>[0-9]+)$',
+        sale_detail, name='sale-payment-detail'),
 
     # Items
     url(r'^items/$', item_list, name='item-list'),
@@ -163,6 +178,16 @@ urlpatterns = [
     url(r'^orderlines/(?P<orderline_pk>[0-9]+)/lines/(?P<pk>[0-9]+)$',
         orderlineitem_detail, name='orderlineitem-detail'),
 
+    # Payment Methods
+    url(r'^paymentmethods/$',
+        paymentmethod_list, name='paymentmethod-list'),
+    url(r'^paymentmethods/(?P<pk>[0-9]+)/$',
+        paymentmethod_detail, name='paymentmethod-detail'),
+    url(r'^sales/(?P<sale_pk>[0-9]+)/paymentmethods/$',
+        paymentmethod_list, name='paymentmethod-list'),
+    url(r'^sales/(?P<sale_pk>[0-9]+)/paymentmethods/(?P<pk>[0-9]+)$',
+        paymentmethod_detail, name='paymentmethod-detail'),
+
     # Relationships views for the related links
     url(
         regex=r'^assos/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
@@ -198,5 +223,10 @@ urlpatterns = [
         regex=r'^orderlines/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
         view=OrderLineRelationshipView.as_view(),
         name='orderline-relationships'
+    ),
+    url(
+        regex=r'^paymentmethods/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
+        view=PaymentMethodRelationshipView.as_view(),
+        name='paymentmethod-relationships'
     )
 ]
