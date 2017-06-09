@@ -22,7 +22,7 @@ def api_root(request, format=None):
         'assos': reverse('association-list', request=request, format=format),
         'sales': reverse('sale-list', request=request, format=format),
         'items': reverse('item-list', request=request, format=format),
-        'specs': reverse('itemSpecification-list', request=request, format=format),
+        'itemSpecifications': reverse('itemSpecification-list', request=request, format=format),
         'woollyusertypes': reverse('usertype-list', request=request, format=format),
         'orders': reverse('order-list', request=request, format=format),
         'orderlines': reverse('orderline-list', request=request, format=format),

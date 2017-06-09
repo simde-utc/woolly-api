@@ -4,8 +4,15 @@ from authentication.models import WoollyUserType
 
 
 class Association(models.Model):
+    """
+    Represents the association information
+    """
     name = models.CharField(max_length=200)
     bank_account = models.CharField(max_length=30)
+    # The foundation ID is used to  link the app to NemoPay
+    # No calculations are going to be made with it
+    # So it's a char field
+    foundation_id = models.CharField(max_length=30)
 
     class JSONAPIMeta:
         resource_name = "associations"
@@ -59,6 +66,11 @@ class ItemSpecifications(models.Model):
         Item, on_delete=models.CASCADE, related_name='specifications')
     quantity = models.IntegerField()
     price = models.FloatField()
+    # Like the foundation ID of the association model
+    # The nemopay ID is used to link the app to the
+    # Nemopay app, so calculation are going to be made
+    # So it's a char field
+    nemopay_id = models.CharField(max_length=30)
 
     class JSONAPIMeta:
         resource_name = "itemspecifications"

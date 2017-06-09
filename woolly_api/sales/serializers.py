@@ -19,7 +19,7 @@ class ItemSpecificationsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ItemSpecifications
-        fields = ('id', 'woolly_user_type', 'price', 'quantity')
+        fields = ('id', 'woolly_user_type', 'price', 'quantity', 'nemopay_id')
 
     class JSONAPIMeta:
         included_resources = ['woolly_user_type']
@@ -129,7 +129,7 @@ class AssociationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Association
-        fields = ('id', 'name', 'bank_account', 'sales')
+        fields = ('id', 'name', 'bank_account', 'sales', 'foundation_id')
 
     class JSONAPIMeta:
         included_resources = ['sales']
