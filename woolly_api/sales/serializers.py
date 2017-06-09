@@ -6,25 +6,6 @@ from authentication.models import WoollyUserType
 from authentication.serializers import WoollyUserTypeSerializer
 
 
-class PaymentMethodSerializer(serializers.ModelSerializer):
-    """
-    sales = ResourceRelatedField(
-        queryset=Sale.objects,
-        many=True,
-        related_link_view_name='sale-payment-list',
-        related_link_url_kwarg='payment_pk',
-        self_link_view_name='paymentmethod-relationships'
-    )
-    """
-    class Meta:
-        model = PaymentMethod
-        fields = ('id', 'name', 'api_url')
-    """
-    class JSONAPIMeta:
-        included_resources = ['sales']
-    """
-
-
 class ItemSpecificationsSerializer(serializers.ModelSerializer):
     woolly_user_type = ResourceRelatedField(
         queryset=WoollyUserType.objects,
@@ -108,6 +89,52 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class JSONAPIMeta:
         included_resources = ['items']
+
+
+class SalePSerializer(serializers.ModelSerializer):
+    asso = serializers.ReadOnlyField(source='association.name')
+    items = ResourceRelatedField(
+        queryset=Item.objects,
+        many=True,
+        related_link_view_name='item-list',
+        related_link_url_kwarg='sale_pk',
+        self_link_view_name='sale-relationships'
+    )
+
+    included_serializers = {
+        'items': ItemSerializer
+    }
+
+    class Meta:
+        model = Sale
+        fields = ('id', 'name', 'description', 'creation_date', 'begin_date',
+                  'end_date', 'max_payment_date', 'max_item_quantity', 'asso',
+                  'items')
+
+    class JSONAPIMeta:
+        included_resources = ['items']
+
+
+class PaymentMethodSerializer(serializers.ModelSerializer):
+
+    sales = ResourceRelatedField(
+        queryset=Sale.objects,
+        many=True,
+        related_link_view_name='sale-payment-list',
+        related_link_url_kwarg='payment_pk',
+        self_link_view_name='paymentmethod-relationships'
+    )
+
+    included_serializers = {
+        'sales': SalePSerializer
+    }
+
+    class Meta:
+        model = PaymentMethod
+        fields = ('id', 'name', 'api_url', 'sales')
+
+    class JSONAPIMeta:
+        included_resources = ['sales']
 
 
 class SaleSerializer(serializers.ModelSerializer):
