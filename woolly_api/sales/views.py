@@ -157,7 +157,8 @@ class ItemViewSet(viewsets.ModelViewSet):
         )
 
     def get_queryset(self):
-        queryset = self.queryset
+        queryset = self.queryset.filter(
+            specifications__woolly_user_type__name=self.request.user.type.name)
 
         if 'sale_pk' in self.kwargs:
             sale_pk = self.kwargs['sale_pk']
