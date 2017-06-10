@@ -4,17 +4,23 @@ from rest_framework import permissions
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.decorators import detail_route, list_route
 from rest_framework import permissions
+from .permissions import IsOwner
 
 from rest_framework_json_api.views import RelationshipView
 
-from .models import Item, ItemSpecifications, Association, Sale, Order, OrderLine, PaymentMethod
-from .serializers import ItemSerializer, ItemSpecificationsSerializer, AssociationSerializer
-from .serializers import OrderSerializer, OrderLineSerializer, SaleSerializer, PaymentMethodSerializer
-from authentication.models import WoollyUserType
-from authentication.serializers import WoollyUserTypeSerializer
-from .permissions import IsOwner
-import pdb
+from .models import (
+    Item, ItemSpecifications, Association, Sale, Order, OrderLine,
+    PaymentMethod
+)
+from .serializers import (
+    ItemSerializer, ItemSpecificationsSerializer, AssociationSerializer,
+    OrderSerializer, OrderLineSerializer, SaleSerializer,
+    PaymentMethodSerializer
+)
+
+from django.contrib.auth import get_user_model
 
 @api_view(['GET'])
 def api_root(request, format=None):
@@ -62,11 +68,11 @@ class OrderViewSet(viewsets.ModelViewSet):
         )
 
     def get_queryset(self):
-        queryset = self.queryset
+        queryset = self.queryset.filter(owner=self.request.user)
 
         if 'woollyuser_pk' in self.kwargs:
-            association_pk = self.kwargs['woollyuser_pk']
-            queryset = queryset.filter(user__pk=association_pk)
+            woollyuser_pk = self.kwargs['woollyuser_pk']
+            queryset = queryset.filter(owner__pk=woollyuser_pk)
 
         return queryset
 

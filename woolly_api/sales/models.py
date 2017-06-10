@@ -87,6 +87,7 @@ class Order(models.Model):
         settings.AUTH_USER_MODEL,
         related_name='orders',
         on_delete=models.CASCADE)
+
     status = models.CharField(max_length=50)
     date = models.DateField()
 
