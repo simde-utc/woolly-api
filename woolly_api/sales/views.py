@@ -20,8 +20,6 @@ from .serializers import (
     PaymentMethodSerializer
 )
 
-from django.contrib.auth import get_user_model
-
 @api_view(['GET'])
 def api_root(request, format=None):
     return Response({
@@ -99,7 +97,6 @@ class OrderLineViewSet(viewsets.ModelViewSet):
 
 
 class SaleViewSet(viewsets.ModelViewSet):
-    queryset = Sale.objects.all()
     serializer_class = SaleSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -110,19 +107,21 @@ class SaleViewSet(viewsets.ModelViewSet):
         )
 
     def get_queryset(self):
-        queryset = self.queryset
+        queryset = Sale.objects.all().filter(
+            items__specifications__woolly_user_type__name=self.request.user.type.name)
 
         # if this viewset is accessed via the 'association-detail' route,
         # it wll have been passed the `association_pk` kwarg and the queryset
-        # needs to be filtered accordingly; if it was accessed via the
-        # unnested '/portes' route, the queryset should include all Portes
+        # needs to be filtered accordingly
         if 'association_pk' in self.kwargs:
             association_pk = self.kwargs['association_pk']
-            queryset = queryset.filter(association__pk=association_pk)
+            queryset = Sale.objects.all().filter(association__pk=association_pk)
 
+        # TO DO : Remove this in order not to display all the sales link
+        # to a payment method on every Sale JSON
         if 'payment_pk' in self.kwargs:
             payment_pk = self.kwargs['payment_pk']
-            queryset = queryset.filter(payment_methods__pk=payment_pk)      
+            queryset = Sale.objects.all().filter(payment_methods__pk=payment_pk)    
 
         return queryset
 
