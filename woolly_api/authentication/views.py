@@ -1,5 +1,6 @@
 from authentication.serializers import WoollyUserSerializer, WoollyUserTypeSerializer
 from authentication.models import WoollyUserType, WoollyUser
+from sales.models import AssociationMember
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework import viewsets
 from rest_framework_json_api.views import RelationshipView

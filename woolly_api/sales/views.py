@@ -12,12 +12,12 @@ from rest_framework_json_api.views import RelationshipView
 
 from .models import (
     Item, ItemSpecifications, Association, Sale, Order, OrderLine,
-    PaymentMethod
+    PaymentMethod, AssociationMember
 )
 from .serializers import (
     ItemSerializer, ItemSpecificationsSerializer, AssociationSerializer,
     OrderSerializer, OrderLineSerializer, SaleSerializer,
-    PaymentMethodSerializer
+    PaymentMethodSerializer, AssociationMemberSerializer
 )
 
 @api_view(['GET'])
@@ -31,6 +31,7 @@ def api_root(request, format=None):
         'orders': reverse('order-list', request=request, format=format),
         'orderlines': reverse('orderline-list', request=request, format=format),
         'paymentmethods': reverse('paymentmethod-list', request=request, format=format),
+        'associationmembers': reverse('associationmember-list', request=request, format=format),
     })
 
 
@@ -38,6 +39,36 @@ class AssociationViewSet(viewsets.ModelViewSet):
     queryset = Association.objects.all()
     serializer_class = AssociationSerializer
     permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        queryset = self.queryset.filter(members__woollyUser=self.request.user)
+
+        if 'associationmember_pk' in self.kwargs:
+            associationmember_pk = self.kwargs['associationmember_pk']
+            queryset = Association.objects.all().filter(members__pk=associationmember_pk)
+        
+        return queryset
+
+
+class AssociationMemberViewSet(viewsets.ModelViewSet):
+    queryset = AssociationMember.objects.all()
+    serializer_class = AssociationMemberSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def perform_create(self, serializer):
+        serializer.save(
+            woollyUser_id=self.request.user.id,
+            association_id=self.kwargs['association_pk'],
+        )
+
+    def get_queryset(self):
+        queryset = self.queryset
+
+        if 'item_pk' in self.kwargs:
+            item_pk = self.kwargs['item_pk']
+            queryset = queryset.filter(item__pk=item_pk)
+
+        return queryset
 
 
 class PaymentMethodViewSet(viewsets.ModelViewSet):
@@ -205,6 +236,10 @@ class ItemRelationshipView(RelationshipView):
 
 class SaleRelationshipView(RelationshipView):
     queryset = Sale.objects
+
+
+class AssociationMemberRelationshipView(RelationshipView):
+    queryset = AssociationMember.objects
 
 
 class ItemSpecificationsRelationshipView(RelationshipView):

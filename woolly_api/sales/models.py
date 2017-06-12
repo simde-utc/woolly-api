@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from authentication.models import WoollyUserType
+from authentication.models import WoollyUserType, WoollyUser
 
 
 class Association(models.Model):
@@ -80,6 +80,18 @@ class ItemSpecifications(models.Model):
 
     class JSONAPIMeta:
         resource_name = "itemspecifications"
+
+
+class AssociationMember(models.Model):
+    woollyUser = models.ForeignKey(
+        WoollyUser, on_delete=models.CASCADE, related_name='associations')
+    association = models.ForeignKey(
+        Association, on_delete=models.CASCADE, related_name='members')
+    role = models.CharField(max_length=50)
+    rights = models.CharField(max_length=50)
+
+    class JSONAPIMeta:
+        resource_name = "associationmembers"
 
 
 class Order(models.Model):

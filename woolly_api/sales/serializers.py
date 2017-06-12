@@ -1,5 +1,5 @@
 from .models import Sale, Item, ItemSpecifications, Association, Order
-from .models import OrderLine, PaymentMethod
+from .models import OrderLine, PaymentMethod, AssociationMember
 from rest_framework_json_api import serializers
 from rest_framework_json_api.relations import ResourceRelatedField
 from authentication.models import WoollyUserType
@@ -146,15 +146,7 @@ class SaleSerializer(serializers.ModelSerializer):
         related_link_url_kwarg='sale_pk',
         self_link_view_name='sale-relationships'
     )
-    """
-    payment_methods = ResourceRelatedField(
-        queryset=PaymentMethod.objects,
-        many=True,
-        related_link_view_name='paymentmethod-list',
-        related_link_url_kwarg='sale_pk',
-        self_link_view_name='sale-relationships'
-    )
-    """
+
     included_serializers = {
         'items': ItemSerializer,
         'payment_methods': PaymentMethodSerializer
@@ -189,3 +181,23 @@ class AssociationSerializer(serializers.ModelSerializer):
 
     class JSONAPIMeta:
         included_resources = ['sales']
+
+
+class AssociationMemberSerializer(serializers.ModelSerializer):
+    association = ResourceRelatedField(
+        queryset=Association.objects,
+        related_link_view_name='association-list',
+        related_link_url_kwarg='associationmember_pk',
+        self_link_view_name='associationmember-relationships'
+    )
+
+    included_serializers = {
+        'association': AssociationSerializer,
+    }
+
+    class Meta:
+        model = AssociationMember
+        fields = ('id', 'association', 'role', 'rights')
+
+    class JSONAPIMeta:
+        included_resources = ['association']

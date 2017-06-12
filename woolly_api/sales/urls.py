@@ -1,12 +1,15 @@
 from django.conf.urls import url, include
 from rest_framework.urlpatterns import format_suffix_patterns
 
-from .views import SaleViewSet, AssociationViewSet, ItemViewSet, ItemSpecificationsViewSet
-from .views import AssociationRelationshipView, SaleRelationshipView
-from .views import ItemSpecificationsRelationshipView, OrderRelationshipView
-from .views import AssociationRelationshipView, ItemRelationshipView, api_root
-from .views import OrderViewSet, OrderLineViewSet, OrderLineRelationshipView
-from .views import OrderLineItemViewSet, PaymentMethodViewSet, PaymentMethodRelationshipView
+from .views import (
+    SaleViewSet, AssociationViewSet, ItemViewSet, ItemSpecificationsViewSet,
+    AssociationRelationshipView, SaleRelationshipView,
+    ItemSpecificationsRelationshipView, OrderRelationshipView,
+    AssociationRelationshipView, ItemRelationshipView, api_root,
+    OrderViewSet, OrderLineViewSet, OrderLineRelationshipView,
+    OrderLineItemViewSet, PaymentMethodViewSet, PaymentMethodRelationshipView,
+    AssociationMemberViewSet, AssociationMemberRelationshipView
+)
 from authentication.views import WoollyUserTypeViewSet
 
 usertype_list = WoollyUserTypeViewSet.as_view({
@@ -108,6 +111,16 @@ paymentmethod_detail = PaymentMethodViewSet.as_view({
     'delete': 'destroy'
 })
 
+associationmember_list = AssociationMemberViewSet.as_view({
+    'get': 'list',
+    'post': 'create'
+})
+associationmember_detail = AssociationMemberViewSet.as_view({
+    'get': 'retrieve',
+    'put': 'update',
+    'patch': 'partial_update',
+    'delete': 'destroy'
+})
 
 urlpatterns = [
     # Root
@@ -117,6 +130,13 @@ urlpatterns = [
     url(r'^assos/$', association_list, name='association-list'),
     url(r'^assos/(?P<pk>[0-9]+)/$',
         association_detail, name='association-detail'),
+    url(r'^associationmembers/(?P<associationmember_pk>[0-9]+)/assos/$', association_list, name='association-list'),
+    url(r'^associationmembers/(?P<associationmember_pk>[0-9]+)/assos/(?P<pk>[0-9]+)/$',
+        association_detail, name='association-detail'),
+
+    url(r'^associationmembers/$', associationmember_list, name='associationmember-list'),
+    url(r'^associationmembers/(?P<pk>[0-9]+)/$',
+        associationmember_detail, name='associationmember-detail'),
 
     # Sales
     url(r'^sales/$', sale_list, name='sale-list'),
@@ -140,7 +160,8 @@ urlpatterns = [
         item_detail, name='item-detail'),
 
     # Spec
-    url(r'^itemspecifications/$', itemSpecifications_list, name='itemSpecification-list'),
+    url(r'^itemspecifications/$', itemSpecifications_list,
+        name='itemSpecification-list'),
     url(r'^itemspecifications/(?P<pk>[0-9]+)$', itemSpecifications_detail,
         name='itemSpecification-detail'),
     url(r'^items/(?P<item_pk>[0-9]+)/itemspecifications/$',
@@ -228,5 +249,10 @@ urlpatterns = [
         regex=r'^paymentmethods/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
         view=PaymentMethodRelationshipView.as_view(),
         name='paymentmethod-relationships'
+    ),
+    url(
+        regex=r'^associationmembers/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
+        view=AssociationMemberRelationshipView.as_view(),
+        name='associationmember-relationships'
     )
 ]
