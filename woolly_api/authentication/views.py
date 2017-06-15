@@ -34,13 +34,9 @@ class WoollyUserTypeViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = self.queryset
 
-        # if this viewset is accessed via the 'association-detail' route,
-        # it wll have been passed the `association_pk` kwarg and the queryset
-        # needs to be filtered accordingly; if it was accessed via the
-        # unnested '/portes' route, the queryset should include all Portes
         if 'itemspec_pk' in self.kwargs:
             itemspec_pk = self.kwargs['itemspec_pk']
-            queryset = queryset.filter(specs__pk=itemspec_pk)
+            queryset = queryset.filter(itemspecifications__pk=itemspec_pk)
 
         if 'user_pk' in self.kwargs:
             user_pk = self.kwargs['user_pk']

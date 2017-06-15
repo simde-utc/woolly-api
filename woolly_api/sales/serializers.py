@@ -27,7 +27,7 @@ class ItemSpecificationsSerializer(serializers.ModelSerializer):
 
 
 class ItemSerializer(serializers.ModelSerializer):
-    specifications = ResourceRelatedField(
+    itemspecifications = ResourceRelatedField(
         queryset=ItemSpecifications.objects,
         many=True,
         related_link_view_name='itemSpecification-list',
@@ -36,16 +36,16 @@ class ItemSerializer(serializers.ModelSerializer):
     )
 
     included_serializers = {
-        'specifications': ItemSpecificationsSerializer,
+        'itemspecifications': ItemSpecificationsSerializer,
     }
 
     class Meta:
         model = Item
         fields = ('id', 'name', 'description', 'remaining_quantity',
-                  'initial_quantity', 'specifications')
+                  'initial_quantity', 'itemspecifications')
 
     class JSONAPIMeta:
-        included_resources = ['specifications']
+        included_resources = ['itemspecifications']
 
 
 class OrderLineSerializer(serializers.ModelSerializer):
@@ -71,7 +71,7 @@ class OrderLineSerializer(serializers.ModelSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    items = ResourceRelatedField(
+    orderlines = ResourceRelatedField(
         queryset=OrderLine.objects,
         many=True,
         related_link_view_name='orderline-list',
@@ -80,19 +80,19 @@ class OrderSerializer(serializers.ModelSerializer):
     )
 
     included_serializers = {
-        'items': OrderLineSerializer,
+        'orderlines': OrderLineSerializer,
     }
 
     class Meta:
         model = Order
-        fields = ('id', 'status', 'date', 'items')
+        fields = ('id', 'status', 'date', 'orderlines')
 
     class JSONAPIMeta:
-        included_resources = ['items']
+        included_resources = ['orderlines']
 
 
 class SalePSerializer(serializers.ModelSerializer):
-    asso = serializers.ReadOnlyField(source='association.name')
+    association = serializers.ReadOnlyField(source='association.name')
     items = ResourceRelatedField(
         queryset=Item.objects,
         many=True,
@@ -108,7 +108,7 @@ class SalePSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sale
         fields = ('id', 'name', 'description', 'creation_date', 'begin_date',
-                  'end_date', 'max_payment_date', 'max_item_quantity', 'asso',
+                  'end_date', 'max_payment_date', 'max_item_quantity', 'association',
                   'items')
 
     class JSONAPIMeta:
@@ -138,7 +138,7 @@ class PaymentMethodSerializer(serializers.ModelSerializer):
 
 
 class SaleSerializer(serializers.ModelSerializer):
-    asso = serializers.ReadOnlyField(source='association.name')
+    association = serializers.ReadOnlyField(source='association.name')
     items = ResourceRelatedField(
         queryset=Item.objects,
         many=True,
@@ -149,17 +149,17 @@ class SaleSerializer(serializers.ModelSerializer):
 
     included_serializers = {
         'items': ItemSerializer,
-        'payment_methods': PaymentMethodSerializer
+        'paymentmethods': PaymentMethodSerializer
     }
 
     class Meta:
         model = Sale
         fields = ('id', 'name', 'description', 'creation_date', 'begin_date',
-                  'end_date', 'max_payment_date', 'max_item_quantity', 'asso',
-                  'items', 'payment_methods')
+                  'end_date', 'max_payment_date', 'max_item_quantity', 'association',
+                  'items', 'paymentmethods')
 
     class JSONAPIMeta:
-        included_resources = ['items', 'payment_methods']
+        included_resources = ['items', 'paymentmethods']
 
 
 class AssociationSerializer(serializers.ModelSerializer):

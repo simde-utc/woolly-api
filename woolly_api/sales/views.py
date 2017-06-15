@@ -92,6 +92,10 @@ class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsOwner,)
 
     def perform_create(self, serializer):
+        # import pdb; pdb.set_trace()
+        # if self.request.data.lines != ''
+        #    # azazd
+
         serializer.save(
             owner=self.request.user
         )
@@ -118,11 +122,11 @@ class OrderLineViewSet(viewsets.ModelViewSet):
         )
 
     def get_queryset(self):
-        queryset = self.queryset
+        queryset = self.queryset.filter(order__owner=self.request.user)
 
         if 'order_pk' in self.kwargs:
             order_pk = self.kwargs['order_pk']
-            queryset = queryset.filter(order__pk=order_pk)
+            queryset = OrderLine.objects.all().filter(order__pk=order_pk)
 
         return queryset
 
@@ -139,7 +143,7 @@ class SaleViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Sale.objects.all().filter(
-            items__specifications__woolly_user_type__name=self.request.user.type.name)
+            items__itemspecifications__woolly_user_type__name=self.request.user.type.name)
 
         # if this viewset is accessed via the 'association-detail' route,
         # it wll have been passed the `association_pk` kwarg and the queryset
@@ -152,7 +156,7 @@ class SaleViewSet(viewsets.ModelViewSet):
         # to a payment method on every Sale JSON
         if 'payment_pk' in self.kwargs:
             payment_pk = self.kwargs['payment_pk']
-            queryset = Sale.objects.all().filter(payment_methods__pk=payment_pk)    
+            queryset = Sale.objects.all().filter(paymentmethods__pk=payment_pk)    
 
         return queryset
 
@@ -183,21 +187,27 @@ class ItemViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def perform_create(self, serializer):
-        serializer.save(
-            sale_id=self.kwargs['sale_pk']
-        )
+        if 'orderline_pk' in self.kwargs:
+            serializer.save(
+                sale_id=self.kwargs['sale_pk']
+            )
+
+        if 'orderline_pk' in self.kwargs:
+            serializer.save(
+                sale_id=self.kwargs['orderline_pk']
+            )
 
     def get_queryset(self):
         queryset = self.queryset.filter(
-            specifications__woolly_user_type__name=self.request.user.type.name)
+            itemspecifications__woolly_user_type__name=self.request.user.type.name)
 
         if 'sale_pk' in self.kwargs:
             sale_pk = self.kwargs['sale_pk']
             queryset = queryset.filter(sale__pk=sale_pk)
 
-        # if 'orderline_pk' in self.kwargs:
-        #    orderline_pk = self.kwargs['orderline_pk']
-        #   queryset = queryset.filter(order_item_line__pk=orderline_pk)
+        if 'orderline_pk' in self.kwargs:
+            orderline_pk = self.kwargs['orderline_pk']
+            queryset = queryset.filter(orderlines__pk=orderline_pk)
 
         return queryset
 
@@ -217,7 +227,7 @@ class OrderLineItemViewSet(viewsets.ModelViewSet):
 
         if 'orderline_pk' in self.kwargs:
             orderline_pk = self.kwargs['orderline_pk']
-            queryset = queryset.filter(order_item_line__pk=orderline_pk)
+            queryset = queryset.filter(orderlines__pk=orderline_pk)
 
         return queryset
 

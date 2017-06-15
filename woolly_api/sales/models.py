@@ -36,7 +36,7 @@ class Sale(models.Model):
     max_payment_date = models.DateField()
     max_item_quantity = models.IntegerField()
 
-    payment_methods = models.ForeignKey(
+    paymentmethods = models.ForeignKey(
         PaymentMethod,
         on_delete=None,
         related_name='sales',
@@ -67,9 +67,9 @@ class Item(models.Model):
 
 class ItemSpecifications(models.Model):
     woolly_user_type = models.ForeignKey(
-        WoollyUserType, on_delete=models.CASCADE, related_name='specs')
+        WoollyUserType, on_delete=models.CASCADE, related_name='itemspecifications')
     item = models.ForeignKey(
-        Item, on_delete=models.CASCADE, related_name='specifications')
+        Item, on_delete=models.CASCADE, related_name='itemspecifications')
     quantity = models.IntegerField()
     price = models.FloatField()
     # Like the foundation ID of the association model
@@ -109,9 +109,9 @@ class Order(models.Model):
 
 class OrderLine(models.Model):
     item = models.ForeignKey(
-        Item, on_delete=models.CASCADE, related_name='order_item_line')
+        Item, on_delete=models.CASCADE, related_name='orderlines')
     order = models.ForeignKey(
-        Order, on_delete=models.CASCADE, related_name='items')
+        Order, on_delete=models.CASCADE, related_name='orderlines')
     quantity = models.IntegerField()
 
     class JSONAPIMeta:

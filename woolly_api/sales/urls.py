@@ -127,11 +127,11 @@ urlpatterns = [
     url(r'^$', api_root),
 
     # Associations
-    url(r'^assos/$', association_list, name='association-list'),
-    url(r'^assos/(?P<pk>[0-9]+)/$',
+    url(r'^associations/$', association_list, name='association-list'),
+    url(r'^associations/(?P<pk>[0-9]+)/$',
         association_detail, name='association-detail'),
-    url(r'^associationmembers/(?P<associationmember_pk>[0-9]+)/assos/$', association_list, name='association-list'),
-    url(r'^associationmembers/(?P<associationmember_pk>[0-9]+)/assos/(?P<pk>[0-9]+)/$',
+    url(r'^associationmembers/(?P<associationmember_pk>[0-9]+)/associations/$', association_list, name='association-list'),
+    url(r'^associationmembers/(?P<associationmember_pk>[0-9]+)/associations/(?P<pk>[0-9]+)/$',
         association_detail, name='association-detail'),
 
     url(r'^associationmembers/$', associationmember_list, name='associationmember-list'),
@@ -141,9 +141,9 @@ urlpatterns = [
     # Sales
     url(r'^sales/$', sale_list, name='sale-list'),
     url(r'^sales/(?P<pk>[0-9]+)$', sale_detail, name='sale-detail'),
-    url(r'^assos/(?P<association_pk>[0-9]+)/sales/$',
+    url(r'^associations/(?P<association_pk>[0-9]+)/sales/$',
         sale_list, name='sale-list'),
-    url(r'^assos/(?P<association_pk>[0-9]+)/sales/(?P<pk>[0-9]+)$',
+    url(r'^associations/(?P<association_pk>[0-9]+)/sales/(?P<pk>[0-9]+)$',
         sale_detail, name='sale-detail'),
     url(r'^paymentmethods/(?P<payment_pk>[0-9]+)/sales/$',
         sale_list, name='sale-payment-list'),
@@ -154,9 +154,9 @@ urlpatterns = [
     url(r'^items/$', item_list, name='item-list'),
     url(r'^items/(?P<pk>[0-9]+)$', item_detail, name='item-detail'),
     url(r'^sales/(?P<sale_pk>[0-9]+)/items/$', item_list, name='item-list'),
-    url(r'^assos/(?P<association_pk>[0-9]+)/sales/(?P<sale_pk>[0-9]+)/items/$',
+    url(r'^associations/(?P<association_pk>[0-9]+)/sales/(?P<sale_pk>[0-9]+)/items/$',
         item_list, name='item-list'),
-    url(r'^assos/(?P<association_pk>[0-9]+)/sales/(?P<sale_pk>[0-9]+)/items/(?P<pk>[0-9]+)$',
+    url(r'^associations/(?P<association_pk>[0-9]+)/sales/(?P<sale_pk>[0-9]+)/items/(?P<pk>[0-9]+)$',
         item_detail, name='item-detail'),
 
     # Spec
@@ -190,14 +190,14 @@ urlpatterns = [
         orderline_list, name='orderline-list'),
     url(r'^orderlines/(?P<pk>[0-9]+)/$',
         orderline_detail, name='orderline-detail'),
-    url(r'^orders/(?P<order_pk>[0-9]+)/lines/$',
+    url(r'^orders/(?P<order_pk>[0-9]+)/orderlines/$',
         orderline_list, name='orderline-list'),
-    url(r'^orders/(?P<order_pk>[0-9]+)/lines/(?P<pk>[0-9]+)$',
+    url(r'^orders/(?P<order_pk>[0-9]+)/orderlines/(?P<pk>[0-9]+)$',
         orderline_detail, name='orderline-detail'),
     url(r'^orderlines/(?P<orderline_pk>[0-9]+)/items/$',
-        orderlineitem_list, name='orderlineitem-list'),
-    url(r'^orderlines/(?P<orderline_pk>[0-9]+)/lines/(?P<pk>[0-9]+)$',
-        orderlineitem_detail, name='orderlineitem-detail'),
+        item_list, name='orderlineitem-list'),
+    url(r'^orderlines/(?P<orderline_pk>[0-9]+)/items/(?P<pk>[0-9]+)$',
+        item_detail, name='orderlineitem-detail'),
 
     # Payment Methods
     url(r'^paymentmethods/$',
@@ -210,11 +210,6 @@ urlpatterns = [
         paymentmethod_detail, name='paymentmethod-detail'),
 
     # Relationships views for the related links
-    url(
-        regex=r'^assos/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
-        view=AssociationRelationshipView.as_view(),
-        name='maison-relationships'
-    ),
     url(
         regex=r'^assos/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
         view=AssociationRelationshipView.as_view(),
@@ -231,7 +226,7 @@ urlpatterns = [
         name='item-relationships'
     ),
     url(
-        regex=r'^specs/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
+        regex=r'^itemspecifications/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
         view=ItemSpecificationsRelationshipView.as_view(),
         name='itemSpecification-relationships'
     ),
