@@ -8,11 +8,11 @@ class WoollyUserCreationForm(forms.ModelForm):
     fields, plus a repeated password."""
     password1 = forms.CharField(label='Password', widget=forms.PasswordInput)
     password2 = forms.CharField(label='Password confirmation', widget=forms.PasswordInput)
-  #  type = forms.ChoiceField(choices=WoollyUserType.objects.all())
+  #  woollyusertype = forms.ChoiceField(choices=WoollyUserType.objects.all())
 
     class Meta:
         model = WoollyUser
-        fields = ('login','type',)
+        fields = ('login','woollyusertype',)
 
     def clean_password2(self):
         # Check that the two password entries match
@@ -39,7 +39,7 @@ class WoollyUserChangeForm(forms.ModelForm):
 
     class Meta:
         model = WoollyUser
-        fields = ('login', 'password','type', 'is_active', 'is_admin')
+        fields = ('login', 'password', 'woollyusertype', 'is_active', 'is_admin')
 
     def clean_password(self):
         # Regardless of what the user provides, return the initial value.

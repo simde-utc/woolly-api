@@ -54,7 +54,7 @@ class WoollyUserManager(BaseUserManager):
 class WoollyUser(AbstractBaseUser):
     login = models.CharField(max_length=253, unique=True, blank=False)
 
-    type = models.ForeignKey(
+    woollyusertype = models.ForeignKey(
         WoollyUserType, on_delete=None, null=False, default=4, related_name='users')
 
     last_name = models.CharField(max_length=100, blank=True)
