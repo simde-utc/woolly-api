@@ -1,7 +1,6 @@
 from django.conf.urls import url, include
 from rest_framework.urlpatterns import format_suffix_patterns
 from authentication.views import WoollyUserViewSet, WoollyUserRelationshipView, WoollyUserTypeViewSet
-
 import cas.views
 
 woollyuser_list = WoollyUserViewSet.as_view({

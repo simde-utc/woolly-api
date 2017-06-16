@@ -137,6 +137,10 @@ urlpatterns = [
     url(r'^associationmembers/$', associationmember_list, name='associationmember-list'),
     url(r'^associationmembers/(?P<pk>[0-9]+)/$',
         associationmember_detail, name='associationmember-detail'),
+    url(r'^associations/(?P<association_pk>[0-9]+)/associationmembers/$',
+        associationmember_list, name='associationmember-list'),
+    url(r'^associations/(?P<association_pk>[0-9]+)/associationmembers/(?P<pk>[0-9]+)$',
+        associationmember_detail, name='associationmember-list'),
 
     # Sales
     url(r'^sales/$', sale_list, name='sale-list'),

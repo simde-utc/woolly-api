@@ -1,7 +1,5 @@
 from django.db import models
 from django.conf import settings
-from authentication.models import WoollyUserType, WoollyUser
-
 
 class Association(models.Model):
     """
@@ -67,7 +65,7 @@ class Item(models.Model):
 
 class ItemSpecifications(models.Model):
     woolly_user_type = models.ForeignKey(
-        WoollyUserType, on_delete=models.CASCADE, related_name='itemspecifications')
+        'authentication.WoollyUserType', on_delete=models.CASCADE, related_name='itemspecifications')
     item = models.ForeignKey(
         Item, on_delete=models.CASCADE, related_name='itemspecifications')
     quantity = models.IntegerField()
@@ -84,9 +82,9 @@ class ItemSpecifications(models.Model):
 
 class AssociationMember(models.Model):
     woollyUser = models.ForeignKey(
-        WoollyUser, on_delete=models.CASCADE, related_name='associations')
+        'authentication.WoollyUser', on_delete=models.CASCADE, related_name='associationmembers')
     association = models.ForeignKey(
-        Association, on_delete=models.CASCADE, related_name='members')
+        Association, on_delete=models.CASCADE, related_name='associationmembers')
     role = models.CharField(max_length=50)
     rights = models.CharField(max_length=50)
 

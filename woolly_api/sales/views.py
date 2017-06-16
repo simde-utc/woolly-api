@@ -41,12 +41,12 @@ class AssociationViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        queryset = self.queryset.filter(members__woollyUser=self.request.user)
+        queryset = self.queryset.filter(associationmembers__woollyUser=self.request.user)
 
         if 'associationmember_pk' in self.kwargs:
             associationmember_pk = self.kwargs['associationmember_pk']
-            queryset = Association.objects.all().filter(members__pk=associationmember_pk)
-        
+            queryset = Association.objects.all().filter(associationmembers__pk=associationmember_pk)
+
         return queryset
 
 
@@ -64,9 +64,13 @@ class AssociationMemberViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = self.queryset
 
-        if 'item_pk' in self.kwargs:
-            item_pk = self.kwargs['item_pk']
-            queryset = queryset.filter(item__pk=item_pk)
+        if 'user_pk' in self.kwargs:
+            user_pk = self.kwargs['user_pk']
+            queryset = queryset.filter(woollyUser__pk=user_pk)
+
+        if 'association_pk' in self.kwargs:
+            association_pk = self.kwargs['association_pk']
+            queryset = queryset.filter(association__pk=association_pk)
 
         return queryset
 

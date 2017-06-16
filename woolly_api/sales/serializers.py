@@ -161,6 +161,27 @@ class SaleSerializer(serializers.ModelSerializer):
     class JSONAPIMeta:
         included_resources = ['items', 'paymentmethods']
 
+class AssociationMemberSerializer(serializers.ModelSerializer):
+    """
+    association = ResourceRelatedField(
+        queryset=Association.objects,
+        related_link_view_name='association-list',
+        related_link_url_kwarg='associationmember_pk',
+        self_link_view_name='associationmember-relationships'
+    )
+
+    included_serializers = {
+        'association': AssociationSerializer,
+    }
+    """
+    class Meta:
+        model = AssociationMember
+        fields = ('id', 'role', 'rights')
+    """
+    class JSONAPIMeta:
+        included_resources = ['association']
+    """
+
 
 class AssociationSerializer(serializers.ModelSerializer):
     sales = ResourceRelatedField(
@@ -171,18 +192,27 @@ class AssociationSerializer(serializers.ModelSerializer):
         self_link_view_name='association-relationships'
     )
 
+    associationmembers = ResourceRelatedField(
+        queryset=AssociationMember.objects,
+        many=True,
+        related_link_view_name='associationmember-list',
+        related_link_url_kwarg='association_pk',
+        self_link_view_name='association-relationships'
+    )
+
     included_serializers = {
         'sales': SaleSerializer,
+        'associationmembers': AssociationMemberSerializer
     }
 
     class Meta:
         model = Association
-        fields = ('id', 'name', 'bank_account', 'sales', 'foundation_id')
+        fields = ('id', 'name', 'bank_account', 'sales', 'foundation_id', 'associationmembers')
 
     class JSONAPIMeta:
-        included_resources = ['sales']
+        included_resources = ['sales', 'associationmembers']
 
-
+"""
 class AssociationMemberSerializer(serializers.ModelSerializer):
     association = ResourceRelatedField(
         queryset=Association.objects,
@@ -201,3 +231,4 @@ class AssociationMemberSerializer(serializers.ModelSerializer):
 
     class JSONAPIMeta:
         included_resources = ['association']
+"""
