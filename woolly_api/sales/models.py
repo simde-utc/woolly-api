@@ -70,10 +70,6 @@ class ItemSpecifications(models.Model):
         Item, on_delete=models.CASCADE, related_name='itemspecifications')
     quantity = models.IntegerField()
     price = models.FloatField()
-    # Like the foundation ID of the association model
-    # The nemopay ID is used to link the app to the
-    # Nemopay app, so calculation are going to be made
-    # So it's a char field
     nemopay_id = models.CharField(max_length=30)
 
     class JSONAPIMeta:

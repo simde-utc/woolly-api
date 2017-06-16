@@ -21,14 +21,14 @@ class WoollyUserSerializer(serializers.Serializer):
         related_link_url_kwarg='user_pk',
         self_link_view_name='user-relationships'
     )
-    """
+    
     associationmembers = ResourceRelatedField(
         queryset=AssociationMember.objects,
         related_link_view_name='associationmember-list',
         related_link_url_kwarg='user_pk',
         self_link_view_name='user-relationships'
     )
-    """
+    
     included_serializers = {
         'woollyusertype': WoollyUserTypeSerializer,
         # 'associationmembers': AssociationMemberSerializer
@@ -38,7 +38,7 @@ class WoollyUserSerializer(serializers.Serializer):
         """Meta class to map serializer's fields with the model fields."""
         model = WoollyUser
         fields = ('id', 'login', 'last_login', 'type_id',  'password', 'is_active',
-                  'is_admin', 'woollyusertype')
+                  'is_admin', 'woollyusertype', 'associationmembers')
         write_only_fields = ('password',)
 
     def create(self, validated_data):
@@ -48,4 +48,4 @@ class WoollyUserSerializer(serializers.Serializer):
         return WoollyUser.objects.create(**validated_data)
 
     class JSONAPIMeta:
-        included_resources = ['woollyusertype']
+        included_resources = ['woollyusertype', 'associationmembers']

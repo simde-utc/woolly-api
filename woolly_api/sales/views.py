@@ -47,6 +47,10 @@ class AssociationViewSet(viewsets.ModelViewSet):
             associationmember_pk = self.kwargs['associationmember_pk']
             queryset = Association.objects.all().filter(associationmembers__pk=associationmember_pk)
 
+        if 'user_pk' in self.kwargs:
+            user_pk = self.kwargs['user_pk']
+            queryset = Association.objects.all().filter(associationmembers__woollyUser=user_pk)
+
         return queryset
 
 
@@ -142,12 +146,12 @@ class SaleViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(
             association_id=self.kwargs['association_pk'],
-            payment_method_id=self.kwargs['paymentmethod_pk']
+            paymentmethod_id=self.kwargs['paymentmethod_pk']
         )
 
     def get_queryset(self):
         queryset = Sale.objects.all().filter(
-            items__itemspecifications__woolly_user_type__name=self.request.user.type.name)
+            items__itemspecifications__woolly_user_type__name=self.request.user.woollyusertype.name)
 
         # if this viewset is accessed via the 'association-detail' route,
         # it wll have been passed the `association_pk` kwarg and the queryset
@@ -203,7 +207,7 @@ class ItemViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = self.queryset.filter(
-            itemspecifications__woolly_user_type__name=self.request.user.type.name)
+            itemspecifications__woolly_user_type__name=self.request.user.woollyusertype.name)
 
         if 'sale_pk' in self.kwargs:
             sale_pk = self.kwargs['sale_pk']
