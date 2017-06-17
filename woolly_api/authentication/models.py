@@ -57,6 +57,7 @@ class WoollyUser(AbstractBaseUser):
     woollyusertype = models.ForeignKey(
         WoollyUserType, on_delete=None, null=False, default=4, related_name='users')
 
+    associations = models.ManyToManyField('sales.Association', through='sales.AssociationMember')
     last_name = models.CharField(max_length=100, blank=True)
     first_name = models.CharField(max_length=100, blank=True)
     email = models.EmailField(blank=True)

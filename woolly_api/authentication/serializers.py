@@ -1,5 +1,6 @@
 from authentication.models import WoollyUser, WoollyUserType
 from sales.models import AssociationMember
+# from sales.serializers import AssociationMemberSerializer
 from rest_framework_json_api import serializers
 from rest_framework_json_api.relations import ResourceRelatedField
 
@@ -21,14 +22,14 @@ class WoollyUserSerializer(serializers.Serializer):
         related_link_url_kwarg='user_pk',
         self_link_view_name='user-relationships'
     )
-    
+    """
     associationmembers = ResourceRelatedField(
         queryset=AssociationMember.objects,
         related_link_view_name='associationmember-list',
         related_link_url_kwarg='user_pk',
         self_link_view_name='user-relationships'
     )
-    
+    """
     included_serializers = {
         'woollyusertype': WoollyUserTypeSerializer,
         # 'associationmembers': AssociationMemberSerializer

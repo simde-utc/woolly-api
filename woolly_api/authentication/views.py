@@ -1,7 +1,7 @@
 from authentication.serializers import WoollyUserSerializer, WoollyUserTypeSerializer
 from authentication.models import WoollyUserType, WoollyUser
 from sales.models import AssociationMember
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets
 from rest_framework_json_api.views import RelationshipView
 
@@ -10,7 +10,7 @@ class WoollyUserViewSet(viewsets.ModelViewSet):
     """support Post request to create a new WoollyUser"""
     queryset = WoollyUser.objects.all()
     serializer_class = WoollyUserSerializer
-    permission_classes = (IsAuthenticated, IsAdminUser,)
+    permission_classes = (IsAuthenticated,)
 
     def perform_create(self, serializer):
         serializer.save(
