@@ -101,22 +101,24 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         # Get the customized Orderlines through JSON
+        # import pdb; pdb.set_trace()
         validate_items = []
-        if len(self.request.data['lines']) > 0:
-            for line in self.request.data['lines']:
-                # Check the quantity of each item
-                # TO DO : Call the check quantity function
+        if 'lines' in self.request.data:
+            if len(self.request.data['lines']) > 0:
+                for line in self.request.data['lines']:
+                    # Check the quantity of each item
+                    # TO DO : Call the check quantity function
 
-                # If there is enough stock, add the article
-                # to the validate items list
-                validate_items.append(line)
+                    # If there is enough stock, add the article
+                    # to the validate items list
+                    validate_items.append(line)
 
-        # If there is validated items, create the order
+        # Create the order
+        serializer.save(
+            owner=self.request.user
+        )
+
         if len(validate_items):
-            serializer.save(
-                owner=self.request.user
-            )
-
             # Get the new order ID
             order_id = serializer.data['id']
 
