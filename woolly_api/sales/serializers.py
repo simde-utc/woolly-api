@@ -78,7 +78,7 @@ class OrderSerializer(serializers.ModelSerializer):
         related_link_url_kwarg='order_pk',
         self_link_view_name='order-relationships'
     )
-
+    # sale = serializers.ReadOnlyField(source='orderlines.item.sale')
     included_serializers = {
         'orderlines': OrderLineSerializer,
     }

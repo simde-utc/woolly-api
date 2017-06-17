@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 
+
 class Association(models.Model):
     """
     Represents the association information
