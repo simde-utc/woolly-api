@@ -22,8 +22,11 @@ from .serializers import (
 
 @api_view(['GET'])
 def api_root(request, format=None):
+    """
+    Defines the clickable links displayed on the server
+    """
     return Response({
-        'assos': reverse('association-list', request=request, format=format),
+        'associations': reverse('association-list', request=request, format=format),
         'sales': reverse('sale-list', request=request, format=format),
         'items': reverse('item-list', request=request, format=format),
         'itemSpecifications': reverse('itemSpecification-list', request=request, format=format),
@@ -36,6 +39,9 @@ def api_root(request, format=None):
 
 
 class AssociationViewSet(viewsets.ModelViewSet):
+    """
+        Defines the behavior of the association view
+    """
     queryset = Association.objects.all()
     serializer_class = AssociationSerializer
     permission_classes = (permissions.IsAuthenticated,)
@@ -55,6 +61,9 @@ class AssociationViewSet(viewsets.ModelViewSet):
 
 
 class AssociationMemberViewSet(viewsets.ModelViewSet):
+    """
+        Defines the behavior link to the association member view
+    """
     queryset = AssociationMember.objects.all()
     serializer_class = AssociationMemberSerializer
     permission_classes = (permissions.IsAuthenticated,)
@@ -80,6 +89,9 @@ class AssociationMemberViewSet(viewsets.ModelViewSet):
 
 
 class PaymentMethodViewSet(viewsets.ModelViewSet):
+    """
+        Defines the behavior of the payment method view
+    """
     queryset = PaymentMethod.objects.all()
     serializer_class = PaymentMethodSerializer
     permission_classes = (permissions.IsAuthenticated,)
@@ -95,6 +107,9 @@ class PaymentMethodViewSet(viewsets.ModelViewSet):
 
 
 class OrderViewSet(viewsets.ModelViewSet):
+    """
+        Defines the behavior of the order CRUD
+    """
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
     permission_classes = (permissions.IsAuthenticated, IsOwner,)
@@ -143,7 +158,9 @@ class OrderViewSet(viewsets.ModelViewSet):
 
 
 class OrderLineViewSet(viewsets.ModelViewSet):
-
+    """
+        Defines the behavior of the Orderline view
+    """
     queryset = OrderLine.objects.all()
     serializer_class = OrderLineSerializer
     permission_classes = (permissions.IsAuthenticated,)
@@ -164,6 +181,9 @@ class OrderLineViewSet(viewsets.ModelViewSet):
 
 
 class SaleViewSet(viewsets.ModelViewSet):
+    """
+        Defines the behavior of the sale view
+    """
     serializer_class = SaleSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -194,6 +214,9 @@ class SaleViewSet(viewsets.ModelViewSet):
 
 
 class ItemSpecificationsViewSet(viewsets.ModelViewSet):
+    """
+        Defines the behavior of the item specifications view
+    """
     queryset = ItemSpecifications.objects.all()
     serializer_class = ItemSpecificationsSerializer
     permission_classes = (permissions.IsAuthenticated,)
@@ -214,6 +237,9 @@ class ItemSpecificationsViewSet(viewsets.ModelViewSet):
 
 
 class ItemViewSet(viewsets.ModelViewSet):
+    """
+        Defines the behavior of the item interactions
+    """
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
     permission_classes = (permissions.IsAuthenticated,)
@@ -245,6 +271,9 @@ class ItemViewSet(viewsets.ModelViewSet):
 
 
 class OrderLineItemViewSet(viewsets.ModelViewSet):
+    """
+        Defines the view which display the items of an orderline
+    """
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
     permission_classes = (permissions.IsAuthenticated,)
@@ -265,32 +294,56 @@ class OrderLineItemViewSet(viewsets.ModelViewSet):
 
 
 class OrderRelationshipView(RelationshipView):
+    """
+        Required by JSON API to display the orders related links
+    """
     queryset = Order.objects
 
 
 class OrderLineRelationshipView(RelationshipView):
+    """
+        Required by JSON API to display the orderlines related links
+    """
     queryset = OrderLine.objects
 
 
 class ItemRelationshipView(RelationshipView):
+    """
+        Required by JSON API to display the items related links
+    """
     queryset = Item.objects
 
 
 class SaleRelationshipView(RelationshipView):
+    """
+        Required by JSON API to display the sales related links
+    """
     queryset = Sale.objects
 
 
 class AssociationMemberRelationshipView(RelationshipView):
+    """
+        Required by JSON API to display the association members related links
+    """
     queryset = AssociationMember.objects
 
 
 class ItemSpecificationsRelationshipView(RelationshipView):
+    """
+        Required by JSON API to display the item specifications related links
+    """
     queryset = ItemSpecifications.objects
 
 
 class AssociationRelationshipView(RelationshipView):
+    """
+        Required by JSON API to display the associations related links
+    """
     queryset = Association.objects
 
 
 class PaymentMethodRelationshipView(RelationshipView):
+    """
+        Required by JSON API to display the payment methods related links
+    """
     queryset = PaymentMethod.objects

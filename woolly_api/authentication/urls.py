@@ -29,12 +29,30 @@ user_type_detail = WoollyUserTypeViewSet.as_view({
 urlpatterns = {
     url(r'^auth/', include('rest_framework.urls',
                            namespace='rest_framework')),
-    url(r'^users/', woollyuser_list, name="user-list"),
-    url(r'^users/(?P<pk>[0-9]+)$', woollyuser_detail, name='user-detail'),
-    url(r'^users/(?P<user_pk>[0-9]+)/woollyusertypes$', user_type_list, name='user-type-list'),
-    url(r'^users/(?P<user_pk>[0-9]+)/woollyusertypes/(?P<pk>[0-9]+)$', user_type_detail, name='user-type-detail'),
-    url(r'^woollyusertypes/', user_type_list, name="user-type-list"),
-    url(r'^woollyusertypes/(?P<pk>[0-9]+)$', user_type_detail, name='user-type-detail'),
+    url(r'^users/',
+        woollyuser_list,
+        name="user-list"),
+
+    url(r'^users/(?P<pk>[0-9]+)$',
+        woollyuser_detail,
+        name='user-detail'),
+
+    url(r'^users/(?P<user_pk>[0-9]+)/woollyusertypes/$',
+        user_type_list,
+        name='user-type-list'),
+
+    url(r'^users/(?P<user_pk>[0-9]+)/woollyusertypes/(?P<pk>[0-9]+)/$',
+        user_type_detail,
+        name='user-type-detail'),
+    
+    #url(r'^woollyusertypes/',
+    #    user_type_list,
+    #    name="user-type-list"),
+
+    #url(r'^woollyusertypes/(?P<pk>[0-9]+)/$',
+    #    user_type_detail,
+    #    name='user-type-detail'),
+
     url(r'^login/$', cas.views.login, name='login'),
     url(r'^logout/$', cas.views.logout, name='logout'),
 

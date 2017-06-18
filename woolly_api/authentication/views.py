@@ -32,15 +32,15 @@ class WoollyUserTypeViewSet(viewsets.ModelViewSet):
     serializer_class = WoollyUserTypeSerializer
 
     def get_queryset(self):
-        queryset = self.queryset
+        queryset = self.queryset.filter(users=self.request.user)
 
         if 'itemspec_pk' in self.kwargs:
             itemspec_pk = self.kwargs['itemspec_pk']
-            queryset = queryset.filter(itemspecifications__pk=itemspec_pk)
+            queryset = WoollyUserType.objects.all().filter(itemspecifications__pk=itemspec_pk)
 
         if 'user_pk' in self.kwargs:
             user_pk = self.kwargs['user_pk']
-            queryset = queryset.filter(users__pk=user_pk)
+            queryset = WoollyUserType.objects.all().filter(users__pk=user_pk)
 
         return queryset
 

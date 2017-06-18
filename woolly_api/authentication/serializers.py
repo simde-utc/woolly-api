@@ -1,5 +1,5 @@
 from authentication.models import WoollyUser, WoollyUserType
-from sales.models import AssociationMember
+# from sales.models import AssociationMember
 # from sales.serializers import AssociationMemberSerializer
 from rest_framework_json_api import serializers
 from rest_framework_json_api.relations import ResourceRelatedField
