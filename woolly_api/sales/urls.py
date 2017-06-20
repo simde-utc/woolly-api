@@ -12,6 +12,8 @@ from .views import (
 )
 from authentication.views import WoollyUserTypeViewSet
 
+# The following lines defines the behavior of each view
+# Here usertype_list will be the list and create behavior of the WoollyUserType view
 usertype_list = WoollyUserTypeViewSet.as_view({
     'get': 'list',
     'post': 'create'
@@ -122,6 +124,7 @@ associationmember_detail = AssociationMemberViewSet.as_view({
     'delete': 'destroy'
 })
 
+# The urlpatterns defines the endpoints of the API
 urlpatterns = [
     # Root
     url(r'^$', api_root),
@@ -163,7 +166,7 @@ urlpatterns = [
     url(r'^associations/(?P<association_pk>[0-9]+)/sales/(?P<sale_pk>[0-9]+)/items/(?P<pk>[0-9]+)$',
         item_detail, name='item-detail'),
 
-    # Spec
+    # Itemspecifications
     url(r'^itemspecifications/$', itemSpecifications_list,
         name='itemSpecification-list'),
     url(r'^itemspecifications/(?P<pk>[0-9]+)$', itemSpecifications_detail,
@@ -213,7 +216,7 @@ urlpatterns = [
     url(r'^sales/(?P<sale_pk>[0-9]+)/paymentmethods/(?P<pk>[0-9]+)$',
         paymentmethod_detail, name='paymentmethod-detail'),
 
-    # Relationships views for the related links
+    # Relationships views for the related links, Required by JSON API
     url(
         regex=r'^assos/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
         view=AssociationRelationshipView.as_view(),

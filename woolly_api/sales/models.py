@@ -27,6 +27,9 @@ class PaymentMethod(models.Model):
 
 
 class Sale(models.Model):
+    """
+        Defines the Sale object
+    """
     name = models.CharField(max_length=200)
     description = models.CharField(max_length=1000)
     creation_date = models.DateField(auto_now_add=True)
@@ -48,11 +51,10 @@ class Sale(models.Model):
         resource_name = "sales"
 
 
-# class ItemGroup(models.Model):
-# name = models.CharField(max_length=200)
-
-
 class Item(models.Model):
+    """
+        Defines the Item object
+    """
     name = models.CharField(max_length=200)
     description = models.CharField(max_length=1000)
     remaining_quantity = models.IntegerField()
@@ -65,6 +67,9 @@ class Item(models.Model):
 
 
 class ItemSpecifications(models.Model):
+    """
+        Defines the link between the Item class and the WoollyUserType one
+    """
     woolly_user_type = models.ForeignKey(
         'authentication.WoollyUserType', on_delete=models.CASCADE, related_name='itemspecifications')
     item = models.ForeignKey(
@@ -78,6 +83,9 @@ class ItemSpecifications(models.Model):
 
 
 class AssociationMember(models.Model):
+    """
+        Defines the link between Association and WoollyUser
+    """
     woollyUser = models.ForeignKey(
         'authentication.WoollyUser', on_delete=models.CASCADE, related_name='associationmembers')
     association = models.ForeignKey(
@@ -90,6 +98,9 @@ class AssociationMember(models.Model):
 
 
 class Order(models.Model):
+    """
+        Defines the Order object
+    """
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         related_name='orders',
@@ -103,6 +114,9 @@ class Order(models.Model):
 
 
 class OrderLine(models.Model):
+    """
+        Defines the link between an Order and an Item
+    """
     item = models.ForeignKey(
         Item, on_delete=models.CASCADE, related_name='orderlines')
     order = models.ForeignKey(

@@ -7,6 +7,10 @@ from authentication.serializers import WoollyUserTypeSerializer
 
 
 class ItemSpecificationsSerializer(serializers.ModelSerializer):
+    """
+        Defines how the ItemSpecifications fields are serialized
+    """
+    # Serializes a ForeignKey following JSON API convention
     woolly_user_type = ResourceRelatedField(
         queryset=WoollyUserType.objects,
         related_link_view_name='usertype-list',
@@ -14,19 +18,29 @@ class ItemSpecificationsSerializer(serializers.ModelSerializer):
         self_link_view_name='itemSpecification-relationships'
     )
 
+    # Required by JSON API
     included_serializers = {
         'woolly_user_type': WoollyUserTypeSerializer,
     }
 
     class Meta:
+        """
+            Precises which model and which fields to serialize
+        """
         model = ItemSpecifications
         fields = ('id', 'woolly_user_type', 'price', 'quantity', 'nemopay_id')
 
     class JSONAPIMeta:
+        """
+            Required by JSON API if you want to include the ForeignKey fields into the JSON
+        """
         included_resources = ['woolly_user_type']
 
 
 class ItemSerializer(serializers.ModelSerializer):
+    """
+        Defines how the Item fields are serialized
+    """
     itemspecifications = ResourceRelatedField(
         queryset=ItemSpecifications.objects,
         many=True,
@@ -49,6 +63,9 @@ class ItemSerializer(serializers.ModelSerializer):
 
 
 class OrderLineSerializer(serializers.ModelSerializer):
+    """
+        Defines how the OrderLine fields are serialized
+    """
     order = serializers.ReadOnlyField(source='order.id')
 
     item = ResourceRelatedField(
@@ -71,6 +88,9 @@ class OrderLineSerializer(serializers.ModelSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
+    """
+        Defines how the Order fields are serialized
+    """
     orderlines = ResourceRelatedField(
         queryset=OrderLine.objects,
         many=True,
@@ -92,6 +112,9 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class SalePSerializer(serializers.ModelSerializer):
+    """
+        Defines how the Sale fields are serialized, without the payment methods
+    """
     association = serializers.ReadOnlyField(source='association.name')
     items = ResourceRelatedField(
         queryset=Item.objects,
@@ -116,6 +139,9 @@ class SalePSerializer(serializers.ModelSerializer):
 
 
 class PaymentMethodSerializer(serializers.ModelSerializer):
+    """
+        Defines how the PaymentMethod fields are serialized
+    """
 
     sales = ResourceRelatedField(
         queryset=Sale.objects,
@@ -138,6 +164,9 @@ class PaymentMethodSerializer(serializers.ModelSerializer):
 
 
 class SaleSerializer(serializers.ModelSerializer):
+    """
+        Defines how the Sale fields are serialized
+    """
     association = serializers.ReadOnlyField(source='association.name')
     items = ResourceRelatedField(
         queryset=Item.objects,
@@ -163,6 +192,9 @@ class SaleSerializer(serializers.ModelSerializer):
 
 
 class AssociationSerializer(serializers.ModelSerializer):
+    """
+        Defines how the Association fields are serialized
+    """
     sales = ResourceRelatedField(
         queryset=Sale.objects,
         many=True,
@@ -184,6 +216,9 @@ class AssociationSerializer(serializers.ModelSerializer):
 
 
 class AssociationMemberSerializer(serializers.ModelSerializer):
+    """
+        Defines how the AssociationMember fields are serialized
+    """
     association = ResourceRelatedField(
         queryset=Association.objects,
         related_link_view_name='association-list',

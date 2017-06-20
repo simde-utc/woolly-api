@@ -23,7 +23,8 @@ from .serializers import (
 @api_view(['GET'])
 def api_root(request, format=None):
     """
-    Defines the clickable links displayed on the server
+        Defines the clickable links displayed on the server endpoint.
+        All the reachable endpoints don't appear here
     """
     return Response({
         'associations': reverse('association-list', request=request, format=format),
@@ -208,7 +209,7 @@ class SaleViewSet(viewsets.ModelViewSet):
         # to a payment method on every Sale JSON
         if 'payment_pk' in self.kwargs:
             payment_pk = self.kwargs['payment_pk']
-            queryset = Sale.objects.all().filter(paymentmethods__pk=payment_pk)    
+            queryset = Sale.objects.all().filter(paymentmethods__pk=payment_pk)
 
         return queryset
 
