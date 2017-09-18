@@ -51,7 +51,7 @@ Now you will need to initialise the database, like this :
 
 ```
 python manage.py shell
->>> from core.models import WoollyUserType
+>>> from authentication.models import WoollyUserType
 >>> WoollyUserType.init_values()
 >>> exit()
 ```
