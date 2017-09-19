@@ -20,7 +20,7 @@ pip install virtualenv
 ```
 Create a virtualenv :
 ```
-virtualenv venv
+virtualenv -p python3 "name"
 source venv/bin/activate
 ```
 Installing Django and the useful librairies
