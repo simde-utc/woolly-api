@@ -56,6 +56,9 @@ python manage.py shell
 >>> exit()
 ```
 
+Now ask a responsible person for the settings_confidential.py file containing the foreign APIs indentification keys. The
+file is to be placed next to the settings.py file.
+
 Finally you can migrate the database and launch the server
 
 ```

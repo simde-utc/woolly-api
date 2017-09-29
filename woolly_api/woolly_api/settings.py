@@ -11,8 +11,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
-
-from corsheaders.defaults import default_headers
+from woolly_api.settings_confidential import GINGER_KEY as GINGER_KEY_confidential
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -162,7 +161,7 @@ CAS_PROVIDE_URL_TO_LOGOUT = True
 CAS_AUTO_CREATE_USER = True
 
 # Ginger config
-GINGER_KEY = 'f4f93ae5c15a841251ad54ed90c1b639'
+GINGER_KEY = GINGER_KEY_confidential
 GINGER_SERVER_URL = 'https://assos.utc.fr/ginger/v1/'
 
 # CORS headers config
