@@ -30,8 +30,8 @@ pip install djangorestframework==3.6.3
 pip install django-cas-client==1.3.0
 pip install django-cors-headers==2.1.0
 pip install djangorestframework-jsonapi==2.2.0
+pip install pymysql
 ```
-
 ### Installing
 
 Once you have your virtual environment up and running, you can clone this repo
