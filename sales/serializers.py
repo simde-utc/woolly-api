@@ -28,7 +28,7 @@ class ItemSpecificationsSerializer(serializers.ModelSerializer):
             Precises which model and which fields to serialize
         """
         model = ItemSpecifications
-        fields = ('id', 'woolly_user_type', 'price', 'quantity', 'nemopay_id')
+        fields = ('id', 'woolly_user_type', 'price', 'quantity', 'nemopay_id','fun_id')
 
     class JSONAPIMeta:
         """
@@ -41,6 +41,7 @@ class ItemSerializer(serializers.ModelSerializer):
     """
         Defines how the Item fields are serialized
     """
+    
     itemspecifications = ResourceRelatedField(
         queryset=ItemSpecifications.objects,
         many=True,
@@ -56,7 +57,7 @@ class ItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Item
         fields = ('id', 'name', 'description', 'remaining_quantity',
-                  'initial_quantity', 'itemspecifications')
+                  'initial_quantity','sale_id', 'itemspecifications')
 
     class JSONAPIMeta:
         included_resources = ['itemspecifications']
@@ -67,7 +68,8 @@ class OrderLineSerializer(serializers.ModelSerializer):
         Defines how the OrderLine fields are serialized
     """
     order = serializers.ReadOnlyField(source='order.id')
-
+    print('******************************')
+    
     item = ResourceRelatedField(
         queryset=Item.objects,
         related_link_view_name='orderlineitem-list',
@@ -105,7 +107,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ('id', 'status', 'date', 'orderlines')
+        fields = ('id', 'date','price','hash_key', 'orderlines')
 
     class JSONAPIMeta:
         included_resources = ['orderlines']

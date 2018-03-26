@@ -2,6 +2,8 @@ from django.conf.urls import url, include
 from rest_framework.urlpatterns import format_suffix_patterns
 from authentication.views import WoollyUserViewSet, WoollyUserRelationshipView, WoollyUserTypeViewSet
 import cas.views
+from . import views # import views so we can use them in urls.
+
 
 woollyuser_list = WoollyUserViewSet.as_view({
     'get': 'list',
@@ -61,6 +63,8 @@ urlpatterns = {
         view=WoollyUserRelationshipView.as_view(),
         name='user-relationships'
     ),
+    url(r'^user/userInfos', views.userInfos) # "/store" will call the method "index" in "views.py"
+
 }
 
 

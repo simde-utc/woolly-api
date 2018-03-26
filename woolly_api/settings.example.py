@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
-from woolly_api.settings_confidential import GINGER_KEY as GINGER_KEY_confidential
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,7 +20,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '8=!^9(5mfy+49^tb=ny=asjvtp9&7)3r^a*!3@rm1&c$r=0@lm'
+SECRET_KEY = ''     # TODO
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -44,6 +43,7 @@ INSTALLED_APPS = [
     'core',
     'authentication',
     'sales',
+
 ]
 
 MIDDLEWARE = [
@@ -51,12 +51,12 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'cas.middleware.CASMiddleware',
-]
+    'django.middleware.csrf.CsrfViewMiddleware',
+    ]
 
 ROOT_URLCONF = 'woolly_api.urls'
 
@@ -81,11 +81,14 @@ WSGI_APPLICATION = 'woolly_api.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': 'woolly',                      # Or path to database file if using sqlite3.
+        'USER': 'root',                      # Not used with sqlite3.
+        'PASSWORD': '*****',                  # Not used with sqlite3.
+        'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
+        'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
     }
 }
 
@@ -159,7 +162,7 @@ CAS_SERVER_URL = 'https://cas.utc.fr/cas/'
 CAS_LOGOUT_COMPLETELY = True
 CAS_PROVIDE_URL_TO_LOGOUT = True
 CAS_AUTO_CREATE_USER = True
-
+GINGER_KEY_confidential = ''        # TODO
 # Ginger config
 GINGER_KEY = GINGER_KEY_confidential
 GINGER_SERVER_URL = 'https://assos.utc.fr/ginger/v1/'
@@ -177,6 +180,8 @@ CORS_ALLOW_METHODS = (
 
 CORS_ALLOW_CREDENTIALS = True
 # necessary in addition to the whitelist for protected requests
+
+# necessary in addition to the whitelist for protected requests
 CSRF_TRUSTED_ORIGINS = (
-    'localhost:4200',
+    "localhost"
 )

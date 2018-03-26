@@ -11,40 +11,33 @@ These instructions will get you a copy of the project up and running on your loc
 First of all, you need to set up the environement. Put yourself in the directory of your choice and follow the following instructions : 
 
 If you don't have it yet, install python3
-```
+```sh
 pip install pip3
 ```
 Then the virtual environement :
-```
+```sh
 pip install virtualenv
 ```
+
 Create a virtualenv :
-```
-virtualenv -p python3 "name"
+```sh
+virtualenv -p python3 "venv"
 source venv/bin/activate
 ```
-Installing Django and the useful librairies
-```
-pip install django==1.11.1
-pip install djangorestframework==3.6.3
-pip install django-cas-client==1.3.0
-pip install django-cors-headers==2.1.0
-pip install djangorestframework-jsonapi==2.2.0
+
+Or for Windows :
+Run all commands in admin if you have a problem
+```sh
+pip install virtualenvwrapper-win
+mkvirtualenv venv
+workon venv
 ```
 
 ### Installing
 
-Once you have your virtual environment up and running, you can clone this repo
-
-```
-git clone https://github.com/simde-utc/woolly-api.git
-```
-
-Then you will need to go into the woolly_api app
-
-```
-cd woolly-api
-cd woolly_api
+Installing Django and the useful librairies
+```sh
+pip install -r requirements.txt
 ```
 
 Now you will need to initialise the database, like this :
@@ -59,7 +52,8 @@ python manage.py shell
 Now ask a responsible person for the settings_confidential.py file containing the foreign APIs indentification keys. The
 file is to be placed next to the settings.py file.
 
-Finally you can migrate the database and launch the server
+Finally you can migrate the database and launch the server.
+Create your database named `woolly` and then launch these commands :
 
 ```
 python manage.py makemigrations

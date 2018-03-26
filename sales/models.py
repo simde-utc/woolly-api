@@ -32,10 +32,10 @@ class Sale(models.Model):
     """
     name = models.CharField(max_length=200)
     description = models.CharField(max_length=1000)
-    creation_date = models.DateField(auto_now_add=True)
-    begin_date = models.DateField()
-    end_date = models.DateField()
-    max_payment_date = models.DateField()
+    creation_date = models.DateTimeField(auto_now_add=True)
+    begin_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    max_payment_date = models.DateTimeField()
     max_item_quantity = models.IntegerField()
 
     paymentmethods = models.ForeignKey(
@@ -77,7 +77,7 @@ class ItemSpecifications(models.Model):
     quantity = models.IntegerField()
     price = models.FloatField()
     nemopay_id = models.CharField(max_length=30)
-
+    fun_id = models.CharField(max_length=30)
     class JSONAPIMeta:
         resource_name = "itemspecifications"
 
@@ -107,8 +107,9 @@ class Order(models.Model):
         on_delete=models.CASCADE)
 
     status = models.CharField(max_length=50)
-    date = models.DateField()
-
+    date = models.DateTimeField()
+    price = models.FloatField()
+    hash_key = models.CharField(max_length=50)
     class JSONAPIMeta:
         resource_name = "orders"
 
