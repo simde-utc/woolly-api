@@ -1,7 +1,7 @@
-django==1.11.1
-djangorestframework==3.6.3
-django-cas-client==1.3.0
-django-cors-headers==2.1.0
-djangorestframework-jsonapi==2.2.0
-pymysql
-requests
+django==2.0.3
+djangorestframework==3.7.6
+django-cas-client==1.4.0
+django-cors-headers==2.2.0
+djangorestframework-jsonapi==2.4.0
+pymysql==0.8.0
+requests==2.18.4

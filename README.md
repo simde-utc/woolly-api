@@ -20,18 +20,17 @@ pip install virtualenv
 ```
 
 Create a virtualenv :
+On Linux :
 ```sh
-virtualenv -p python3 "venv"
-source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+virtualenv -p python3 "venv"        # python3 is the name of python executable
+source venv/bin/activate
+```
+On Windows :
+```sh
+virtualenv "venv"
+venv\Scripts\activate
 ```
 
-Or for Windows :
-Run all commands in admin if you have a problem
-```sh
-pip install virtualenvwrapper-win
-mkvirtualenv venv
-workon venv
-```
 
 ### Installing
 
