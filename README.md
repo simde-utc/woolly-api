@@ -22,7 +22,7 @@ pip install virtualenv
 Create a virtualenv :
 ```sh
 virtualenv -p python3 "venv"
-source venv/bin/activate
+source venv/bin/activate  # On Windows use `venv\Scripts\activate`
 ```
 
 Or for Windows :
