@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
-from woolly_api import settings_confidentials as confidentials
+from woolly_api import settings_confidential as confidentials
 
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
