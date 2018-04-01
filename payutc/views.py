@@ -1,7 +1,7 @@
 from django.http import HttpResponse, JsonResponse
 from django.core import serializers
 import json
-from . import payutc2
+from .payutc import Payutc
 from django.contrib.sessions.backends.db import SessionStore
 from woolly_api import settings
 
@@ -9,19 +9,23 @@ from woolly_api import settings
 def createTransaction(request):
 	#for key, value in request.session.items(): 
 	#	print('{} => {}'.format(key, value))
+	params = { "apikey": PAYUTC_KEY }
 	mail = request.GET["mail"]
 	funId = request.GET["funId"]
 	orderlineId = request.GET['orderlineId']
-	#print("here")
 	articles = request.body.decode('utf-8')
-	#print(articles)
-	#print("here2")
-	params = { "apikey": PAYUTC_KEY }
-	p = payutc2.Payutc(params)
-	data  =  {"itemsArray":articles,"funId": funId,"mail" :mail,"returnUrl":"https://payutc.nemopay.net/","callbackUrl" : "http://localhost:8000/payutc/returnTransaction?&funId="+funId+"orderlineId="+orderlineId,"apikey":"d0ba09483a9ed6262d3924d7e7567d37"}
+	p = Payutc(params)
+	data  =  {
+		"itemsArray": articles,
+		"funId": funId,
+		"mail" :mail,
+		"returnUrl": "https://payutc.nemopay.net/",
+		# TODO : sale...
+		"callbackUrl" : "http://localhost:8000/payutc/returnTransaction?&funId="+funId+"orderlineId="+orderlineId,
+		"apikey":"d0ba09483a9ed6262d3924d7e7567d37"
+	}
 	response =  json.loads(p.createTransaction(data))
 	#response = serializers.serialize('json',response)
-	#print(response)
 	return JsonResponse(response)
 
 def setProduct(request):
@@ -32,9 +36,21 @@ def setProduct(request):
 	funId = request.GET['funId']
 	service = request.GET['service']
 	ticket = request.GET['ticket']
-	p = payutc2.Payutc(params)
-	p.cas({"service":service,"ticket":ticket})
-	dataproduct = {"name":name,"category":category,"price":price,"funId":funId,"stock":0,"cotisant":1,"alcool":0,"tva":"0.00","image":None, "image_path":"","objId":None}
+	p = Payutc(params)
+	p.cas({ "service": service, "ticket": ticket })
+	dataproduct = {
+		"name": name,
+		"category": category,
+		"price": price,
+		"funId": funId,
+		"stock": 0,
+		"cotisant": 1,
+		"alcool": 0,
+		"tva": "0.00",
+		"image": None,
+		"image_path": "",
+	 	"objId": None
+	 }
 	response = p.setProduct(dataproduct)
 	p.getFundations()
 	return HttpResponse(response)
@@ -43,8 +59,9 @@ def getFundations(request):
 	params = { "apikey": PAYUTC_KEY }
 	service = request.GET['service']
 	ticket = request.GET['ticket']
-	p = payutc2.Payutc(params)
-	p.cas({"service":service,"ticket":ticket})
+	p = Payutc(params)
+	p.cas({"service":service,
+			"ticket":ticket})
 	p.getFundations()
 	return HttpResponse(response)
 
@@ -54,7 +71,7 @@ def returnTransaction(request):
 	oderlineId = request.GET['orderlineId']
 	transactionId = request.query
 	transactionId= int(float(transactionId))
-	p = payutc2.Payutc(params)
+	p = Payutc(params)
 	data =   {"traId":transactionId,"funId": funId,}
 	response= json.loads(p.getTransactionInfo(data))
 	statutTrans = response['status']

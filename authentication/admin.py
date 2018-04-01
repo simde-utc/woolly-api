@@ -9,25 +9,25 @@ from authentication.models import WoollyUserType
 
 
 class UserAdmin(BaseUserAdmin):
-    form = WoollyUserChangeForm
-    add_form = WoollyUserCreationForm
+	form = WoollyUserChangeForm
+	add_form = WoollyUserCreationForm
 
-    list_display = ('login', 'is_admin', 'woollyusertype')
-    list_filter = ('is_admin',)
-    fieldsets = (
-        (None, {'fields': ('login', 'password', 'woollyusertype')}),
-        ('Permissions', {'fields': ('is_admin',)}),
-    )
+	list_display = ('login', 'is_admin', 'woollyusertype')
+	list_filter = ('is_admin',)
+	fieldsets = (
+		(None, {'fields': ('login', 'first_name', 'password', 'woollyusertype')}),
+		('Permissions', {'fields': ('is_admin',)}),
+	)
 
-    add_fieldsets = (
-        (None, {
-            'classes': ('wide'),
-            'fields': ('login', 'password1', 'password2', 'woollyusertype')}
-         ),
-    )
-    search_fields = ('login',)
-    ordering = ('login',)
-    filter_horizontal = ()
+	add_fieldsets = (
+		(None, {
+			'classes': ('wide'),
+			'fields': ('login', 'password1', 'password2', 'woollyusertype')}
+		 ),
+	)
+	search_fields = ('login',)
+	ordering = ('login',)
+	filter_horizontal = ()
 
 admin.site.register(WoollyUser, UserAdmin)
 admin.site.register(WoollyUserType)
