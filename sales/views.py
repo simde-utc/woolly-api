@@ -25,6 +25,7 @@ from .serializers import (
 )
 from payutc import payutc
 
+# TODO : Déplacer dans core ?
 @api_view(['GET'])
 def api_root(request, format=None):
 	"""
@@ -54,7 +55,7 @@ class AssociationViewSet(viewsets.ModelViewSet):
 	permission_classes = (permissions.IsAuthenticated,)
 
 	def get_queryset(self):
-		queryset = self.queryset.filter(associationmembers__woollyUser=self.request.user)
+		queryset = self.queryset.filter(associationmembers__woollyUser=self.request.user_pk)
 
 		if 'associationmember_pk' in self.kwargs:
 			associationmember_pk = self.kwargs['associationmember_pk']

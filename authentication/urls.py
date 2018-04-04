@@ -29,8 +29,8 @@ user_type_detail = WoollyUserTypeViewSet.as_view({
 # API endpoints
 urlpatterns = {
 	# CAS login/logout
-	url(r'^login/$', cas.views.login, name='login'),
-	url(r'^logout/$', cas.views.logout, name='logout'),
+	url(r'^cas/login/$', cas.views.login, name='login'),
+	url(r'^cas/logout/$', cas.views.logout, name='logout'),
 
 	# Basic login/logout
 	url(r'^auth/', include('rest_framework.urls', namespace='rest_framework') ),
@@ -42,6 +42,7 @@ urlpatterns = {
 	url(r'^users/(?P<pk>[0-9]+)$',
 		woollyuser_detail,
 		name='user-detail'),
+	url(r'^users/me', views.userInfos), # "/store" will call the method "index" in "views.py"
 
 	# WoollyUsersTypes
 	url(r'^users/(?P<user_pk>[0-9]+)/woollyusertypes/$',
@@ -64,7 +65,6 @@ urlpatterns = {
 		view=WoollyUserRelationshipView.as_view(),
 		name='user-relationships'
 	),
-	url(r'^user/userInfos', views.userInfos) # "/store" will call the method "index" in "views.py"
 
 }
 
