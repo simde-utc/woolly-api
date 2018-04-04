@@ -113,7 +113,7 @@ class OrderSerializer(serializers.ModelSerializer):
         included_resources = ['orderlines']
 
 
-class SalePSerializer(serializers.ModelSerializer):
+class SaleSerializer(serializers.ModelSerializer):
     """
         Defines how the Sale fields are serialized, without the payment methods
     """
@@ -154,7 +154,7 @@ class PaymentMethodSerializer(serializers.ModelSerializer):
     )
 
     included_serializers = {
-        'sales': SalePSerializer
+        'sales': SaleSerializer
     }
 
     class Meta:

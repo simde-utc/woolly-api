@@ -23,7 +23,7 @@ from .serializers import (
 	OrderSerializer, OrderLineSerializer, SaleSerializer,
 	PaymentMethodSerializer, AssociationMemberSerializer
 )
-from payutc import payutc2
+from payutc import payutc
 
 @api_view(['GET'])
 def api_root(request, format=None):
