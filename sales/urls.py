@@ -5,7 +5,7 @@ from .views import (
 	SaleViewSet, AssociationViewSet, ItemViewSet, ItemSpecificationsViewSet,
 	AssociationRelationshipView, SaleRelationshipView,
 	ItemSpecificationsRelationshipView, OrderRelationshipView,
-	AssociationRelationshipView, ItemRelationshipView, api_root,
+	AssociationRelationshipView, ItemRelationshipView,
 	OrderViewSet, OrderLineViewSet, OrderLineRelationshipView,
 	OrderLineItemViewSet, PaymentMethodViewSet, PaymentMethodRelationshipView,
 	AssociationMemberViewSet, AssociationMemberRelationshipView
@@ -126,9 +126,6 @@ associationmember_detail = AssociationMemberViewSet.as_view({
 
 # The urlpatterns defines the endpoints of the API
 urlpatterns = [
-	# Root
-	url(r'^$', api_root),
-
 	# Associations
 	url(r'^associations/$', view = association_list, name = 'association-list'),
 	url(r'^associations/(?P<pk>[0-9]+)/$',

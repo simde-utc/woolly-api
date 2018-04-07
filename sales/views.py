@@ -25,26 +25,6 @@ from .serializers import (
 )
 from payutc import payutc
 
-# TODO : Déplacer dans core ?
-@api_view(['GET'])
-def api_root(request, format=None):
-	"""
-		Defines the clickable links displayed on the server endpoint.
-		All the reachable endpoints don't appear here
-	"""
-	return Response({
-		'users': reverse('user-list', request=request, format=format),
-		'woollyusertypes': reverse('usertype-list', request=request, format=format),
-		'associations': reverse('association-list', request=request, format=format),
-		'associationmembers': reverse('associationmember-list', request=request, format=format),
-		'sales': reverse('sale-list', request=request, format=format),
-		'items': reverse('item-list', request=request, format=format),
-		'itemSpecifications': reverse('itemSpecification-list', request=request, format=format),
-		'orders': reverse('order-list', request=request, format=format),
-		'orderlines': reverse('orderline-list', request=request, format=format),
-		'paymentmethods': reverse('paymentmethod-list', request=request, format=format),
-	})
-
 
 class AssociationViewSet(viewsets.ModelViewSet):
 	"""
@@ -56,6 +36,8 @@ class AssociationViewSet(viewsets.ModelViewSet):
 
 	def get_queryset(self):
 		queryset = self.queryset.filter(associationmembers__woollyUser=self.request.user_pk)
+
+		# if 	
 
 		if 'associationmember_pk' in self.kwargs:
 			associationmember_pk = self.kwargs['associationmember_pk']
@@ -204,7 +186,7 @@ class SaleViewSet(viewsets.ModelViewSet):
 		Defines the behavior of the sale view
 	"""
 	serializer_class = SaleSerializer
-	permission_classes = (permissions.IsAuthenticated,)
+	permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
 	def perform_create(self, serializer):
 		serializer.save(
@@ -213,8 +195,9 @@ class SaleViewSet(viewsets.ModelViewSet):
 		)
 
 	def get_queryset(self):
-		queryset = Sale.objects.all().filter(
-			items__itemspecifications__woolly_user_type__name=self.request.user.woollyusertype.name)
+		queryset = Sale.objects.all()
+					# .filter(items__itemspecifications__woolly_user_type__name=self.request.user.woollyusertype.name)
+					# TODO filtrer par date ?
 
 		# if this viewset is accessed via the 'association-detail' route,
 		# it wll have been passed the `association_pk` kwarg and the queryset
