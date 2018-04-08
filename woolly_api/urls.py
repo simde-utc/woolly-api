@@ -20,7 +20,8 @@ from core.views import api_root
 urlpatterns = [
 	url(r'^$', api_root),								# Api Root pour la documentation
 	url(r'^admin/', admin.site.urls),					# Administration du site en backoffice
+	url(r'^oauth/', include('oauth2_provider.urls', namespace='oauth2_provider')),		# OAuth
 	url(r'^',       include('authentication.urls')),	# Routes d'authentification
 	url(r'^',       include('sales.urls')),				# Routes pour les assos, les ventes et autres
-	url(r'^',       include('payutc.urls'))				# Routes pour payutc
+	url(r'^',       include('payutc.urls')),			# Routes pour payutc
 ]

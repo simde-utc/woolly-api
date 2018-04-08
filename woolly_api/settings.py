@@ -29,6 +29,9 @@ CAS_SERVER_URL = 'https://cas.utc.fr/cas/'
 CAS_LOGOUT_COMPLETELY = True
 CAS_PROVIDE_URL_TO_LOGOUT = True
 CAS_AUTO_CREATE_USER = True
+CAS_RESPONSE_CALLBACKS = (
+	'authentication.backends.loggedCas',
+)
 
 # Ginger config
 GINGER_KEY = confidentials.GINGER_KEY
@@ -86,7 +89,7 @@ INSTALLED_APPS = [
 	'core',
 	'authentication',
 	'sales',
-
+	'oauth2_provider',
 ]
 
 MIDDLEWARE = [
@@ -99,7 +102,7 @@ MIDDLEWARE = [
 	'django.middleware.clickjacking.XFrameOptionsMiddleware',
 	'cas.middleware.CASMiddleware',
 	'django.middleware.csrf.CsrfViewMiddleware',
-	]
+]
 
 ROOT_URLCONF = 'woolly_api.urls'
 

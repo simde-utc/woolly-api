@@ -29,14 +29,14 @@ user_type_detail = WoollyUserTypeViewSet.as_view({
 # API endpoints
 urlpatterns = {
 	# CAS login/logout
-	url(r'^cas/login/$', cas.views.login, name='login'),
-	url(r'^cas/logout/$', cas.views.logout, name='logout'),
+	url(r'^cas/login$', cas.views.login, name='cas.login'),
+	url(r'^cas/logout$', cas.views.logout, name='cas.logout'),
 
 	# Basic login/logout
 	url(r'^auth/', include('rest_framework.urls', namespace='rest_framework') ),
 
 	# WoollyUsers
-	url(r'^users/',
+	url(r'^users',
 		woollyuser_list,
 		name="user-list"),
 	url(r'^users/(?P<pk>[0-9]+)$',
@@ -45,18 +45,18 @@ urlpatterns = {
 	url(r'^users/me', views.userInfos), # "/store" will call the method "index" in "views.py"
 
 	# WoollyUsersTypes
-	url(r'^users/(?P<user_pk>[0-9]+)/woollyusertypes/$',
+	url(r'^users/(?P<user_pk>[0-9]+)/woollyusertypes$',
 		user_type_list,
 		name='user-type-list'),
-	url(r'^users/(?P<user_pk>[0-9]+)/woollyusertypes/(?P<pk>[0-9]+)/$',
+	url(r'^users/(?P<user_pk>[0-9]+)/woollyusertypes/(?P<pk>[0-9]+)$',
 		user_type_detail,
 		name='user-type-detail'),
 	# OR ????
 	# WoollyUsersTypes
-	url(r'^woollyusertypes/',
+	url(r'^woollyusertypes',
 		user_type_list,
 		name="user-type-list"),
-	url(r'^woollyusertypes/(?P<pk>[0-9]+)/$',
+	url(r'^woollyusertypes/(?P<pk>[0-9]+)$',
 		user_type_detail,
 		name='user-type-detail'),
 
