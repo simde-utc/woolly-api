@@ -3,9 +3,11 @@ from authentication.models import WoollyUserType, WoollyUser
 from sales.models import AssociationMember
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets
+from django.views import View
 from rest_framework_json_api.views import RelationshipView
 from django.http import HttpResponse,JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
+from .oauth import PortalAPI
 
 from pprint import pprint
 
@@ -65,3 +67,26 @@ def userInfos(request):
 	except WoollyUser.DoesNotExist:
 		response =  {"userId": None, "login": None, "lastName": None, "firstName": None}
 	return JsonResponse(response)
+
+
+# class PortalView(View):
+# 	def __init__(self):
+# 		self.portail = PortalAPI()
+	
+def login(request):
+	portail = PortalAPI()
+	return JsonResponse(portail.get_authorize_url())
+
+def callback(request):
+	portail = PortalAPI()
+	pprint(request)
+	a = portail.get_auth_session(request.GET.get('code', ''));
+	resp = {
+		'got': a
+	}
+	return JsonResponse(resp)
+
+def callback2(request):
+	print("callback 2222222222222222222222222222222")
+	pprint(request)
+	return JsonResponse(request)

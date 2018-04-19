@@ -40,6 +40,18 @@ GINGER_SERVER_URL = 'https://assos.utc.fr/ginger/v1/'
 # Payutc config
 PAYUTC_KEY = confidentials.PAYUTC_KEY
 
+# Portail des Assos config
+PORTAL = {
+	'oauth': {
+		'name':				'woolly',
+		'base_url': 		'http://simde/',
+		'authorize_url': 	'http://simde/oauth/authorize',
+		'access_token_url': 'http://simde/oauth/token',
+		'client_id': 		3,
+		'client_secret': 	confidentials.PORTAL_KEY
+	},
+	'callback': 		'http://localhost:8000/auth/callback',
+}
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
