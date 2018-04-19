@@ -43,14 +43,14 @@ PAYUTC_KEY = confidentials.PAYUTC_KEY
 # Portail des Assos config
 PORTAL = {
 	'oauth': {
-		'name':				'woolly',
-		'base_url': 		'http://simde/',
-		'authorize_url': 	'http://simde/oauth/authorize',
-		'access_token_url': 'http://simde/oauth/token',
-		'client_id': 		3,
-		'client_secret': 	confidentials.PORTAL_KEY
-	},
-	'callback': 		'http://localhost:8000/auth/callback',
+		'client_id': 		confidentials.PORTAL['id'],
+		'client_secret': 	confidentials.PORTAL['key'],
+		'base_url': 		'https://portail-assos.alwaysdata.net/',
+		'authorize_url': 	'https://portail-assos.alwaysdata.net/oauth/authorize',
+		'access_token_url': 'https://portail-assos.alwaysdata.net/oauth/token',
+		'redirect_uri': 	'http://localhost:8000/auth/callback',
+		'scope': 			'user-get-assos-done-now'
+	}
 }
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -92,7 +92,7 @@ INSTALLED_APPS = [
 	'django.contrib.admin',
 	'django.contrib.auth',
 	'django.contrib.contenttypes',
-	'django.contrib.sessions',
+	'django.contrib.sessions',		# Utile ?
 	'django.contrib.messages',
 	'django.contrib.staticfiles',
 	'rest_framework',
@@ -101,7 +101,6 @@ INSTALLED_APPS = [
 	'core',
 	'authentication',
 	'sales',
-	'oauth2_provider',
 ]
 
 MIDDLEWARE = [

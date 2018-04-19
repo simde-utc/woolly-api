@@ -35,13 +35,15 @@ urlpatterns = {
 	# 	Authentification des utilisateurs
 	# ============================================
 
-	url(r'^auth/login$', PortalView.login, name = 'oauth.login'),
+	# Used to get login URL to log through Portail des Assos
+	url(r'^auth/login$', PortalView.login, name = 'portail.login'),
 	url(r'^auth/callback$', PortalView.callback, name = 'oauth.callback'),
-	url(r'^auth/callback2$', PortalView.callback2, name = 'oauth.callback2'),
 
 
 
 
+
+	# ==== A virer...
 	# CAS login/logout
 	url(r'^auth/cas/login$', cas.views.login, name = 'cas.login'),
 	url(r'^auth/cas/logout$', cas.views.logout, name = 'cas.logout'),

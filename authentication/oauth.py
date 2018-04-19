@@ -1,49 +1,42 @@
-from rauth import OAuth2Service
+from authlib.client import OAuth2Session, OAuthException
 from woolly_api.settings import PORTAL as PortalConfig
-from pprint import pprint
+
 import json
+from pprint import pprint
 
 
 class PortalAPI:
 
 	def __init__(self):
-		self.oauth = OAuth2Service(**PortalConfig['oauth'])
+		self.oauth = OAuth2Session(**PortalConfig['oauth'])
 
+		
 	def get_authorize_url(self):
-		"""
-		Retourne l'url d'authorize
-		"""
-		params = {
-			'response_type': 'code',
-			'redirect_uri': PortalConfig['callback'],
-			'scope': 'user-get-assos-done-now',
-		}
-		resp = {
-			'url': self.oauth.get_authorize_url(**params)
+		uri, state = self.oauth.authorization_url(PortalConfig['oauth']['authorize_url'])
+		return {
+			'url': uri,
+			'state': state
 		} 
-		return resp
 
-	def decoder(self, data):
-		parsed = json.loads(data.decode('utf-8'))
-		pprint(type(parsed))
-		pprint(parsed)
-		if ('error' in parsed):
-			raise Exception(parsed['message'])
-		# pprint(parsed['access_token'])
-		return parsed
 
 	def get_auth_session(self, code):
-		print('geeeeeeeeeeeeeeeeeeeeet')
-		print(code)
-		data = {
-			'code': code,
-			'grant_type': 'authorization_code',
-			'redirect_uri': 'http://localhost:8000/auth/callback2'
-		}
 		try:
-			x = self.oauth.get_access_token(data=data, decoder=self.decoder)
-			return x
-		except Exception as e:
-			print("Exxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-			pprint(e)
-			return {'error': e}
+			token = self.oauth.fetch_access_token(PortalConfig['oauth']['access_token_url'], code=code, verify=None)
+			self.store_auth_token(token)
+			return {
+				'token': token
+			} 
+		except OAuthException as error:
+			return {
+				'error': 'OAuthException',
+				'message': str(error)
+			}
+
+	def store_auth_token(self, token):
+		pass
+
+	def fetch_resource(self, req):
+		pass
+		# return token = get_user_token_from_db(request.user)
+
+

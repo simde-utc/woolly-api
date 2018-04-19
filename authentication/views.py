@@ -79,14 +79,8 @@ def login(request):
 
 def callback(request):
 	portail = PortalAPI()
-	pprint(request)
 	a = portail.get_auth_session(request.GET.get('code', ''));
 	resp = {
 		'got': a
 	}
 	return JsonResponse(resp)
-
-def callback2(request):
-	print("callback 2222222222222222222222222222222")
-	pprint(request)
-	return JsonResponse(request)
