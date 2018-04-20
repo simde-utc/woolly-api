@@ -13,7 +13,10 @@ class WoollyUserTypeSerializer(serializers.ModelSerializer):
 
 class WoollyUserSerializer(serializers.Serializer):
 	login = serializers.CharField(allow_blank = False, max_length = 253, required = True)
-	password = serializers.CharField(required = True, write_only = True)
+	email = serializers.CharField(allow_blank = False, max_length = 253, required = True)
+	last_name = serializers.CharField(allow_blank = False, max_length = 253, required = True)
+	first_name = serializers.CharField(allow_blank = False, max_length = 253, required = True)
+	# password = serializers.CharField(required = True, write_only = True)
 
 	woollyusertype = ResourceRelatedField(
 		queryset = WoollyUserType.objects,

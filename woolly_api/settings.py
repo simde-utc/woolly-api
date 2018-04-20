@@ -45,11 +45,11 @@ PORTAL = {
 	'oauth': {
 		'client_id': 		confidentials.PORTAL['id'],
 		'client_secret': 	confidentials.PORTAL['key'],
-		'base_url': 		'https://portail-assos.alwaysdata.net/',
+		'base_url': 		'https://portail-assos.alwaysdata.net/api/v1/',
 		'authorize_url': 	'https://portail-assos.alwaysdata.net/oauth/authorize',
 		'access_token_url': 'https://portail-assos.alwaysdata.net/oauth/token',
 		'redirect_uri': 	'http://localhost:8000/auth/callback',
-		'scope': 			'user-get-assos-done-now'
+		'scope': 			'user-get-assos-done-now user-get-info'
 	}
 }
 

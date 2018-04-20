@@ -4,6 +4,23 @@ from django.db import models
 import datetime
 
 
+class OAuth2Token(models.Model):
+	name = models.CharField(max_length=40)
+	token_type = models.CharField(max_length=20)
+	access_token = models.CharField(max_length=200)
+	refresh_token = models.CharField(max_length=200)
+	# oauth 2 expires time
+	expires_at = models.DateTimeField()
+	# ...
+
+	def to_token(self):
+		return dict(
+			access_token=self.access_token,
+			token_type=self.token_type,
+			refresh_token=self.refresh_token,
+			expires_at=self.expires_at,
+		)
+
 class WoollyUserType(models.Model):
 	COTISANT = 'cotisant'
 	NON_COTISANT = 'non-cotisant'
@@ -27,6 +44,7 @@ class WoollyUserType(models.Model):
 class WoollyUserManager(BaseUserManager):
 	# required by Django
 	def create_user(self, login, password=None, **other_fields):
+		print("aaaaaaaa")
 		if not login:
 			raise ValueError('The given login must be set')
 		user = self.model(login=login, **other_fields)

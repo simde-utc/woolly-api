@@ -73,14 +73,24 @@ def userInfos(request):
 # 	def __init__(self):
 # 		self.portail = PortalAPI()
 	
+from .models import WoollyUser 
+from .serializers import WoollyUserSerializer 
+
 def login(request):
+	"""
+	Return authorization url for Front to display and redirect to it
+	"""
 	portail = PortalAPI()
-	return JsonResponse(portail.get_authorize_url())
+	a = WoollyUserSerializer.create(**{
+			"email": "alexandre.brasseur@etu.utc.fr",
+			"last_name": "Brasseur",
+			"firs_tname": "Alexandre",
+		})
+	pprint(a)
+	return JsonResponse(WoollyUserSerializer(a).data)
+	# return JsonResponse(portail.get_authorize_url())
 
 def callback(request):
 	portail = PortalAPI()
 	a = portail.get_auth_session(request.GET.get('code', ''));
-	resp = {
-		'got': a
-	}
-	return JsonResponse(resp)
+	return JsonResponse(a)
