@@ -85,9 +85,10 @@ def login(request):
 	portail = PortalAPI()
 
 	serializer = WoollyUserSerializer(data = {
-			"email": "alexanddare.brasseur@etu.utc.fr",
+			"email": "rasseur@etddu.utc.fr",
 			"last_name": "Brasseur",
 			"first_name": "Alexandre",
+			"login": "azdazdazd"
 		})
 	if serializer.is_valid():
 		print("serializers vaaaaaaaaaaaaaaaaaaaaaaaaaaalid")

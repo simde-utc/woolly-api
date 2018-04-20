@@ -45,6 +45,7 @@ class WoollyUserType(models.Model):
 		resource_name = "woollyusertypes"
 
 
+"""
 class WoollyUserManager(BaseUserManager):
 	# required by Django
 	def create_user(self, login='', password=None, **other_fields):
@@ -61,12 +62,12 @@ class WoollyUserManager(BaseUserManager):
 		user.is_admin = True
 		user.save(using=self._db)
 		return user
-
+"""
 
 class WoollyUser(AbstractBaseUser):
 	# Properties
 	email = models.EmailField(unique=True)
-	login = models.CharField(max_length=253, blank=True, null=True) #unique=True, 
+	login = models.CharField(max_length=253, unique=True, blank=True, null=True) 
 	first_name = models.CharField(max_length=100)
 	last_name = models.CharField(max_length=100)
 	birthdate = models.DateField(default=datetime.date.today)
