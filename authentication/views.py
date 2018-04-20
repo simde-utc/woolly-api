@@ -8,7 +8,6 @@ from .models import WoollyUserType, WoollyUser
 from .oauth import PortalAPI, JWTClient
 # from sales.models import AssociationMember
 
-from pprint import pprint
 
 class WoollyUserViewSet(viewsets.ModelViewSet):
 	"""
@@ -20,7 +19,6 @@ class WoollyUserViewSet(viewsets.ModelViewSet):
 	permission_classes = (IsAuthenticated,)
 
 	# def perform_create(self, serializer):
-		# pprint(self.request.data['woollyusertype'])
 		# serializer.save(type_id = self.kwargs['woollyusertype_pk'])
 		# serializer.save()
 
@@ -95,3 +93,8 @@ def validate_jwt(request):
 	jwt = request.GET.get('jwt', '')
 	jwtClient = JWTClient()
 	return JsonResponse(jwtClient.validate(jwt))
+
+def test_jwt(request):
+	jwt = request.GET.get('jwt', '')
+	portail = PortalAPI()
+	return JsonResponse(portail.retrieve_token_from_jwt(jwt))

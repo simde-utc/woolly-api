@@ -4,7 +4,7 @@ from .models import WoollyUser
 from .serializers import WoollyUserSerializer
 from django.contrib.sessions.backends.db import SessionStore
 
-from authlib.specs.rfc7519 import JWT
+from authlib.specs.rfc7519 import JWT, JWTError
 
 import json
 from pprint import pprint
@@ -98,12 +98,16 @@ class PortalAPI:
 		return user
 
 
-	# TODO
 	def retrieve_token_from_jwt(self, jwt):
-		# Get session id from 
+		# Get session id from jwt
+		claims = self.jwtClient.get_claims(jwt)
+		if 'error' in claims:
+			return None
+		session_key = claims['data']['session']
+
 		# Retrieve session
 		try:
-			session = SessionStore(session_key='2b1189a188b44ad18c35e113ac6ceead')
+			session = SessionStore(session_key=session_key)
 			return session['portal_token']
 		except:
 			return None
@@ -127,13 +131,14 @@ class PortalAPI:
 class JWTClient(JWT):
 
 	def get_jwt(self, user_id, session_key):
+		exp = int(time.time()) + JWT_TTL
 		header = {
 			'alg': 'HS256',
 			'typ': 'JWT'
 		}
 		payload = {
 			'iss': 'woolly_api',
-			'exp': time.time() + JWT_TTL, 
+			'exp': exp,
 			'data': {
 				'user_id': 	user_id,
 				'session': 	session_key,
@@ -143,20 +148,22 @@ class JWTClient(JWT):
 		return {
 			'type': 'bearer',
 			'token': token,
-			'expires_in': ''
+			'expires_at': exp
 		}
 
 
 	def validate(self, jwt):
-		claims = self.decode(jwt, JWT_SECRET_KEY)
-		print(claims)
-		# {'iss': 'Authlib', 'sub': '123', ...}
-		print(claims.header)
-		# {'alg': 'RS256', 'typ': 'JWT'}
-		x = claims.validate()
-		print(x)
-		return {
-			'validate': x,
-			'claims': claims
-		}
+		self.claims = self.decode(jwt, JWT_SECRET_KEY)
+		self.claims.validate()
+		# raise a JWTError if not valid
+
+	def get_claims(self, jwt):
+		try:
+			self.validate(jwt)
+			return self.claims
+		except JWTError as error:
+			return {
+				'error': 'JWTError',
+				'message': str(JWTError)
+			}
 
