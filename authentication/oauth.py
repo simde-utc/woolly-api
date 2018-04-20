@@ -33,7 +33,8 @@ class OAuthAPI:
 		"""
 		Return authorization url
 		"""
-		return self.oauthClient.authorization_url(OAuthConfig[self.provider]['authorize_url'])
+		url, state = self.oauthClient.authorization_url(OAuthConfig[self.provider]['authorize_url'])
+		return url
 
 
 	def get_auth_session(self, code):

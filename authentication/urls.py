@@ -3,7 +3,6 @@ from rest_framework.urlpatterns import format_suffix_patterns
 from .views import WoollyUserViewSet, WoollyUserRelationshipView, WoollyUserTypeViewSet, userInfos
 from . import views as PortalView
 import cas.views
-from authentication.oauth import PortalAPI
 
 
 woollyuser_list = WoollyUserViewSet.as_view({
