@@ -3,7 +3,7 @@ from django.contrib.auth.models import BaseUserManager
 from django.db import models
 import datetime
 
-
+"""
 class OAuth2Token(models.Model):
 	name = models.CharField(max_length=40)
 	token_type = models.CharField(max_length=20)
@@ -20,13 +20,17 @@ class OAuth2Token(models.Model):
 			refresh_token=self.refresh_token,
 			expires_at=self.expires_at,
 		)
+"""
 
 class WoollyUserType(models.Model):
+	name = models.CharField(max_length=50, unique=True)
+	# description = models.CharField(max_length=180, unique=True)
+
+	# TODO : revoir ça ?
 	COTISANT = 'cotisant'
 	NON_COTISANT = 'non-cotisant'
 	TREMPLIN = 'tremplin'
 	EXTERIEUR = 'extérieur'
-	name = models.CharField(max_length=50, unique=True)
 
 	@staticmethod
 	def init_values():
@@ -43,8 +47,7 @@ class WoollyUserType(models.Model):
 
 class WoollyUserManager(BaseUserManager):
 	# required by Django
-	def create_user(self, login, password=None, **other_fields):
-		print("aaaaaaaa")
+	def create_user(self, login='', password=None, **other_fields):
 		if not login:
 			raise ValueError('The given login must be set')
 		user = self.model(login=login, **other_fields)
@@ -61,25 +64,29 @@ class WoollyUserManager(BaseUserManager):
 
 
 class WoollyUser(AbstractBaseUser):
-	# Attributs
-	login = models.CharField(max_length=253, unique=True, blank=False)		# TODO Null pour les extés ?
-	woollyusertype = models.ForeignKey(WoollyUserType, on_delete=None, null=False, default=4, related_name='users')
-	associations = models.ManyToManyField('sales.Association', through='sales.AssociationMember')
-	last_name = models.CharField(max_length=100, blank=True)
-	first_name = models.CharField(max_length=100, blank=True)
-	email = models.EmailField(blank=True)
+	# Properties
+	email = models.EmailField(unique=True)
+	login = models.CharField(max_length=253, blank=True, null=True) #unique=True, 
+	first_name = models.CharField(max_length=100)
+	last_name = models.CharField(max_length=100)
 	birthdate = models.DateField(default=datetime.date.today)
 
-	# required by Django.admin
+	# Associations
+	woollyusertype = models.ForeignKey(WoollyUserType, on_delete=None, null=False, default=4, related_name='users')
+	# associations = models.ManyToManyField('sales.Association', through='sales.AssociationMember')
+
+	# required by Django.is_admin => A virer pour remplacer par les droits
 	is_active = models.BooleanField(default=True)
 	is_admin = models.BooleanField(default=False)
 
-	objects = WoollyUserManager()
+	# objects = WoollyUserManager()
 
-	USERNAME_FIELD = 'login'
+	# Cas
+	USERNAME_FIELD = 'id'
 	EMAIL_FIELD = 'email'
 	REQUIRED_FIELDS = []
 
+	"""
 	# required by Django 1.11 for the User class
 	def get_full_name(self):
 		ret = self.first_name + ' ' + self.last_name
@@ -101,9 +108,16 @@ class WoollyUser(AbstractBaseUser):
 		return self.is_admin
 
 	def save(self, *args, **kwargs):
-		if not self.pk and self.has_usable_password() is False:
-			self.set_password(self.password)
+		if not self.login:
+			self.login = None
+		# if not self.pk and self.has_usable_password() is False:
+			# self.set_password(self.password)
 		super(WoollyUser, self).save(*args, **kwargs)
+	"""
+
+	class Meta:
+		# default_manager_name = WoollyUserManager
+		pass
 
 	class JSONAPIMeta:
 		resource_name = "woollyusers"

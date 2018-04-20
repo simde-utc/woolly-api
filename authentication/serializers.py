@@ -3,6 +3,7 @@ from authentication.models import WoollyUser, WoollyUserType
 # from sales.serializers import AssociationMemberSerializer
 from rest_framework_json_api import serializers
 from rest_framework_json_api.relations import ResourceRelatedField
+from django.db import IntegrityError
 
 
 class WoollyUserTypeSerializer(serializers.ModelSerializer):
@@ -11,20 +12,17 @@ class WoollyUserTypeSerializer(serializers.ModelSerializer):
 		fields = ('id', 'name')
 
 
-class WoollyUserSerializer(serializers.Serializer):
-	login = serializers.CharField(allow_blank = False, max_length = 253, required = True)
-	email = serializers.CharField(allow_blank = False, max_length = 253, required = True)
-	last_name = serializers.CharField(allow_blank = False, max_length = 253, required = True)
-	first_name = serializers.CharField(allow_blank = False, max_length = 253, required = True)
-	# password = serializers.CharField(required = True, write_only = True)
+class WoollyUserSerializer(serializers.ModelSerializer):
 
+	# password = serializers.CharField(required = True, write_only = True)
+	"""
 	woollyusertype = ResourceRelatedField(
 		queryset = WoollyUserType.objects,
 		related_link_view_name = 'user-type-list',
 		related_link_url_kwarg = 'user_pk',
-		self_link_view_name = 'user-relationships'
+		self_link_view_name = 'user-relationships',
+		required = False
 	)
-	"""
 	associationmembers = ResourceRelatedField(
 		queryset=AssociationMember.objects,
 		related_link_view_name='associationmember-list',
@@ -32,24 +30,35 @@ class WoollyUserSerializer(serializers.Serializer):
 		self_link_view_name='user-relationships'
 	)
 	"""
+
+	class Meta:
+		model = WoollyUser
+		exclude = ('password',)
+		# fields = ('id', 'login', 'email', 'first_name', 'last_name', 'last_login', 'is_active', 'is_admin', 'woollyusertype', 'associationmembers')
+		# write_only_fields = ('password',)
+
+	def create(self, validated_data):
+		# Login = None par défaut
+		if 'login' not in validated_data or not validated_data['login']:
+			validated_data['login'] = None
+		# Sinon on vérifie l'unicité
+		# else:
+		# try:
+		user = WoollyUser.objects.create(**validated_data) 
+		# except IntegrityError as e:
+		# 	print("EROOOOOOOOOOOOOOORORROOROROROROR")
+		# 	if 'login' not in e or 'null' not in e:
+		# 		raise IntegrityError(e)
+			
+		return user
+
+
 	included_serializers = {
 		'woollyusertype': WoollyUserTypeSerializer,
 		# 'associationmembers': AssociationMemberSerializer
 	}
 
-	class Meta:
-		"""Meta class to map serializer's fields with the model fields."""
-		model = WoollyUser
-		fields = ('id', 'login', 'last_login', 'type_id', 'is_active',
-				  'is_admin', 'woollyusertype', 'associationmembers')
-		# write_only_fields = ('password',)
-		# exclude = ('password',)
-
-	def create(self, validated_data):
-		"""
-		Create and return a new `WoollyUser` instance, given the validated data.
-		"""
-		return WoollyUser.objects.create(**validated_data)
 
 	class JSONAPIMeta:
-		included_resources = ['woollyusertype', 'associationmembers']
+		# included_resources = ['woollyusertype', 'associationmembers']
+		included_resources = ['woollyusertype']

@@ -14,6 +14,12 @@ def loggedCas(tree):
 	print("[CAS LOGIN CALLBACK]")
 
 
+class OAuthBackend():
+	pass
+
+
+
+# Inutiles ?
 class UpdatedCASBackend(CASBackend):
 	"""
 	An extension of the CASBackend to make it functionnable 
@@ -25,48 +31,31 @@ class UpdatedCASBackend(CASBackend):
 		Verifies CAS ticket and gets or creates User object
 		NB: Use of PT to identify proxy
 		"""
-		SessionStore = import_module(settings.SESSION_ENGINE).SessionStore
+		print("_______________________ CAS Backend ________________")
+		# SessionStore = import_module(settings.SESSION_ENGINE).SessionStore		# Use ?
 		UserModel = get_user_model()
 		username = _verify(ticket, service)
 		if not username:
 			return None
 
 		try:
-			user = UserModel._default_manager.get(**{
-				UserModel.USERNAME_FIELD: username
-			})
-			user = self.configure_user(user)
-			user.save()
+			user = UserModel.objects.get(login=username)
+			# user = self.configure_user(user)
 		except UserModel.DoesNotExist:
 			# user will have an "unusable" password
 			if settings.CAS_AUTO_CREATE_USER:
 				user = UserModel.objects.create_user(username, '')
-				user = self.configure_user(user)
-				user.save()
+				# user = self.configure_user(user)
+				# user.save()
 			else:
 				user = None
 		return user
 
 	def configure_user(self, user):
 		"""
-		Configures a user in a custom manner
-		:param user: the user to retrieve informations on
-		:return: a configured user
+		Ginger overload
 		"""
-		return user
-
-
-class GingerCASBackend(UpdatedCASBackend):
-	"""
-	A CAS Backend implementing Ginger for User configuration
-	"""
-
-	def configure_user(self, user):
-		"""
-		Configures a user using Ginger
-		:param user: The WoollyUser to configure
-		:return: The configurated user
-		"""
+		print("gggggggggggggggggggiiiiiiiiiiiiiiiiinnnnger")
 		params = {'key': settings.GINGER_KEY, }
 		url = urljoin(settings.GINGER_SERVER_URL, user.login) + \
 			'?' + urlencode(params)
