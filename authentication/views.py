@@ -1,13 +1,12 @@
-from authentication.serializers import WoollyUserSerializer, WoollyUserTypeSerializer
-from authentication.models import WoollyUserType, WoollyUser
-from sales.models import AssociationMember
+from django.views import View
+from django.http import HttpResponse, JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets
-from django.views import View
 from rest_framework_json_api.views import RelationshipView
-from django.http import HttpResponse,JsonResponse
-from django.core.exceptions import ObjectDoesNotExist
-from .oauth import PortalAPI
+from .serializers import WoollyUserSerializer, WoollyUserTypeSerializer
+from .models import WoollyUserType, WoollyUser
+from .oauth import PortalAPI, JWTClient
+# from sales.models import AssociationMember
 
 from pprint import pprint
 
@@ -62,42 +61,37 @@ class WoollyUserRelationshipView(RelationshipView):
 # ====================================================
 
 def userInfos(request):
+	# TODO
 	userId = request.session['_auth_user_id']
 	try:
 		queryset = WoollyUser.objects.get(id=userId)
 		login = queryset.login
 		lastName = queryset.last_name
 		firstName = queryset.first_name
+		# TODO serializer... + permissions
 		response = {"userId": userId, "login": login, "lastName": lastName, "firstName": firstName}
 	except WoollyUser.DoesNotExist:
 		response =  {"userId": None, "login": None, "lastName": None, "firstName": None}
 	return JsonResponse(response)
 
 
-# class PortalView(View):
-# 	def __init__(self):
-# 		self.portail = PortalAPI()
-
 def login(request):
 	"""
 	Return authorization url for Front to display and redirect to it
 	"""
 	portail = PortalAPI()
+	return JsonResponse(portail.get_authorize_url())
 
-	serializer = WoollyUserSerializer(data = {
-			"email": "rasseur@etddu.utc.fr",
-			"last_name": "Brasseur",
-			"first_name": "Alexandre",
-			"login": "azdazdazd"
-		})
-	if serializer.is_valid():
-		print("serializers vaaaaaaaaaaaaaaaaaaaaaaaaaaalid")
-		serializer.save()
-		return JsonResponse(serializer.data)
-	return JsonResponse(serializer.errors)
-	# return JsonResponse(portail.get_authorize_url())
 
 def callback(request):
+	"""
+	Get user from Portal, find or create it, store the token, create and return a JWT or an error
+	"""
 	portail = PortalAPI()
-	a = portail.get_auth_session(request.GET.get('code', ''));
-	return JsonResponse(a)
+	resp = portail.get_auth_session(request.GET.get('code', ''));
+	return JsonResponse(resp)
+
+def validate_jwt(request):
+	jwt = request.GET.get('jwt', '')
+	jwtClient = JWTClient()
+	return JsonResponse(jwtClient.validate(jwt))

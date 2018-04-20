@@ -36,8 +36,11 @@ urlpatterns = {
 	# ============================================
 
 	# Used to get login URL to log through Portail des Assos
-	url(r'^auth/login$', PortalView.login, name = 'auth.login'),
-	url(r'^auth/callback$', PortalView.callback, name = 'oauth.callback'),
+	url(r'^auth/login', PortalView.login, name = 'auth.login'),
+	url(r'^auth/callback', PortalView.callback, name = 'oauth.callback'),
+
+	url(r'^auth/validate', PortalView.validate_jwt, name = 'jwt.validate'),
+
 
 
 

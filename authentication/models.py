@@ -74,7 +74,7 @@ class WoollyUser(AbstractBaseUser):
 
 	# Associations
 	woollyusertype = models.ForeignKey(WoollyUserType, on_delete=None, null=False, default=4, related_name='users')
-	# associations = models.ManyToManyField('sales.Association', through='sales.AssociationMember')
+	associations = models.ManyToManyField('sales.Association', through='sales.AssociationMember')
 
 	# required by Django.is_admin => A virer pour remplacer par les droits
 	is_active = models.BooleanField(default=True)

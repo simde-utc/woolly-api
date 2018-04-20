@@ -23,6 +23,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = confidentials.SECRET_KEY
+JWT_SECRET_KEY = confidentials.JWT_SECRET_KEY
+JWT_TTL = 3600
 
 # Payutc & Ginger config
 PAYUTC_KEY = confidentials.PAYUTC_KEY
@@ -126,7 +128,7 @@ INSTALLED_APPS = [
 	'django.contrib.admin',
 	'django.contrib.auth',
 	'django.contrib.contenttypes',
-	'django.contrib.sessions',		# Utile ?
+	'django.contrib.sessions',
 	'django.contrib.messages',
 	'django.contrib.staticfiles',
 	'rest_framework',

@@ -34,23 +34,14 @@ class WoollyUserSerializer(serializers.ModelSerializer):
 	class Meta:
 		model = WoollyUser
 		exclude = ('password',)
-		# fields = ('id', 'login', 'email', 'first_name', 'last_name', 'last_login', 'is_active', 'is_admin', 'woollyusertype', 'associationmembers')
-		# write_only_fields = ('password',)
 
 	def create(self, validated_data):
-		# Login = None par défaut
+		"""
+		Overload : set login to None if not a CAS user
+		"""
 		if 'login' not in validated_data or not validated_data['login']:
 			validated_data['login'] = None
-		# Sinon on vérifie l'unicité
-		# else:
-		# try:
-		user = WoollyUser.objects.create(**validated_data) 
-		# except IntegrityError as e:
-		# 	print("EROOOOOOOOOOOOOOORORROOROROROROR")
-		# 	if 'login' not in e or 'null' not in e:
-		# 		raise IntegrityError(e)
-			
-		return user
+		return WoollyUser.objects.create(**validated_data) 
 
 
 	included_serializers = {
