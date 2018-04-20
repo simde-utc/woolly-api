@@ -17,6 +17,7 @@ from woolly_api import settings_confidential as confidentials
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+
 # --------------------------------------------------------------------------
 # 		Services Configuration
 # --------------------------------------------------------------------------
@@ -33,13 +34,15 @@ GINGER_SERVER_URL = 'https://assos.utc.fr/ginger/v1/'
 
 
 # Portail des Assos config
-PORTAL = {
-	'oauth': {
+OAUTH = {
+	'portal': {
 		'client_id': 		confidentials.PORTAL['id'],
 		'client_secret': 	confidentials.PORTAL['key'],
 		'base_url': 		'https://portail-assos.alwaysdata.net/api/v1/',
 		'authorize_url': 	'https://portail-assos.alwaysdata.net/oauth/authorize',
 		'access_token_url': 'https://portail-assos.alwaysdata.net/oauth/token',
+		'login_url': 		'https://portail-assos.alwaysdata.net/login',
+		'logout_url': 		'https://portail-assos.alwaysdata.net/logout',
 		'redirect_uri': 	'http://localhost:8000/auth/callback',
 		'scope': 			'user-get-assos-done-now user-get-info'
 	}

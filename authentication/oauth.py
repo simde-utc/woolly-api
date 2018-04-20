@@ -1,5 +1,5 @@
 from authlib.client import OAuth2Session, OAuthException
-from woolly_api.settings import JWT_SECRET_KEY, JWT_TTL, PORTAL as PortalConfig
+from woolly_api.settings import JWT_SECRET_KEY, JWT_TTL, OAUTH as OAuthConfig
 from .models import WoollyUser
 from .serializers import WoollyUserSerializer
 from django.contrib.sessions.backends.db import SessionStore
@@ -12,12 +12,12 @@ import time
 
 
 
-class PortalAPI:
+class OAuthAPI:
 	"""
 	Accès à l'API du portail des assos
 	Utile pour la connexion, la récupération des droits
 	"""
-
+	provider = 'portal'
 	user = None
 	oauthToken = None
 
@@ -25,19 +25,15 @@ class PortalAPI:
 		"""
 		OAuth2 and JWT Client initialisation
 		"""
-		self.oauthClient = OAuth2Session(**PortalConfig['oauth'])
+		self.oauthClient = OAuth2Session(**OAuthConfig[self.provider])
 		self.jwtClient = JWTClient()
 
 		
-	def get_authorize_url(self):
+	def login(self):
 		"""
 		Return authorization url
 		"""
-		uri, state = self.oauthClient.authorization_url(PortalConfig['oauth']['authorize_url'])
-		return {
-			'url': uri,
-			'state': state
-		} 
+		return self.oauthClient.authorization_url(OAuthConfig[self.provider]['authorize_url'])
 
 
 	def get_auth_session(self, code):
@@ -46,7 +42,7 @@ class PortalAPI:
 		"""
 		try:
 			# Get token from code
-			self.oauthToken = self.oauthClient.fetch_access_token(PortalConfig['oauth']['access_token_url'], code=code)
+			self.oauthToken = self.oauthClient.fetch_access_token(OAuthConfig[self.provider]['access_token_url'], code=code)
 
 			# Retrieve user infos from the Portal
 			auth_user = self.fetch_resource('user/')
@@ -55,8 +51,10 @@ class PortalAPI:
 			self.user = self.find_or_create_user(auth_user)
 
 			# Store portal token linked to user id
+			# TODO : check expiration
 			session = SessionStore()
 			session['portal_token'] = self.oauthToken
+			session['user_id'] = self.user.id
 			session.create()
 			
 			# Create JWT token linked to the session key and return it
@@ -70,6 +68,20 @@ class PortalAPI:
 				'message': str(error)
 			}
 	
+	def logout(self, jwt):
+		# Delete cached properties
+		self.oauthToken = None
+		self.user = None
+
+		# Delete session
+		session = retrieve_session_from_jwt(jwt)
+		session.delete()
+
+		# Revoke JWT
+		self.jwtClient.revoke_jwt(jwt)
+
+		# Redirect to logout
+		return OAuthConfig[self.provider]['logout']
 
 
 	def find_or_create_user(self, auth_user):
@@ -98,7 +110,7 @@ class PortalAPI:
 		return user
 
 
-	def retrieve_token_from_jwt(self, jwt):
+	def retrieve_session_from_jwt(self, jwt):
 		# Get session id from jwt
 		claims = self.jwtClient.get_claims(jwt)
 		if 'error' in claims:
@@ -107,8 +119,7 @@ class PortalAPI:
 
 		# Retrieve session
 		try:
-			session = SessionStore(session_key=session_key)
-			return session['portal_token']
+			return SessionStore(session_key=session_key)
 		except:
 			return None
 
@@ -118,7 +129,7 @@ class PortalAPI:
 		"""
 		Return infos from the API if 200 else an OAuthException
 		"""
-		resp = self.oauthClient.get(PortalConfig['oauth']['base_url'] + req)
+		resp = self.oauthClient.get(OAuthConfig[self.provider]['base_url'] + req)
 		if resp.status_code == 200:
 			return resp.json()
 		elif resp.status_code == 404:
@@ -129,6 +140,11 @@ class PortalAPI:
 
 
 class JWTClient(JWT):
+
+	def validate(self, jwt):
+		self.claims = self.decode(jwt, JWT_SECRET_KEY)
+		self.claims.validate()
+		# raise a JWTError if not valid
 
 	def get_jwt(self, user_id, session_key):
 		exp = int(time.time()) + JWT_TTL
@@ -146,16 +162,25 @@ class JWTClient(JWT):
 		}
 		token = self.encode(header, payload, JWT_SECRET_KEY).decode('utf-8')
 		return {
-			'type': 'bearer',
+			'token_type': 'Bearer',
 			'token': token,
 			'expires_at': exp
 		}
 
+	def revoke_jwt(self, jwt):
+		# TODO
+		return None
 
-	def validate(self, jwt):
-		self.claims = self.decode(jwt, JWT_SECRET_KEY)
-		self.claims.validate()
-		# raise a JWTError if not valid
+	def refresh_jwt(self, jwt):
+		try:
+			self.validate(jwt)
+		except JWTError as error:
+			return {
+				'error': 'JWTError',
+				'message': str(JWTError)
+			}
+		self.revoke_jwt(jwt)
+		return self.get_jwt(self.claims['user_id'], self.claims['session_key'])
 
 	def get_claims(self, jwt):
 		try:

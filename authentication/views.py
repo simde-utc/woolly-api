@@ -1,11 +1,12 @@
-from django.views import View
 from django.http import HttpResponse, JsonResponse
+from django.shortcuts import redirect
+from django.views import View
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets
 from rest_framework_json_api.views import RelationshipView
 from .serializers import WoollyUserSerializer, WoollyUserTypeSerializer
 from .models import WoollyUserType, WoollyUser
-from .oauth import PortalAPI, JWTClient
+from .oauth import OAuthAPI, JWTClient
 # from sales.models import AssociationMember
 
 
@@ -73,28 +74,48 @@ def userInfos(request):
 	return JsonResponse(response)
 
 
+def get_jwt_from_request(request):
+	return request.GET.get('jwt', '')
+
+
 def login(request):
 	"""
 	Return authorization url for Front to display and redirect to it
 	"""
-	portail = PortalAPI()
-	return JsonResponse(portail.get_authorize_url())
+	oauth = OAuthAPI()
+	return redirect(oauth.login())
 
 
-def callback(request):
+def login_callback(request):
 	"""
-	Get user from Portal, find or create it, store the token, create and return a JWT or an error
+	Get user from API, find or create it in Woolly, store the OAuth token, create and return a user JWT or an error
 	"""
-	portail = PortalAPI()
-	resp = portail.get_auth_session(request.GET.get('code', ''));
+	oauth = OAuthAPI()
+	resp = oauth.get_auth_session(request.GET.get('code', ''));
+	# Get token at another page ?
 	return JsonResponse(resp)
 
+def logout(request):
+	# TODO NOT FINISHED : revoke
+	oauth = OAuthAPI()
+	return redirect(oauth.logout())
+
+
+# TODO NOT FINISHED : revoke
+def refresh_jwt(request):
+	jwt = get_jwt_from_request(request)
+	jwtClient = JWTClient()
+	return JsonResponse(jwtClient.refresh_jwt(jwt))
+
+
+# TODO a virer
 def validate_jwt(request):
-	jwt = request.GET.get('jwt', '')
+	jwt = get_jwt_from_request(request)
 	jwtClient = JWTClient()
 	return JsonResponse(jwtClient.validate(jwt))
 
+# TODO virer
 def test_jwt(request):
-	jwt = request.GET.get('jwt', '')
-	portail = PortalAPI()
-	return JsonResponse(portail.retrieve_token_from_jwt(jwt))
+	jwt = get_jwt_from_request(request)
+	oauth = OAuthAPI()
+	return JsonResponse(oauth.retrieve_token_from_jwt(jwt))

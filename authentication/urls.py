@@ -35,12 +35,16 @@ urlpatterns = {
 	# 	Authentification des utilisateurs
 	# ============================================
 
-	# Used to get login URL to log through Portail des Assos
-	url(r'^auth/login', 	PortalView.login, name = 'auth.login'),
-	url(r'^auth/callback', 	PortalView.callback, name = 'oauth.callback'),
+	# Get login URL to log through Portail des Assos
+	url(r'^auth/login', PortalView.login, name = 'auth.login'),
+	# Log user in Woolly and get JWT
+	url(r'^auth/callback', PortalView.login_callback, name = 'auth.callback'),
+	# Refresh JWT : TODO
+	url(r'^auth/refresh', PortalView.refresh_jwt, name = 'auth.refresh'),
+	# Revoke session, JWT and redirect to Portal's logout
+	url(r'^auth/logout', PortalView.logout, name = 'auth.logout'),
 
-	url(r'^auth/validate', 	PortalView.validate_jwt, name = 'jwt.validate'),
-	url(r'^auth/test', 		PortalView.test_jwt, name = 'jwt.validate'),
+	# url(r'^auth/test', PortalView.test_jwt, name = 'jwt.validate'),
 
 
 
