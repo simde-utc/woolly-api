@@ -74,37 +74,59 @@ def userInfos(request):
 	return JsonResponse(response)
 
 
+# Util
 def get_jwt_from_request(request):
 	return request.GET.get('jwt', '')
 
 
+
+# ========================================================
+# 		Login - Callback - Logout
+# ========================================================
+
 def login(request):
 	"""
-	Redirect to OAuth api authorization url
+	Redirect to OAuth api authorization url with an added front callback
 	"""
-	redirection = request.GET.get('redirect', '')
-	oauth = OAuthAPI(redirection)
-	return JsonResponse({'url':oauth.login()})
-	return redirect(oauth.login())
+	oauth = OAuthAPI()
+	# oauth = OAuthAPI(request.GET.get('redirect', ''))
+	a = oauth.get_auth_url()
+	return JsonResponse({'url':a}) 			# DEBUG
+	# 
+	return redirect(a)
 
 
 def login_callback(request):
 	"""
-	Get user from API, find or create it in Woolly, store the OAuth token, create and return a user JWT or an error
+	# Get user from API, find or create it in Woolly, store the OAuth token, create and return a user JWT or an error
+	Get user from API, find or create it in Woolly, store the OAuth token, create and redirect to the front with a code to get a JWT
 	"""
 	oauth = OAuthAPI()
+	after = request.GET.get('after', '')
 	resp = oauth.get_auth_session(request.GET.get('code', ''));
 	return JsonResponse(resp)
-
-def get_jwt(request):
-	session_key = request.POST.get('code')
-	return
 
 def logout(request):
 	# TODO NOT FINISHED : revoke
 	oauth = OAuthAPI()
 	return redirect(oauth.logout())
 
+def me(request):
+	me = request.user
+	print('a' if me.is_anonymous else 'b')
+	return JsonResponse({
+		'authenticated': me.is_authenticated,
+		'user': None if me.is_anonymous else WoollyUserSerializer(me).data
+	})
+
+
+# ========================================================
+# 		JWT Management
+# ========================================================
+
+def get_jwt(request):
+	session_key = request.POST.get('code')
+	return
 
 # TODO NOT FINISHED : revoke
 def refresh_jwt(request):

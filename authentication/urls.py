@@ -44,6 +44,7 @@ urlpatterns = {
 	url(r'^auth/logout', PortalView.logout, name = 'auth.logout'),
 
 	# url(r'^auth/test', PortalView.test_jwt, name = 'jwt.validate'),
+	url(r'^auth/me', PortalView.me, name = 'auth.me'),
 
 
 
