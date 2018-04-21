@@ -21,11 +21,16 @@ class OAuthAPI:
 	user = None
 	oauthToken = None
 
-	def __init__(self):
+	def __init__(self, redirection=''):
 		"""
 		OAuth2 and JWT Client initialisation
 		"""
-		self.oauthClient = OAuth2Session(**OAuthConfig[self.provider])
+		config = OAuthConfig[self.provider]
+		print(config['redirect_uri'])
+		# if redirection != '':
+		# WTF ?? Copy stuff
+		# config['redirect_uri'] = config['redirect_uri'] + 'aaaaa'
+		self.oauthClient = OAuth2Session(**config)
 		self.jwtClient = JWTClient()
 
 		
@@ -57,6 +62,9 @@ class OAuthAPI:
 			session['portal_token'] = self.oauthToken
 			session['user_id'] = self.user.id
 			session.create()
+
+			# TODO
+			return { 'code': session.session_key}
 			
 			# Create JWT token linked to the session key and return it
 			jwt = self.jwtClient.get_jwt(self.user.id, session.session_key)

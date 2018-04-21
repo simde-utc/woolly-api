@@ -80,9 +80,11 @@ def get_jwt_from_request(request):
 
 def login(request):
 	"""
-	Return authorization url for Front to display and redirect to it
+	Redirect to OAuth api authorization url
 	"""
-	oauth = OAuthAPI()
+	redirection = request.GET.get('redirect', '')
+	oauth = OAuthAPI(redirection)
+	return JsonResponse({'url':oauth.login()})
 	return redirect(oauth.login())
 
 
@@ -92,8 +94,11 @@ def login_callback(request):
 	"""
 	oauth = OAuthAPI()
 	resp = oauth.get_auth_session(request.GET.get('code', ''));
-	# Get token at another page ?
 	return JsonResponse(resp)
+
+def get_jwt(request):
+	session_key = request.POST.get('code')
+	return
 
 def logout(request):
 	# TODO NOT FINISHED : revoke
