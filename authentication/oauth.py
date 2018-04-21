@@ -113,6 +113,7 @@ class OAuthAPI:
 		"""
 		# Retrieve session_key from random code
 		session_key = cache.get(code)
+		print(session_key)
 		cache.delete(code)
 		# TODO gestion erreur
 		if session_key == None:
@@ -120,6 +121,7 @@ class OAuthAPI:
 
 		# Retrieve session and create JWT from its infos
 		session = SessionStore(session_key=session_key)
+		print(session['user_id'])
 		return self.jwtClient.get_jwt(session['user_id'], session_key)
 
 

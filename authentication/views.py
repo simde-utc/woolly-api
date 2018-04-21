@@ -111,9 +111,9 @@ def get_jwt(request):
 	"""
 	Get first JWT after login and got a random code
 	"""
-	code = request.POST.get('code')
+	code = request.GET.get('code')
 	oauth = OAuthAPI()
-	return oauth.get_jwt_after_login(code)
+	return JsonResponse(oauth.get_jwt_after_login(code))
 
 def logout(request):
 	# TODO NOT FINISHED : revoke

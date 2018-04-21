@@ -38,6 +38,9 @@ urlpatterns = {
 	url(r'^auth/login', PortalView.login, name = 'auth.login'),
 	# Log user in Woolly and get JWT
 	url(r'^auth/callback', PortalView.login_callback, name = 'auth.callback'),
+	# Get the JWT after login
+	url(r'^auth/jwt$', PortalView.get_jwt, name = 'auth.jwt'),
+	
 	# Refresh JWT : TODO
 	url(r'^auth/refresh', PortalView.refresh_jwt, name = 'auth.refresh'),
 	# Revoke session, JWT and redirect to Portal's logout
