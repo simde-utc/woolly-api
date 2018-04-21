@@ -1,14 +1,16 @@
+from django.contrib.sessions.backends.db import SessionStore
+from django.utils.crypto import get_random_string
+from django.core.cache import cache
+
+from authlib.specs.rfc7519 import JWT, JWTError
 from authlib.client import OAuth2Session, OAuthException
+import time
+
 from woolly_api.settings import JWT_SECRET_KEY, JWT_TTL, OAUTH as OAuthConfig
 from .models import WoollyUser
 from .serializers import WoollyUserSerializer
-from django.contrib.sessions.backends.db import SessionStore
 
-from authlib.specs.rfc7519 import JWT, JWTError
 
-import json
-from pprint import pprint
-import time
 
 
 
@@ -27,23 +29,25 @@ class OAuthAPI:
 		"""
 		config = OAuthConfig[self.provider]
 		# TODO not working
-		if redirection != '':
-			config['redirect_uri'] = OAuthConfig[self.provider]['redirect_uri'] + '?after=' + redirection
-		print(config['redirect_uri'])
 
 		self.oauthClient = OAuth2Session(**config)
 		self.jwtClient = JWTClient()
 
 		
-	def get_auth_url(self):
+	def get_auth_url(self, redirect):
 		"""
 		Return authorization url
 		"""
+		# Get url and state from OAuth server
 		url, state = self.oauthClient.authorization_url(OAuthConfig[self.provider]['authorize_url'])
+
+		# Cache front url with state for 5mins
+		cache.set(state, redirect, 300)
+
 		return url
 
 
-	def get_auth_session(self, code):
+	def callback_and_create_session(self, code, state):
 		"""
 		Get token, user informations, store these and return a JWT 
 		"""
@@ -64,15 +68,20 @@ class OAuthAPI:
 			session['user_id'] = self.user.id
 			session.create()
 
-			# TODO
-			# return { 'code': session.session_key}
-			
-			# Later
-			# Create JWT token linked to the session key and return it
-			jwt = self.jwtClient.get_jwt(self.user.id, session.session_key)
-			return jwt
+			# Get front redirection from cached state
+			redirection = cache.get(state)
+			cache.delete(state)
 
-			return WoollyUserSerializer(user).data
+			# TODO gérer ce cas
+			if redirection == None:
+				return 'auth.login'
+
+			# Cache session_key to retrieve it for the jwt
+			cache_key = get_random_string(length=32)
+			cache.set(cache_key, session.session_key)
+
+			return redirection + '?code=' +  cache_key
+
 		except OAuthException as error:
 			return {
 				'error': 'OAuthException',
@@ -80,6 +89,10 @@ class OAuthAPI:
 			}
 	
 	def logout(self, jwt):
+		"""
+		Logout the user in Woolly and redirect to the provider's logout
+		"""
+
 		# Delete cached properties
 		self.oauthToken = None
 		self.user = None
@@ -93,6 +106,42 @@ class OAuthAPI:
 
 		# Redirect to logout
 		return OAuthConfig[self.provider]['logout']
+
+	def get_jwt_after_login(self, code):
+		"""
+		Return JWT to the client after it logged in and got a random code to the session
+		"""
+		# Retrieve session_key from random code
+		session_key = cache.get(code)
+		cache.delete(code)
+		# TODO gestion erreur
+		if session_key == None:
+			return {}
+
+		# Retrieve session and create JWT from its infos
+		session = SessionStore(session_key=session_key)
+		return self.jwtClient.get_jwt(session['user_id'], session_key)
+
+
+	# =========================================
+	# 		Utils
+	# =========================================
+
+
+	def retrieve_session_from_jwt(self, jwt):
+		"""
+		"""
+		# Get session id from jwt
+		claims = self.jwtClient.get_claims(jwt)
+		if 'error' in claims:
+			return None
+		session_key = claims['data']['session']
+
+		# Retrieve session
+		try:
+			return SessionStore(session_key=session_key)
+		except:
+			return None
 
 
 	def find_or_create_user(self, auth_user):
@@ -121,21 +170,6 @@ class OAuthAPI:
 		return user
 
 
-	def retrieve_session_from_jwt(self, jwt):
-		# Get session id from jwt
-		claims = self.jwtClient.get_claims(jwt)
-		if 'error' in claims:
-			return None
-		session_key = claims['data']['session']
-
-		# Retrieve session
-		try:
-			return SessionStore(session_key=session_key)
-		except:
-			return None
-
-
-
 	def fetch_resource(self, req):
 		"""
 		Return infos from the API if 200 else an OAuthException
@@ -150,14 +184,40 @@ class OAuthAPI:
 		# return token = get_user_token_from_db(request.user)
 
 
+
+
+
+
+
 class JWTClient(JWT):
+	"""
+	JWT Client used to authenticate users
+	"""
+
+	def get_claims(self, jwt):
+		"""
+		Return the content of a JWT
+		"""
+		try:
+			self.validate(jwt)
+			return self.claims
+		except JWTError as error:
+			return {
+				'error': 'JWTError',
+				'message': str(JWTError)
+			}
 
 	def validate(self, jwt):
+		"""
+		Do nothing if jwt is valid, else raise a JWTError
+		"""
 		self.claims = self.decode(jwt, JWT_SECRET_KEY)
 		self.claims.validate()
-		# raise a JWTError if not valid
 
 	def get_jwt(self, user_id, session_key):
+		"""
+		Create and return a new JWT with user_id and session_key
+		"""
 		exp = int(time.time()) + JWT_TTL
 		header = {
 			'alg': 'HS256',
@@ -178,11 +238,10 @@ class JWTClient(JWT):
 			'expires_at': exp
 		}
 
-	def revoke_jwt(self, jwt):
-		# TODO
-		return None
-
 	def refresh_jwt(self, jwt):
+		"""
+		Return a new JWT from an old one
+		"""
 		try:
 			self.validate(jwt)
 		except JWTError as error:
@@ -193,13 +252,8 @@ class JWTClient(JWT):
 		self.revoke_jwt(jwt)
 		return self.get_jwt(self.claims['user_id'], self.claims['session_key'])
 
-	def get_claims(self, jwt):
-		try:
-			self.validate(jwt)
-			return self.claims
-		except JWTError as error:
-			return {
-				'error': 'JWTError',
-				'message': str(JWTError)
-			}
+	def revoke_jwt(self, jwt):
+		# TODO
+		return None
+
 

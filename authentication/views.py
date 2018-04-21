@@ -89,12 +89,11 @@ def login(request):
 	Redirect to OAuth api authorization url with an added front callback
 	"""
 	oauth = OAuthAPI()
-	# oauth = OAuthAPI(request.GET.get('redirect', ''))
-	a = oauth.get_auth_url()
-	return JsonResponse({'url':a}) 			# DEBUG
-	# 
-	return redirect(a)
-
+	redirection = request.GET.get('redirect', '')
+	url = oauth.get_auth_url(redirection)
+	# print(url)
+	# return JsonResponse({ 'url': url}) 			# DEBUG
+	return redirect(url)
 
 def login_callback(request):
 	"""
@@ -103,8 +102,18 @@ def login_callback(request):
 	"""
 	oauth = OAuthAPI()
 	after = request.GET.get('after', '')
-	resp = oauth.get_auth_session(request.GET.get('code', ''));
-	return JsonResponse(resp)
+	resp = oauth.callback_and_create_session(request.GET.get('code', ''), request.GET.get('state', ''));
+	# !! Can return dict errors
+	# return JsonResponse({ 'redirect': resp })		# DEBUG
+	return redirect(resp)
+
+def get_jwt(request):
+	"""
+	Get first JWT after login and got a random code
+	"""
+	code = request.POST.get('code')
+	oauth = OAuthAPI()
+	return oauth.get_jwt_after_login(code)
 
 def logout(request):
 	# TODO NOT FINISHED : revoke
@@ -123,10 +132,6 @@ def me(request):
 # ========================================================
 # 		JWT Management
 # ========================================================
-
-def get_jwt(request):
-	session_key = request.POST.get('code')
-	return
 
 # TODO NOT FINISHED : revoke
 def refresh_jwt(request):
