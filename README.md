@@ -54,8 +54,8 @@ file is to be placed next to the settings.py file.
 Finally you can migrate the database and launch the server.
 Create your database named `woolly` and then launch these commands :
 
+<!-- python manage.py makemigrations -->
 ```
-python manage.py makemigrations
 python manage.py migrate
 python manage.py migrate oauth2_provider
 python manage.py runserver

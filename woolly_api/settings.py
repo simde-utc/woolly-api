@@ -44,7 +44,7 @@ OAUTH = {
 		'login_url': 		'https://portail-assos.alwaysdata.net/login',
 		'logout_url': 		'https://portail-assos.alwaysdata.net/logout',
 		'redirect_uri': 	'http://localhost:8000/auth/callback',
-		'scope': 			'user-get-assos-done-now user-get-info'
+		'scope': 			'user-get-assos-joined-now user-get-info'
 	}
 }
 
