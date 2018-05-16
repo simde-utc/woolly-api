@@ -1,7 +1,6 @@
 from django.conf.urls import url, include
 from rest_framework.urlpatterns import format_suffix_patterns
-from .views import WoollyUserViewSet, WoollyUserRelationshipView, WoollyUserTypeViewSet, userInfos
-from . import views as PortalView
+from .views import WoollyUserViewSet, WoollyUserRelationshipView, WoollyUserTypeViewSet, AuthView
 import cas.views
 
 
@@ -35,19 +34,19 @@ urlpatterns = {
 	# ============================================
 
 	# Get login URL to log through Portail des Assos
-	url(r'^auth/login', PortalView.login, name = 'auth.login'),
+	url(r'^auth/login', AuthView.login, name = 'auth.login'),
 	# Log user in Woolly and get JWT
-	url(r'^auth/callback', PortalView.login_callback, name = 'auth.callback'),
+	url(r'^auth/callback', AuthView.login_callback, name = 'auth.callback'),
 	# Get the JWT after login
-	url(r'^auth/jwt$', PortalView.get_jwt, name = 'auth.jwt'),
+	url(r'^auth/jwt$', AuthView.get_jwt, name = 'auth.jwt'),
 	
 	# Refresh JWT : TODO
-	url(r'^auth/refresh', PortalView.refresh_jwt, name = 'auth.refresh'),
+	url(r'^auth/refresh', AuthView.refresh_jwt, name = 'auth.refresh'),
 	# Revoke session, JWT and redirect to Portal's logout
-	url(r'^auth/logout', PortalView.logout, name = 'auth.logout'),
+	url(r'^auth/logout', AuthView.logout, name = 'auth.logout'),
 
-	url(r'^auth/test', PortalView.test_jwt, name = 'jwt.validate'),
-	url(r'^auth/me', PortalView.me, name = 'auth.me'),
+	url(r'^auth/test', AuthView.test_jwt, name = 'jwt.validate'),
+	url(r'^auth/me', AuthView.me, name = 'auth.me'),
 
 
 
@@ -75,7 +74,7 @@ urlpatterns = {
 	url(r'^users/(?P<pk>[0-9]+)$',
 		woollyuser_detail,
 		name = 'user-detail'),
-	url(r'^users/me', userInfos), # "/store" will call the method "index" in "views.py"
+	# url(r'^users/me', userInfos), # "/store" will call the method "index" in "views.py"
 
 	# WoollyUsersTypes
 	url(r'^users/(?P<user_pk>[0-9]+)/woollyusertypes$',
