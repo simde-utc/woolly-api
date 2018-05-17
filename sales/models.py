@@ -12,6 +12,8 @@ class Association(models.Model):
     # No calculations are going to be made with it
     # So it's a char field
     foundation_id = models.CharField(max_length=30)
+    woollyUser = models.ManyToManyField(
+        'authentication.WoollyUser')
 
     class JSONAPIMeta:
         resource_name = "associations"
@@ -24,62 +26,6 @@ class PaymentMethod(models.Model):
 
     class JSONAPIMeta:
         resource_name = "paymentmethods"
-
-
-class Sale(models.Model):
-    """
-        Defines the Sale object
-    """
-    name = models.CharField(max_length=200)
-    description = models.CharField(max_length=1000)
-    creation_date = models.DateTimeField(auto_now_add=True)
-    begin_date = models.DateTimeField()
-    end_date = models.DateTimeField()
-    max_payment_date = models.DateTimeField()
-    max_item_quantity = models.IntegerField()
-
-    paymentmethods = models.ForeignKey(
-        PaymentMethod,
-        on_delete=None,
-        related_name='sales',
-        blank=True)
-
-    association = models.ForeignKey(
-        Association, on_delete=None, related_name='sales', blank=True)
-
-    class JSONAPIMeta:
-        resource_name = "sales"
-
-
-class Item(models.Model):
-    """
-        Defines the Item object
-    """
-    name = models.CharField(max_length=200)
-    description = models.CharField(max_length=1000)
-    remaining_quantity = models.IntegerField()
-    initial_quantity = models.IntegerField()
-    sale = models.ForeignKey(
-        Sale, on_delete=models.CASCADE, related_name='items')
-
-    class JSONAPIMeta:
-        resource_name = "items"
-
-
-class ItemSpecifications(models.Model):
-    """
-        Defines the link between the Item class and the WoollyUserType one
-    """
-    woolly_user_type = models.ForeignKey(
-        'authentication.WoollyUserType', on_delete=models.CASCADE, related_name='itemspecifications')
-    item = models.ForeignKey(
-        Item, on_delete=models.CASCADE, related_name='itemspecifications')
-    quantity = models.IntegerField()
-    price = models.FloatField()
-    nemopay_id = models.CharField(max_length=30)
-    fun_id = models.CharField(max_length=30)
-    class JSONAPIMeta:
-        resource_name = "itemspecifications"
 
 
 class AssociationMember(models.Model):
@@ -114,6 +60,63 @@ class Order(models.Model):
         resource_name = "orders"
 
 
+class Sale(models.Model):
+    """
+        Defines the Sale object
+    """
+    name = models.CharField(max_length=200)
+    description = models.CharField(max_length=1000)
+    creation_date = models.DateTimeField(auto_now_add=True)
+    begin_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    max_payment_date = models.DateTimeField()
+    payment_delay = models.DateTimeField()
+    max_item_quantity = models.IntegerField()
+
+    paymentmethods = models.ManyToManyField(
+        PaymentMethod)
+
+    association = models.ForeignKey(
+        Association, on_delete=None, related_name='sales', blank=True)
+
+    order = models.ForeignKey(
+        Order, on_delete=models.CASCADE, related_name='order', blank=True)
+
+    class JSONAPIMeta:
+        resource_name = "sales"
+
+
+class ItemGroup(models.Model):
+    """
+        Defines the ItemGroup object
+    """
+    name = models.CharField(max_length=200)
+    quantity = models.IntegerField()
+
+    class JSONAPIMeta:
+        resource_name = "itemgroups"
+
+
+class Item(models.Model):
+    """
+        Defines the Item object
+    """
+    name = models.CharField(max_length=200)
+    description = models.CharField(max_length=1000)
+    quantity = models.IntegerField()
+    price = models.FloatField()
+    nemopay_id = models.CharField(max_length=30)
+    sale = models.ForeignKey(
+        Sale, on_delete=models.CASCADE, related_name='items')
+    itemgroup = models.ForeignKey(
+        ItemGroup, on_delete=None, related_name='itemgroups')
+    woolly_user_type = models.ManyToManyField(
+        'authentication.WoollyUserType')
+
+    class JSONAPIMeta:
+        resource_name = "items"
+
+
 class OrderLine(models.Model):
     """
         Defines the link between an Order and an Item
@@ -126,3 +129,47 @@ class OrderLine(models.Model):
 
     class JSONAPIMeta:
         resource_name = "orderlines"
+
+
+class Field(models.Model):
+    """
+        Defines the Field object
+    """
+    name = models.CharField(max_length=200)
+    type = models.CharField(max_length=1000)
+    default = models.BooleanField
+
+    item = models.ManyToManyField(
+        Item, through='ItemField')
+
+    orderline = models.ManyToManyField(
+        OrderLine, through='OrderLineField')
+
+    class JSONAPIMeta:
+        resource_name = "fields"
+
+
+class ItemField(models.Model):
+    """
+        Defines the ItemField object
+    """
+    editable = models.BooleanField(default=1)
+
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    field = models.ForeignKey(Field, on_delete=models.CASCADE)
+
+    class JSONAPIMeta:
+        resource_name = "itemfields"
+
+
+class OrderLineField(models.Model):
+    """
+        Defines the OrderLineField object
+    """
+    value = models.CharField(max_length=1000)
+
+    orderline = models.ForeignKey(OrderLine, on_delete=models.CASCADE)
+    field = models.ForeignKey(Field, on_delete=models.CASCADE)
+
+    class JSONAPIMeta:
+        resource_name = "orderlinefields"

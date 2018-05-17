@@ -58,17 +58,6 @@ item_detail = ItemViewSet.as_view({
 	'delete': 'destroy'
 })
 
-itemSpecifications_list = ItemSpecificationsViewSet.as_view({
-	'get': 'list',
-	'post': 'create'
-})
-itemSpecifications_detail = ItemSpecificationsViewSet.as_view({
-	'get': 'retrieve',
-	'put': 'update',
-	'patch': 'partial_update',
-	'delete': 'destroy'
-})
-
 order_list = OrderViewSet.as_view({
 	'get': 'list',
 	'post': 'create'
@@ -164,16 +153,6 @@ urlpatterns = [
 	url(r'^associations/(?P<association_pk>[0-9]+)/sales/(?P<sale_pk>[0-9]+)/items/(?P<pk>[0-9]+)$',
 		view = item_detail, name = 'item-detail'),
 
-	# Itemspecifications
-	url(r'^itemspecifications$', view = itemSpecifications_list,
-		name = 'itemSpecification-list'),
-	url(r'^itemspecifications/(?P<pk>[0-9]+)$', view = itemSpecifications_detail,
-		name = 'itemSpecification-detail'),
-	url(r'^items/(?P<item_pk>[0-9]+)/itemspecifications$',
-		view = itemSpecifications_list, name = 'itemSpecification-list'),
-	url(r'^itemspecifications/(?P<itemspec_pk>[0-9]+)/woollyusertypes$',
-		view = usertype_list, name = 'usertype-list'),
-
 	# User Type
 	url(r'^woollyusertypes$',
 		view = usertype_list, name = 'usertype-list'),
@@ -229,11 +208,6 @@ urlpatterns = [
 		regex = r'^items/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
 		view = ItemRelationshipView.as_view(),
 		name = 'item-relationships'
-	),
-	url(
-		regex = r'^itemspecifications/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
-		view = ItemSpecificationsRelationshipView.as_view(),
-		name = 'itemSpecification-relationships'
 	),
 	url(
 		regex = r'^orders/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
