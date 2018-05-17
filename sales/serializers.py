@@ -6,37 +6,6 @@ from authentication.models import UserType
 from authentication.serializers import UserTypeSerializer
 
 
-class ItemSpecificationsSerializer(serializers.ModelSerializer):
-    """
-        Defines how the ItemSpecifications fields are serialized
-    """
-    # Serializes a ForeignKey following JSON API convention
-    usertype = ResourceRelatedField(
-        queryset=UserType.objects,
-        related_link_view_name='usertype-list',
-        related_link_url_kwarg='itemspec_pk',
-        self_link_view_name='itemSpecification-relationships'
-    )
-
-    # Required by JSON API
-    included_serializers = {
-        'usertype': UserTypeSerializer,
-    }
-
-    class Meta:
-        """
-            Precises which model and which fields to serialize
-        """
-        model = ItemSpecifications
-        fields = ('id', 'usertype', 'price', 'quantity', 'nemopay_id','fun_id')
-
-    class JSONAPIMeta:
-        """
-            Required by JSON API if you want to include the ForeignKey fields into the JSON
-        """
-        included_resources = ['usertype']
-
-
 class ItemSerializer(serializers.ModelSerializer):
     """
         Defines how the Item fields are serialized
@@ -45,14 +14,9 @@ class ItemSerializer(serializers.ModelSerializer):
     itemspecifications = ResourceRelatedField(
         queryset=ItemSpecifications.objects,
         many=True,
-        related_link_view_name='itemSpecification-list',
         related_link_url_kwarg='item_pk',
         self_link_view_name='item-relationships'
     )
-
-    included_serializers = {
-        'itemspecifications': ItemSpecificationsSerializer,
-    }
 
     class Meta:
         model = Item

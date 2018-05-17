@@ -15,8 +15,8 @@ from .permissions import IsOwner
 from rest_framework_json_api.views import RelationshipView
 
 from .models import (
-	Item, ItemSpecifications, Association, Sale, Order, OrderLine,
-	PaymentMethod, AssociationMember
+	Item, ItemGroup, Association, Sale, Order, OrderLine, PaymentMethod, AssociationMember, \
+	OrderLineField, ItemField, Field
 )
 from .serializers import (
 	ItemSerializer, ItemSpecificationsSerializer, AssociationSerializer,
@@ -215,28 +215,6 @@ class SaleViewSet(viewsets.ModelViewSet):
 		return queryset
 
 
-class ItemSpecificationsViewSet(viewsets.ModelViewSet):
-	"""
-		Defines the behavior of the item specifications view
-	"""
-	queryset = ItemSpecifications.objects.all()
-	serializer_class = ItemSpecificationsSerializer
-	permission_classes = (permissions.IsAuthenticated,)
-
-	def perform_create(self, serializer):
-		serializer.save(
-			item_id=self.kwargs['item_pk']
-		)
-
-	def get_queryset(self):
-		queryset = self.queryset
-		if 'item_pk' in self.kwargs:
-			item_pk = self.kwargs['item_pk']
-			queryset = queryset.filter(item__pk=item_pk)
-
-		return queryset
-
-
 class ItemViewSet(viewsets.ModelViewSet):
 	"""
 		Defines the behavior of the item interactions
@@ -326,13 +304,6 @@ class AssociationMemberRelationshipView(RelationshipView):
 		Required by JSON API to display the association members related links
 	"""
 	queryset = AssociationMember.objects
-
-
-class ItemSpecificationsRelationshipView(RelationshipView):
-	"""
-		Required by JSON API to display the item specifications related links
-	"""
-	queryset = ItemSpecifications.objects
 
 
 class AssociationRelationshipView(RelationshipView):

@@ -7,6 +7,8 @@ import datetime
 class UserType(models.Model):
 	name = models.CharField(max_length=50, unique=True)
 	# description = models.CharField(max_length=180, unique=True)
+	item = models.ManyToManyField(
+		'sales.Item')
 
 	# TODO : revoir ça ?
 	COTISANT = 'cotisant'
