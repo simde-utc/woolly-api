@@ -1,6 +1,7 @@
 from django.conf.urls import url, include
 from rest_framework.urlpatterns import format_suffix_patterns
-from .views import WoollyUserViewSet, WoollyUserRelationshipView, WoollyUserTypeViewSet, AuthView
+from .views import WoollyUserViewSet, WoollyUserRelationshipView, WoollyUserTypeViewSet
+from . import views as AuthView
 import cas.views
 
 
@@ -24,6 +25,7 @@ user_type_detail = WoollyUserTypeViewSet.as_view({
 	'patch': 'partial_update',
 	'delete': 'destroy'
 })
+
 
 
 # API endpoints

@@ -55,96 +55,93 @@ class WoollyUserRelationshipView(RelationshipView):
 	queryset = WoollyUser.objects
 
 
-# ====================================================
-# 		Custom endpoints
-# ====================================================
 
-class AuthView:
+# ========================================================
+# 		Login - Callback - Logout
+# ========================================================
 
-	def __init__(self):
-		self.oauth = OAuthAPI()
-		self.jwtClient = JWTClient()
+def login(request):
+	"""
+	Redirect to OAuth api authorization url with an added front callback
+	"""
+	redirection = request.GET.get('redirect', '')
+	oauth = OAuthAPI()
+	url = oauth.get_auth_url(redirection)
+	# print(url)
+	# return JsonResponse({ 'url': url}) 			# DEBUG
+	return redirect(url)
 
-	# ========================================================
-	# 		Login - Callback - Logout
-	# ========================================================
+def login_callback(request):
+	"""
+	# Get user from API, find or create it in Woolly, store the OAuth token, create and return a user JWT or an error
+	Get user from API, find or create it in Woolly, store the OAuth token, create and redirect to the front with a code to get a JWT
+	"""
+	after = request.GET.get('after', '')
+	oauth = OAuthAPI()
+	resp = oauth.callback_and_create_session(request.GET.get('code', ''), request.GET.get('state', ''));
+	# !! Can return dict errors
+	# return JsonResponse({ 'redirect': resp })		# DEBUG
+	return redirect(resp)
 
-	def login(self, request):
-		"""
-		Redirect to OAuth api authorization url with an added front callback
-		"""
-		redirection = request.GET.get('redirect', '')
-		url = self.oauth.get_auth_url(redirection)
-		# print(url)
-		# return JsonResponse({ 'url': url}) 			# DEBUG
-		return redirect(url)
+# TODO Virer
+def userInfos(request):
+	userId = request.session['_auth_user_id']
+	try:
+		queryset = WoollyUser.objects.get(id=userId)
+		login = queryset.login
+		lastName = queryset.last_name
+		firstName = queryset.first_name
+		# TODO serializer... + permissions
+		response = {"userId": userId, "login": login, "lastName": lastName, "firstName": firstName}
+	except WoollyUser.DoesNotExist:
+		response =  {"userId": None, "login": None, "lastName": None, "firstName": None}
+	return JsonResponse(response)
 
-	def login_callback(self, request):
-		"""
-		# Get user from API, find or create it in Woolly, store the OAuth token, create and return a user JWT or an error
-		Get user from API, find or create it in Woolly, store the OAuth token, create and redirect to the front with a code to get a JWT
-		"""
-		after = request.GET.get('after', '')
-		resp = self.oauth.callback_and_create_session(request.GET.get('code', ''), request.GET.get('state', ''));
-		# !! Can return dict errors
-		# return JsonResponse({ 'redirect': resp })		# DEBUG
-		return redirect(resp)
+def me(request):
+	me = request.user
+	print('anonymous' if me.is_anonymous else 'connected')
+	return JsonResponse({
+		'authenticated': me.is_authenticated,
+		'user': None if me.is_anonymous else WoollyUserSerializer(me).data
+	})
 
-	def userInfos(self, request):
-		# TODO
-		userId = request.session['_auth_user_id']
-		try:
-			queryset = WoollyUser.objects.get(id=userId)
-			login = queryset.login
-			lastName = queryset.last_name
-			firstName = queryset.first_name
-			# TODO serializer... + permissions
-			response = {"userId": userId, "login": login, "lastName": lastName, "firstName": firstName}
-		except WoollyUser.DoesNotExist:
-			response =  {"userId": None, "login": None, "lastName": None, "firstName": None}
-		return JsonResponse(response)
-
-	def me(self, request):
-		me = request.user
-		print('a' if me.is_anonymous else 'b')
-		return JsonResponse({
-			'authenticated': me.is_authenticated,
-			'user': None if me.is_anonymous else WoollyUserSerializer(me).data
-		})
-
-	def logout(self, request):
-		# TODO NOT FINISHED : revoke
-		return redirect(self.oauth.logout(get_jwt_from_request(request)))
-
-
-
-	# ========================================================
-	# 		JWT Management
-	# ========================================================
-
-	# Static ?
-	def get_jwt_from_request(self, request):
-		return request.GET.get('jwt', '')
-
-		# TODO OOOOOOOOOOO
-	def get_jwt(self, request):
-		"""
-		Get first JWT after login and got a random code
-		"""
-		code = get_jwt_from_request(request)
-		return JsonResponse(self.oauth.get_jwt_after_login(code))
-
+def logout(request):
 	# TODO NOT FINISHED : revoke
-	def refresh_jwt(self, request):
-		jwt = get_jwt_from_request(request)
-		return JsonResponse(self.jwtClient.refresh_jwt(jwt))
+	oauth = OAuthAPI()
+	return redirect(oauth.logout(get_jwt_from_request(request)))
 
 
-	# TODO a virer
-	def validate_jwt(self, request):
-		jwt = get_jwt_from_request(request)
-		return JsonResponse(self.jwtClient.validate(jwt))
-	# TODO virer
-	def test_jwt(self, request):
-		jwt = get_jwt_from_request(request)
-		return JsonResponse(self.oauth.retrieve_token_from_jwt(jwt))
+
+# ========================================================
+# 		JWT Management
+# ========================================================
+
+def get_jwt_from_request(request):
+	return request.GET.get('jwt', '')
+
+	# TODO OOOOOOOOOOO
+def get_jwt(request):
+	"""
+	Get first JWT after login and got a random code
+	"""
+	code = get_jwt_from_request(request)
+	oauth = OAuthAPI()
+	return JsonResponse(oauth.get_jwt_after_login(code))
+
+# TODO NOT FINISHED : revoke
+def refresh_jwt(request):
+	jwt = get_jwt_from_request(request)
+	jwtClient = JWTClient()
+	return JsonResponse(jwtClient.refresh_jwt(jwt))
+
+
+# TODO a virer
+def validate_jwt(request):
+	jwt = get_jwt_from_request(request)
+	jwtClient = JWTClient()
+	return JsonResponse(jwtClient.validate(jwt))
+# TODO virer
+def test_jwt(request):
+	jwt = get_jwt_from_request(request)
+	oauth = OAuthAPI()
+	return JsonResponse(oauth.retrieve_token_from_jwt(jwt))
