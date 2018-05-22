@@ -15,7 +15,6 @@ class WoollyUserTypeSerializer(serializers.ModelSerializer):
 class WoollyUserSerializer(serializers.ModelSerializer):
 
 	# password = serializers.CharField(required = True, write_only = True)
-	"""
 	woollyusertype = ResourceRelatedField(
 		queryset = WoollyUserType.objects,
 		related_link_view_name = 'user-type-list',
@@ -23,6 +22,7 @@ class WoollyUserSerializer(serializers.ModelSerializer):
 		self_link_view_name = 'user-relationships',
 		required = False
 	)
+	"""
 	associationmembers = ResourceRelatedField(
 		queryset=AssociationMember.objects,
 		related_link_view_name='associationmember-list',

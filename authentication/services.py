@@ -7,7 +7,7 @@ from authlib.client import OAuth2Session, OAuthException
 import time
 
 from woolly_api.settings import JWT_SECRET_KEY, JWT_TTL, OAUTH as OAuthConfig
-from .models import WoollyUser
+from .models import WoollyUser, WoollyUserType
 from .serializers import WoollyUserSerializer
 
 
@@ -20,25 +20,41 @@ def find_or_create_user(user_infos):
 		user = WoollyUser.objects.get(email = user_infos['email'])		# TODO replace
 		print("[Auth Services] Find")
 	except WoollyUser.DoesNotExist:
-		# Create user
 		print("[Auth Services] Create")
+
+		# Create user
+		# TODO : admin, birthdate, login
 		serializer = WoollyUserSerializer(data = {
 			'email': user_infos['email'],
 			'first_name': user_infos['firstname'],
 			'last_name': user_infos['lastname'],
-			# TODO add login ...
-			# 'login': user_infos['login'],		# TODO add login in with for Portail
-			# 'woollyusertype': '',
+			# 'login': user_infos['login'],
 			# 'associations': '',
 			# 'birthdate': ''
 		})
 		if not serializer.is_valid():
 			# TODO
+			print("ERROORRRRS")
+			print(serializer.errors)
 			return {
 				'error': 'Invalid serialization',
 				'errors': serializer.errors
 			}
 		user = serializer.save()
+
+	# Process WoollyUserType relation
+	userType = WoollyUserType.EXTERIEUR
+	if user_infos['is_cas'] == True:
+		userType = WoollyUserType.NON_COTISANT			
+	if user_infos['is_contributorBde'] == True:
+		userType = WoollyUserType.COTISANT			
+
+	# Mise à jour du WoollyUserType si besoin
+	if user.woollyusertype.name != userType:
+		user.woollyusertype = WoollyUserType.objects.get(name=userType)
+		user.save()
+
+	print(user)
 	return user
 
 class JWTClient(JWT):
@@ -188,10 +204,9 @@ class OAuthAPI:
 			oauthToken = self.oauthClient.fetch_access_token(OAuthConfig[self.provider]['access_token_url'], code=code)
 
 			# Retrieve user infos from the Portal
-			auth_user_infos = self.fetch_resource('user/?allDetails=true')
-			print("===== [ Portal Info ] =====")
+			auth_user_infos = self.fetch_resource('user/?allTypes=true&allDetails=true') # TODO restreindre
+			print("===== [ Portal Info ] =====") # DEBUG
 			print(auth_user_infos)
-			# print(self.fetch_resource('user/roles'))
 
 			# Find or create User
 			user = find_or_create_user(auth_user_infos)

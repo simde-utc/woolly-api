@@ -69,6 +69,9 @@ class WoollyUser(AbstractBaseUser):
 	EMAIL_FIELD = 'email'
 	REQUIRED_FIELDS = []
 
+	def __str__(self):
+		return '%s %s' % (self.email, self.woollyusertype.name)
+
 	"""
 	# required by Django 1.11 for the User class
 	def get_full_name(self):
