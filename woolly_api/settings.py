@@ -71,6 +71,8 @@ CORS_ALLOW_METHODS = (
 
 # necessary in addition to the whitelist for protected requests
 CORS_ALLOW_CREDENTIALS = True
+CSRF_COOKIE_HTTPONLY = True # Useful ??
+CSRF_USE_SESSIONS = False	# Useful ??
 CSRF_TRUSTED_ORIGINS = (
 	"localhost"
 )
@@ -152,11 +154,13 @@ MIDDLEWARE = [
 	'django.middleware.clickjacking.XFrameOptionsMiddleware',
 	'cas.middleware.CASMiddleware',
 	'django.middleware.csrf.CsrfViewMiddleware',
+	'authentication.oauth.JWTMiddleware',
 ]
 
 AUTHENTICATION_BACKENDS = (
-	'django.contrib.auth.backends.ModelBackend',
+	# 'django.contrib.auth.backends.ModelBackend',
 	# 'authentication.backends.UpdatedCASBackend',
+	'authentication.backends.JWTBackend',
 )
 
 AUTH_USER_MODEL = 'authentication.WoollyUser'

@@ -10,6 +10,9 @@ from woolly_api.settings import JWT_SECRET_KEY, JWT_TTL, OAUTH as OAuthConfig
 from .models import WoollyUser
 from .serializers import WoollyUserSerializer
 
+# from .backends import JWTBackend
+from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth import get_user_model
 
 
 
@@ -28,8 +31,6 @@ class OAuthAPI:
 		OAuth2 and JWT Client initialisation
 		"""
 		config = OAuthConfig[self.provider]
-		# TODO not working
-
 		self.oauthClient = OAuth2Session(**config)
 		self.jwtClient = JWTClient()
 
@@ -62,7 +63,7 @@ class OAuthAPI:
 			self.user = self.find_or_create_user(auth_user)
 
 			# Store portal token linked to user id
-			# TODO : check expiration
+			# TODO : check expiration and optimize
 			session = SessionStore()
 			session['portal_token'] = self.oauthToken
 			session['user_id'] = self.user.id
@@ -78,7 +79,7 @@ class OAuthAPI:
 
 			# Cache session_key to retrieve it for the jwt
 			cache_key = get_random_string(length=32)
-			cache.set(cache_key, session.session_key)
+			cache.set(cache_key, session.session_key, 300)
 
 			return redirection + '?code=' +  cache_key
 
@@ -87,6 +88,21 @@ class OAuthAPI:
 				'error': 'OAuthException',
 				'message': str(error)
 			}
+
+	def get_jwt_after_login(self, code):
+		"""
+		Return JWT to the client after it logged in and got a random code to the session
+		"""
+		# Retrieve session_key from random code
+		session_key = cache.get(code)
+		cache.delete(code)
+		# TODO gestion erreur
+		if session_key == None:
+			return {}
+
+		# Retrieve session and create JWT from its infos
+		session = SessionStore(session_key=session_key)
+		return self.jwtClient.get_jwt(session['user_id'], session_key)
 	
 	def logout(self, jwt):
 		"""
@@ -106,23 +122,6 @@ class OAuthAPI:
 
 		# Redirect to logout
 		return OAuthConfig[self.provider]['logout']
-
-	def get_jwt_after_login(self, code):
-		"""
-		Return JWT to the client after it logged in and got a random code to the session
-		"""
-		# Retrieve session_key from random code
-		session_key = cache.get(code)
-		print(session_key)
-		cache.delete(code)
-		# TODO gestion erreur
-		if session_key == None:
-			return {}
-
-		# Retrieve session and create JWT from its infos
-		session = SessionStore(session_key=session_key)
-		print(session['user_id'])
-		return self.jwtClient.get_jwt(session['user_id'], session_key)
 
 
 	# =========================================
@@ -187,18 +186,21 @@ class OAuthAPI:
 
 
 
-
-
-
-
+# TODO ['data partout']
 class JWTClient(JWT):
 	"""
 	JWT Client used to authenticate users
 	"""
+	def get_user_id(self, jwt):
+		try:
+			self.validate(jwt)
+			return self.claims['data']['user_id']
+		except JWTError as error:
+			return None
 
 	def get_claims(self, jwt):
 		"""
-		Return the content of a JWT
+		Return the JSON content of a JWT
 		"""
 		try:
 			self.validate(jwt)
@@ -211,7 +213,7 @@ class JWTClient(JWT):
 
 	def validate(self, jwt):
 		"""
-		Do nothing if jwt is valid, else raise a JWTError
+		Stock claims if jwt is valid, else raise a JWTError
 		"""
 		self.claims = self.decode(jwt, JWT_SECRET_KEY)
 		self.claims.validate()
@@ -257,5 +259,56 @@ class JWTClient(JWT):
 	def revoke_jwt(self, jwt):
 		# TODO
 		return None
+
+def get_jwt_from_request(request):
+	try:
+		jwt = request.META['HTTP_AUTHORIZATION']
+	except KeyError:
+		return None
+	if not jwt or jwt == '':
+		return None
+	return jwt[7:]		# substring : Bearer ...
+
+
+class JWTBackend():
+	def __init__(self):
+		self.jwtClient = JWTClient()
+		# One-time configuration and initialization.
+
+	def authenticate(self, request):
+		print("AUTHENTICATE")
+		# Get JWT from request header
+		try:
+			jwt = request.META['HTTP_AUTHORIZATION']
+		except KeyError:
+			return AnonymousUser
+		if not jwt or jwt == '':
+			return AnonymousUser
+		jwt = jwt[7:]		# substring : Bearer ...
+
+		# Get user id
+		user_id = self.jwtClient.get_user_id(jwt)
+		print(user_id)
+		if user_id == None:
+			return AnonymousUser
+
+		# Try logging user
+		UserModel = get_user_model()
+		try:
+			return UserModel.objects.get(id=user_id)
+		except UserModel.DoesNotExist:
+			return AnonymousUser
+
+class JWTMiddleware:
+	"""
+	Middleware to log user from JWT into request.user
+	"""
+	def __init__(self, get_response):
+		self.get_response = get_response
+		self.backend = JWTBackend()
+
+	def __call__(self, request):
+		request.user = self.backend.authenticate(request)
+		return self.get_response(request)
 
 

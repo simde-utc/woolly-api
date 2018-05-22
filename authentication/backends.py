@@ -9,17 +9,36 @@ import datetime
 from authentication.models import WoollyUserType
 from django.contrib.sessions.backends.db import SessionStore
 from importlib import import_module
+from django.contrib.auth.models import AnonymousUser
+from .oauth import JWTClient
 
-def loggedCas(tree):
-	print("[CAS LOGIN CALLBACK]")
+# class JWTBackend():
+	# def __init__(self):
+	# 	self.jwtClient = JWTClient()
+	# 	# One-time configuration and initialization.
 
+	# def authenticate(self, request):
+	# 	print("AUTHENTICATE")
+	# 	# Get JWT from request header
+	# 	jwt = request.META['Authorization'][7:]		# substring : Bearer ...
+	# 	# Get user id
+	# 	user_id = self.jwtClient.get_user_id(jwt)
+	# 	print(user_id)
+	# 	if user_id == None:
+	# 		return AnonymousUser
 
-class OAuthBackend():
-	pass
+	# 	# Try logging user
+	# 	try:
+	# 		UserModel = get_user_model()
+	# 		return UserModel.objects.get(id==user_id)
+	# 	except UserModel.DoesNotExist:
+	# 		return AnonymousUser
 
 
 
 # Inutiles ?
+def loggedCas(tree):
+	print("[CAS LOGIN CALLBACK]")
 class UpdatedCASBackend(CASBackend):
 	"""
 	An extension of the CASBackend to make it functionnable 

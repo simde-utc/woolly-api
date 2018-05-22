@@ -122,9 +122,9 @@ def get_jwt_from_request(request):
 	# TODO OOOOOOOOOOO
 def get_jwt(request):
 	"""
-	Get first JWT after login and got a random code
+	Get first JWT after login from random session code
 	"""
-	code = get_jwt_from_request(request)
+	code = request.GET.get('code', '')
 	oauth = OAuthAPI()
 	return JsonResponse(oauth.get_jwt_after_login(code))
 
