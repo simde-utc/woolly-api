@@ -154,9 +154,10 @@ MIDDLEWARE = [
 	'django.middleware.clickjacking.XFrameOptionsMiddleware',
 	'cas.middleware.CASMiddleware',
 	'django.middleware.csrf.CsrfViewMiddleware',
-	'authentication.oauth.JWTMiddleware',
+	'authentication.middlewares.JWTMiddleware',
 ]
 
+# Useful ?
 AUTHENTICATION_BACKENDS = (
 	# 'django.contrib.auth.backends.ModelBackend',
 	# 'authentication.backends.UpdatedCASBackend',

@@ -1,42 +1,56 @@
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
+
+from .oauth import JWTClient
+
+class JWTBackend():
+	"""
+	Backend to log user frow JWT
+	"""
+	def __init__(self):
+		self.jwtClient = JWTClient()
+		# One-time configuration and initialization.
+
+	def authenticate(self, request):
+		"""
+		Return the user from the JWT sent in the request
+		"""
+		# Get JWT from request header
+		try:
+			jwt = request.META['HTTP_AUTHORIZATION']	# Traiter automatiquement par Django
+		except KeyError:
+			return AnonymousUser
+		if not jwt or jwt == '':
+			return AnonymousUser
+		jwt = jwt[7:]									# substring : Bearer ...
+
+		# Get user id
+		user_id = self.jwtClient.get_user_id(jwt)
+		if user_id == None:
+			return AnonymousUser
+
+		# Try logging user
+		UserModel = get_user_model()
+		try:
+			return UserModel.objects.get(id=user_id)
+		except UserModel.DoesNotExist:
+			return AnonymousUser
+
+
+# """
+# Inutiles ?
+
 from cas.backends import CASBackend
 from cas.backends import _verify
-from django.contrib.auth import get_user_model
 from django.conf import settings
 from urllib.parse import urlencode, urljoin
 from urllib.request import urlopen
 import json
 import datetime
-from authentication.models import WoollyUserType
 from django.contrib.sessions.backends.db import SessionStore
 from importlib import import_module
-from django.contrib.auth.models import AnonymousUser
-from .oauth import JWTClient
+from authentication.models import WoollyUserType
 
-# class JWTBackend():
-	# def __init__(self):
-	# 	self.jwtClient = JWTClient()
-	# 	# One-time configuration and initialization.
-
-	# def authenticate(self, request):
-	# 	print("AUTHENTICATE")
-	# 	# Get JWT from request header
-	# 	jwt = request.META['Authorization'][7:]		# substring : Bearer ...
-	# 	# Get user id
-	# 	user_id = self.jwtClient.get_user_id(jwt)
-	# 	print(user_id)
-	# 	if user_id == None:
-	# 		return AnonymousUser
-
-	# 	# Try logging user
-	# 	try:
-	# 		UserModel = get_user_model()
-	# 		return UserModel.objects.get(id==user_id)
-	# 	except UserModel.DoesNotExist:
-	# 		return AnonymousUser
-
-
-
-# Inutiles ?
 def loggedCas(tree):
 	print("[CAS LOGIN CALLBACK]")
 class UpdatedCASBackend(CASBackend):
@@ -96,3 +110,4 @@ class UpdatedCASBackend(CASBackend):
 			user.woollyusertype = WoollyUserType.objects.get(
 				name=WoollyUserType.NON_COTISANT)
 		return user
+# """

@@ -1,7 +1,6 @@
 from django.conf.urls import url, include
 from rest_framework.urlpatterns import format_suffix_patterns
-from .views import WoollyUserViewSet, WoollyUserRelationshipView, WoollyUserTypeViewSet
-from . import views as AuthView
+from .views import WoollyUserViewSet, WoollyUserRelationshipView, WoollyUserTypeViewSet, AuthView, JWTView
 import cas.views
 
 
@@ -39,23 +38,23 @@ urlpatterns = {
 	url(r'^auth/login', AuthView.login, name = 'auth.login'),
 	# Log user in Woolly and get JWT
 	url(r'^auth/callback', AuthView.login_callback, name = 'auth.callback'),
-	# Get the JWT after login
-	url(r'^auth/jwt$', AuthView.get_jwt, name = 'auth.jwt'),
-	
-	# Refresh JWT : TODO
-	url(r'^auth/refresh', AuthView.refresh_jwt, name = 'auth.refresh'),
+	# Get User information
+	url(r'^auth/me', AuthView.me, name = 'auth.me'),
 	# Revoke session, JWT and redirect to Portal's logout
 	url(r'^auth/logout', AuthView.logout, name = 'auth.logout'),
+	
+	# Get the JWT after login
+	url(r'^auth/jwt$', JWTView.get_jwt, name = 'auth.jwt'),
+	# Refresh JWT : TODO
+	url(r'^auth/refresh', JWTView.refresh_jwt, name = 'auth.refresh'),
+	# Validate JWT : TODO
+	url(r'^auth/refresh', JWTView.validate_jwt, name = 'auth.validate'),
 
-	url(r'^auth/test', AuthView.test_jwt, name = 'jwt.validate'),
-	url(r'^auth/me', AuthView.me, name = 'auth.me'),
 
 
 
 
-
-
-	# ==== A virer...
+	# ==== TODO A virer...
 	# CAS login/logout
 	url(r'^auth/cas/login$', cas.views.login, name = 'cas.login'),
 	url(r'^auth/cas/logout$', cas.views.logout, name = 'cas.logout'),
@@ -76,7 +75,6 @@ urlpatterns = {
 	url(r'^users/(?P<pk>[0-9]+)$',
 		woollyuser_detail,
 		name = 'user-detail'),
-	# url(r'^users/me', userInfos), # "/store" will call the method "index" in "views.py"
 
 	# WoollyUsersTypes
 	url(r'^users/(?P<user_pk>[0-9]+)/woollyusertypes$',
