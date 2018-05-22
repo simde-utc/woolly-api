@@ -5,8 +5,21 @@ from datetime import date
 class Payutc:
 
 	def __init__(self, params):
-		self.config  = {"url" : "https:/api.nemopay.net", "username":"username", "password":"password", "systemID" : "payutc", "async" : False, "app_key": params["apikey"], "fun_id":2, "sessionID":0,"logged_usr":"","loginMethod" : "payuser", "date" : date.today(),"debug":False }
-		self.config["apikey"] = params["apikey"]
+		self.config  = {
+			'url' : 'https:/api.nemopay.net',
+			'username':'username',
+			'password':'password',
+			'systemID' : 'payutc',
+			'async' : False,
+			'app_key': params['apikey'],
+			'fun_id':2,
+			'sessionID':0,
+			'logged_usr':'',
+			'loginMethod' : 'payuser',
+			'date' : date.today(),
+			'debug': False
+		}
+		self.config['apikey'] = params['apikey']
 
 	def genericApiCall(self,service, method,data):
 		response = ""

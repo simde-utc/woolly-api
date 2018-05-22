@@ -5,7 +5,7 @@ from django.db import models
 
 import datetime
 
-
+"""
 class WoollyUserType(models.Model):
     COTISANT = 'cotisant'
     NON_COTISANT = 'non-cotisant'
@@ -15,9 +15,9 @@ class WoollyUserType(models.Model):
 
     @staticmethod
     def init_values():
-        """
+        "" "
         initialize the different possible WoollyUserType in DB
-        """
+        "" "
         values = [WoollyUserType.COTISANT, WoollyUserType.NON_COTISANT,
                   WoollyUserType.TREMPLIN, WoollyUserType.EXTERIEUR]
         for value in values:
@@ -103,3 +103,4 @@ class WoollyUser(AbstractBaseUser):
 
     # check set_unusable_password() for authentication against
     # external source
+"""

@@ -5,4 +5,5 @@ django-cors-headers==2.2.0
 djangorestframework-jsonapi==2.4.0
 pymysql==0.8.0
 requests==2.18.4
-django-oauth-toolkit==1.0.0
+Authlib==0.6
+

@@ -3,6 +3,7 @@ from authentication.models import WoollyUser, WoollyUserType
 # from sales.serializers import AssociationMemberSerializer
 from rest_framework_json_api import serializers
 from rest_framework_json_api.relations import ResourceRelatedField
+from django.db import IntegrityError
 
 
 class WoollyUserTypeSerializer(serializers.ModelSerializer):
@@ -11,15 +12,15 @@ class WoollyUserTypeSerializer(serializers.ModelSerializer):
 		fields = ('id', 'name')
 
 
-class WoollyUserSerializer(serializers.Serializer):
-	login = serializers.CharField(allow_blank = False, max_length = 253, required = True)
-	password = serializers.CharField(required = True, write_only = True)
+class WoollyUserSerializer(serializers.ModelSerializer):
 
+	# password = serializers.CharField(required = True, write_only = True)
 	woollyusertype = ResourceRelatedField(
 		queryset = WoollyUserType.objects,
 		related_link_view_name = 'user-type-list',
 		related_link_url_kwarg = 'user_pk',
-		self_link_view_name = 'user-relationships'
+		self_link_view_name = 'user-relationships',
+		required = False
 	)
 	"""
 	associationmembers = ResourceRelatedField(
@@ -29,24 +30,26 @@ class WoollyUserSerializer(serializers.Serializer):
 		self_link_view_name='user-relationships'
 	)
 	"""
+
+	class Meta:
+		model = WoollyUser
+		exclude = ('password',)
+
+	def create(self, validated_data):
+		"""
+		Overload : set login to None if not a CAS user
+		"""
+		if 'login' not in validated_data or not validated_data['login']:
+			validated_data['login'] = None
+		return WoollyUser.objects.create(**validated_data) 
+
+
 	included_serializers = {
 		'woollyusertype': WoollyUserTypeSerializer,
 		# 'associationmembers': AssociationMemberSerializer
 	}
 
-	class Meta:
-		"""Meta class to map serializer's fields with the model fields."""
-		model = WoollyUser
-		fields = ('id', 'login', 'last_login', 'type_id', 'is_active',
-				  'is_admin', 'woollyusertype', 'associationmembers')
-		# write_only_fields = ('password',)
-		# exclude = ('password',)
-
-	def create(self, validated_data):
-		"""
-		Create and return a new `WoollyUser` instance, given the validated data.
-		"""
-		return WoollyUser.objects.create(**validated_data)
 
 	class JSONAPIMeta:
-		included_resources = ['woollyusertype', 'associationmembers']
+		# included_resources = ['woollyusertype', 'associationmembers']
+		included_resources = ['woollyusertype']

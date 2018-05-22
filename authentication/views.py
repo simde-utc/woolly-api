@@ -1,13 +1,15 @@
-from authentication.serializers import WoollyUserSerializer, WoollyUserTypeSerializer
-from authentication.models import WoollyUserType, WoollyUser
-from sales.models import AssociationMember
-from rest_framework.permissions import IsAuthenticated
+from django.http import JsonResponse
+from django.shortcuts import redirect
 from rest_framework import viewsets
 from rest_framework_json_api.views import RelationshipView
-from django.http import HttpResponse,JsonResponse
-from django.core.exceptions import ObjectDoesNotExist
 
-from pprint import pprint
+from rest_framework.permissions import IsAuthenticated
+from .serializers import WoollyUserSerializer, WoollyUserTypeSerializer
+from .models import WoollyUserType, WoollyUser
+
+from .services import OAuthAPI, JWTClient
+# from sales.models import AssociationMember
+
 
 class WoollyUserViewSet(viewsets.ModelViewSet):
 	"""
@@ -19,7 +21,6 @@ class WoollyUserViewSet(viewsets.ModelViewSet):
 	permission_classes = (IsAuthenticated,)
 
 	# def perform_create(self, serializer):
-		# pprint(self.request.data['woollyusertype'])
 		# serializer.save(type_id = self.kwargs['woollyusertype_pk'])
 		# serializer.save()
 
@@ -54,14 +55,90 @@ class WoollyUserTypeViewSet(viewsets.ModelViewSet):
 class WoollyUserRelationshipView(RelationshipView):
 	queryset = WoollyUser.objects
 
-def userInfos(request):
-	userId = request.session['_auth_user_id']
+
+# ========================================================
+# 		Auth & JWT Management
+# ========================================================
+
+def get_jwt_from_request(request):
+	"""
+	Helper to get JWT from request
+	Return None if no JWT
+	"""
 	try:
-		queryset = WoollyUser.objects.get(id=userId)
-		login = queryset.login
-		lastName = queryset.last_name
-		firstName = queryset.first_name
-		response = {"userId": userId, "login": login, "lastName": lastName, "firstName": firstName}
-	except WoollyUser.DoesNotExist:
-		response =  {"userId": None, "login": None, "lastName": None, "firstName": None}
-	return JsonResponse(response)
+		jwt = request.META['HTTP_AUTHORIZATION']	# Traité automatiquement par Django
+	except KeyError:
+		return None
+	if not jwt or jwt == '':
+		return None
+	return jwt[7:]		# substring : Bearer ...
+
+
+class AuthView:
+	oauth = OAuthAPI()
+	jwtClient = JWTClient()
+
+	@classmethod
+	def login(cls, request):
+		"""
+		Redirect to OAuth api authorization url with an added front callback
+		"""
+		redirection = request.GET.get('redirect', '')
+		url = cls.oauth.get_auth_url(redirection)
+		# print(url)
+		# return JsonResponse({ 'url': url}) 			# DEBUG
+		return redirect(url)
+
+	@classmethod
+	def login_callback(cls, request):
+		"""
+		# Get user from API, find or create it in Woolly, store the OAuth token, create and return a user JWT or an error
+		Get user from API, find or create it in Woolly, store the OAuth token, create and redirect to the front with a code to get a JWT
+		"""
+		after = request.GET.get('after', '')
+		resp = cls.oauth.callback_and_create_session(request.GET.get('code', ''), request.GET.get('state', ''));
+		# !! Can return dict errors
+		# return JsonResponse({ 'redirect': resp })		# DEBUG
+		return redirect(resp)
+
+	@classmethod
+	def me(cls, request):
+		me = request.user
+		print('anonymous' if me.is_anonymous else 'connected')
+		return JsonResponse({
+			'authenticated': me.is_authenticated,
+			'user': None if me.is_anonymous else WoollyUserSerializer(me).data
+		})
+
+	@classmethod
+	def logout(cls, request):
+		# TODO NOT FINISHED : revoke
+		return redirect(cls.oauth.logout(get_jwt_from_request(request)))
+
+
+class JWTView:
+	jwtClient = JWTClient()
+
+	@classmethod
+	def get_jwt(cls, request):
+		"""
+		Get first JWT after login from random session code
+		"""
+		code = request.GET.get('code', '')
+		return JsonResponse(cls.jwtClient.get_jwt_after_login(code))
+
+	# TODO NOT FINISHED : revoke
+	@classmethod
+	def refresh_jwt(cls, request):
+		jwt = get_jwt_from_request(request)
+		return JsonResponse(cls.jwtClient.refresh_jwt(jwt))
+
+	@classmethod
+	def validate_jwt(cls, request):
+		jwt = get_jwt_from_request(request)
+		try:
+			cls.jwtClient.validate(jwt)
+			valid = True
+		except JWTError as error:
+			valid = False
+		return JsonResponse({ 'valid': valid })

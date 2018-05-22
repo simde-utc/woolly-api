@@ -1,19 +1,59 @@
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
+
+from .services import JWTClient
+from .views import get_jwt_from_request
+
+class JWTBackend:
+	"""
+	Backend to log user frow JWT
+	"""
+	def __init__(self):
+		self.jwtClient = JWTClient()
+		# One-time configuration and initialization.
+
+	def authenticate(self, request):
+		"""
+		Return the user from the JWT sent in the request
+		"""
+		# Get JWT from request header
+		jwt = get_jwt_from_request(request)
+		if jwt == None:
+			return AnonymousUser
+
+		# Get user id
+		claims = self.jwtClient.get_claims(jwt)
+		try:
+			user_id = claims['data']['user_id']
+		except KeyError:
+			return AnonymousUser
+		if user_id == None:
+			return AnonymousUser
+
+		# Try logging user
+		UserModel = get_user_model()
+		try:
+			return UserModel.objects.get(id=user_id)
+		except UserModel.DoesNotExist:
+			return AnonymousUser
+
+
+# """
+# Inutiles ?
+
 from cas.backends import CASBackend
 from cas.backends import _verify
-from django.contrib.auth import get_user_model
 from django.conf import settings
 from urllib.parse import urlencode, urljoin
 from urllib.request import urlopen
 import json
 import datetime
-from authentication.models import WoollyUserType
 from django.contrib.sessions.backends.db import SessionStore
 from importlib import import_module
+from authentication.models import WoollyUserType
 
 def loggedCas(tree):
 	print("[CAS LOGIN CALLBACK]")
-
-
 class UpdatedCASBackend(CASBackend):
 	"""
 	An extension of the CASBackend to make it functionnable 
@@ -25,48 +65,31 @@ class UpdatedCASBackend(CASBackend):
 		Verifies CAS ticket and gets or creates User object
 		NB: Use of PT to identify proxy
 		"""
-		SessionStore = import_module(settings.SESSION_ENGINE).SessionStore
+		print("_______________________ CAS Backend ________________")
+		# SessionStore = import_module(settings.SESSION_ENGINE).SessionStore		# Use ?
 		UserModel = get_user_model()
 		username = _verify(ticket, service)
 		if not username:
 			return None
 
 		try:
-			user = UserModel._default_manager.get(**{
-				UserModel.USERNAME_FIELD: username
-			})
-			user = self.configure_user(user)
-			user.save()
+			user = UserModel.objects.get(login=username)
+			# user = self.configure_user(user)
 		except UserModel.DoesNotExist:
 			# user will have an "unusable" password
 			if settings.CAS_AUTO_CREATE_USER:
 				user = UserModel.objects.create_user(username, '')
-				user = self.configure_user(user)
-				user.save()
+				# user = self.configure_user(user)
+				# user.save()
 			else:
 				user = None
 		return user
 
 	def configure_user(self, user):
 		"""
-		Configures a user in a custom manner
-		:param user: the user to retrieve informations on
-		:return: a configured user
+		Ginger overload
 		"""
-		return user
-
-
-class GingerCASBackend(UpdatedCASBackend):
-	"""
-	A CAS Backend implementing Ginger for User configuration
-	"""
-
-	def configure_user(self, user):
-		"""
-		Configures a user using Ginger
-		:param user: The WoollyUser to configure
-		:return: The configurated user
-		"""
+		print("gggggggggggggggggggiiiiiiiiiiiiiiiiinnnnger")
 		params = {'key': settings.GINGER_KEY, }
 		url = urljoin(settings.GINGER_SERVER_URL, user.login) + \
 			'?' + urlencode(params)
@@ -88,3 +111,4 @@ class GingerCASBackend(UpdatedCASBackend):
 			user.woollyusertype = WoollyUserType.objects.get(
 				name=WoollyUserType.NON_COTISANT)
 		return user
+# """
