@@ -1,9 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 
-from .oauth import JWTClient
+from .services import JWTClient
+from .views import get_jwt_from_request
 
-class JWTBackend():
+class JWTBackend:
 	"""
 	Backend to log user frow JWT
 	"""
@@ -16,16 +17,16 @@ class JWTBackend():
 		Return the user from the JWT sent in the request
 		"""
 		# Get JWT from request header
-		try:
-			jwt = request.META['HTTP_AUTHORIZATION']	# Traiter automatiquement par Django
-		except KeyError:
+		jwt = get_jwt_from_request(request)
+		if jwt == None:
 			return AnonymousUser
-		if not jwt or jwt == '':
-			return AnonymousUser
-		jwt = jwt[7:]									# substring : Bearer ...
 
 		# Get user id
-		user_id = self.jwtClient.get_user_id(jwt)
+		claims = self.jwtClient.get_claims(jwt)
+		try:
+			user_id = claims['data']['user_id']
+		except KeyError:
+			return AnonymousUser
 		if user_id == None:
 			return AnonymousUser
 

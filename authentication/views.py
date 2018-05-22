@@ -2,13 +2,12 @@ from django.http import JsonResponse
 from django.shortcuts import redirect
 from rest_framework import viewsets
 from rest_framework_json_api.views import RelationshipView
-# from django.views import View
 
 from rest_framework.permissions import IsAuthenticated
 from .serializers import WoollyUserSerializer, WoollyUserTypeSerializer
 from .models import WoollyUserType, WoollyUser
 
-from .oauth import OAuthAPI, JWTClient
+from .services import OAuthAPI, JWTClient
 # from sales.models import AssociationMember
 
 
@@ -57,23 +56,23 @@ class WoollyUserRelationshipView(RelationshipView):
 	queryset = WoollyUser.objects
 
 
+# ========================================================
+# 		Auth & JWT Management
+# ========================================================
+
 def get_jwt_from_request(request):
 	"""
 	Helper to get JWT from request
 	Return None if no JWT
 	"""
 	try:
-		jwt = request.META['HTTP_AUTHORIZATION']
+		jwt = request.META['HTTP_AUTHORIZATION']	# Traiter automatiquement par Django
 	except KeyError:
 		return None
 	if not jwt or jwt == '':
 		return None
 	return jwt[7:]		# substring : Bearer ...
 
-
-# ========================================================
-# 		Login - Callback - Logout
-# ========================================================
 
 class AuthView:
 	oauth = OAuthAPI()
@@ -102,7 +101,6 @@ class AuthView:
 		# return JsonResponse({ 'redirect': resp })		# DEBUG
 		return redirect(resp)
 
-
 	@classmethod
 	def me(cls, request):
 		me = request.user
@@ -118,11 +116,7 @@ class AuthView:
 		return redirect(cls.oauth.logout(get_jwt_from_request(request)))
 
 
-
 class JWTView:
-	"""
-	JWT Management
-	"""
 	jwtClient = JWTClient()
 
 	@classmethod
@@ -139,8 +133,12 @@ class JWTView:
 		jwt = get_jwt_from_request(request)
 		return JsonResponse(cls.jwtClient.refresh_jwt(jwt))
 
-	# TODO finir
 	@classmethod
 	def validate_jwt(cls, request):
 		jwt = get_jwt_from_request(request)
-		return JsonResponse(cls.jwtClient.validate(jwt))
+		try:
+			cls.jwtClient.validate(jwt)
+			valid = True
+		except JWTError as error:
+			valid = False
+		return JsonResponse({ 'valid': valid })

@@ -48,7 +48,7 @@ urlpatterns = {
 	# Refresh JWT : TODO
 	url(r'^auth/refresh', JWTView.refresh_jwt, name = 'auth.refresh'),
 	# Validate JWT : TODO
-	url(r'^auth/refresh', JWTView.validate_jwt, name = 'auth.validate'),
+	url(r'^auth/validate', JWTView.validate_jwt, name = 'auth.validate'),
 
 
 
