@@ -24,7 +24,7 @@ class WoollyUserType(models.Model):
 			WoollyUserType(name=value).save()
 
 	class JSONAPIMeta:
-		resource_name = "woollyusertypes"
+		resource_name = "usertypes"
 
 
 """
@@ -106,6 +106,6 @@ class WoollyUser(AbstractBaseUser):
 		pass
 
 	class JSONAPIMeta:
-		resource_name = "woollyusers"
+		resource_name = "users"
 
 	# check set_unusable_password() for authentication against external source
