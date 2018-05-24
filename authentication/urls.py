@@ -1,4 +1,5 @@
 from django.conf.urls import url, include
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.urlpatterns import format_suffix_patterns
 from .views import WoollyUserViewSet, WoollyUserRelationshipView, WoollyUserTypeViewSet, AuthView, JWTView
 import cas.views
@@ -41,7 +42,7 @@ urlpatterns = {
 	# Get User information
 	url(r'^auth/me', AuthView.me, name = 'auth.me'),
 	# Revoke session, JWT and redirect to Portal's logout
-	url(r'^auth/logout', AuthView.logout, name = 'auth.logout'),
+	url(r'^auth/logout', csrf_exempt(AuthView.logout), name = 'auth.logout'),
 	
 	# Get the JWT after login
 	url(r'^auth/jwt$', JWTView.get_jwt, name = 'auth.jwt'),

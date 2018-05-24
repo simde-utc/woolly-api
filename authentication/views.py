@@ -18,14 +18,13 @@ class WoollyUserViewSet(viewsets.ModelViewSet):
 	"""
 	queryset = WoollyUser.objects.all()
 	serializer_class = WoollyUserSerializer
-	permission_classes = (IsAuthenticated,)
+	# permission_classes = (IsAuthenticated,)
 
 	# def perform_create(self, serializer):
 		# serializer.save(type_id = self.kwargs['woollyusertype_pk'])
 		# serializer.save()
 
-	# TODO : Normal que cela ne retourne que l'user loggué ?
-	# def get_queryset(self):
+		# def get_queryset(self):
 	# 	queryset = self.queryset.filter(login=self.request.user.login)
 	# 	if 'woollyuser_pk' in self.kwargs:
 	# 		association_pk = self.kwargs['woollyuser_pk']
@@ -104,7 +103,6 @@ class AuthView:
 	@classmethod
 	def me(cls, request):
 		me = request.user
-		print('anonymous' if me.is_anonymous else 'connected')
 		return JsonResponse({
 			'authenticated': me.is_authenticated,
 			'user': None if me.is_anonymous else WoollyUserSerializer(me).data
@@ -112,8 +110,12 @@ class AuthView:
 
 	@classmethod
 	def logout(cls, request):
-		# TODO NOT FINISHED : revoke
-		return redirect(cls.oauth.logout(get_jwt_from_request(request)))
+		jwt = get_jwt_from_request(request)
+		logout_url = cls.oauth.logout(jwt)
+		return JsonResponse({
+			'logout': True,
+			'logout_url': logout_url
+		})
 
 
 class JWTView:

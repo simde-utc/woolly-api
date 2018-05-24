@@ -18,12 +18,9 @@ def find_or_create_user(user_infos):
 	try:
 		# Try to find user
 		user = WoollyUser.objects.get(email = user_infos['email'])		# TODO replace
-		print("[Auth Services] Find")
 	except WoollyUser.DoesNotExist:
-		print("[Auth Services] Create")
-
 		# Create user
-		# TODO : admin, birthdate, login
+		# TODO : birthdate, login
 		serializer = WoollyUserSerializer(data = {
 			'email': user_infos['email'],
 			'first_name': user_infos['firstname'],
@@ -33,7 +30,7 @@ def find_or_create_user(user_infos):
 			# 'birthdate': ''
 		})
 		if not serializer.is_valid():
-			# TODO
+			# TODO : Exceptions
 			print("ERROORRRRS")
 			print(serializer.errors)
 			return {
@@ -42,6 +39,9 @@ def find_or_create_user(user_infos):
 			}
 		user = serializer.save()
 
+	# Process new informations
+	madeChanges = False
+
 	# Process WoollyUserType relation
 	userType = WoollyUserType.EXTERIEUR
 	if user_infos['is_cas'] == True:
@@ -49,13 +49,19 @@ def find_or_create_user(user_infos):
 	if user_infos['is_contributorBde'] == True:
 		userType = WoollyUserType.COTISANT			
 
-	# Mise à jour du WoollyUserType si besoin
+	# Mise à jour si besoin
 	if user.woollyusertype.name != userType:
 		user.woollyusertype = WoollyUserType.objects.get(name=userType)
+		madeChanges = True
+	if user.is_admin != user_infos['is_admin']:
+		user.is_admin = user_infos['is_admin']
+		madeChanges = True
+	if madeChanges:
 		user.save()
 
-	print(user)
 	return user
+
+
 
 class JWTClient(JWT):
 	"""
@@ -205,8 +211,6 @@ class OAuthAPI:
 
 			# Retrieve user infos from the Portal
 			auth_user_infos = self.fetch_resource('user/?allTypes=true&allDetails=true') # TODO restreindre
-			print("===== [ Portal Info ] =====") # DEBUG
-			print(auth_user_infos)
 
 			# Find or create User
 			user = find_or_create_user(auth_user_infos)
@@ -243,16 +247,16 @@ class OAuthAPI:
 		"""
 		Logout the user from Woolly and redirect to the provider's logout
 		"""
-
 		# Delete session
-		session = retrieve_session_from_jwt(jwt)
-		session.delete()
+		session = self.jwtClient.retrieve_session_from_jwt(jwt)
+		if session:
+			session.delete()
 
 		# Revoke JWT
 		self.jwtClient.revoke_jwt(jwt)
 
 		# Redirect to logout
-		return OAuthConfig[self.provider]['logout']
+		return OAuthConfig[self.provider]['logout_url']
 
 	def fetch_resource(self, query):
 		"""

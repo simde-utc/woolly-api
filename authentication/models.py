@@ -46,15 +46,16 @@ class WoollyUserManager(BaseUserManager):
 		return user
 """
 
+
 class WoollyUser(AbstractBaseUser):
 	# Properties
 	email = models.EmailField(unique=True)
-	login = models.CharField(max_length=253, unique=True, blank=True, null=True) 
+	login = models.CharField(max_length=253, unique=True, blank=True, null=True)  # TODO : virer
 	first_name = models.CharField(max_length=100)
 	last_name = models.CharField(max_length=100)
 	birthdate = models.DateField(default=datetime.date.today)
 
-	# Associations
+	# Relations
 	woollyusertype = models.ForeignKey(WoollyUserType, on_delete=None, null=False, default=4, related_name='users')
 	associations = models.ManyToManyField('sales.Association', through='sales.AssociationMember')
 
