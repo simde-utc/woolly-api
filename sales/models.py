@@ -68,12 +68,10 @@ class Item(models.Model):
 
 class ItemSpecifications(models.Model):
     """
-        Defines the link between the Item class and the WoollyUserType one
+        Defines the link between the Item class and the UserType one
     """
-    woolly_user_type = models.ForeignKey(
-        'authentication.WoollyUserType', on_delete=models.CASCADE, related_name='itemspecifications')
-    item = models.ForeignKey(
-        Item, on_delete=models.CASCADE, related_name='itemspecifications')
+    _user_type = models.ForeignKey('authentication.UserType', on_delete=models.CASCADE, related_name='itemspecifications')
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='itemspecifications')
     quantity = models.IntegerField()
     price = models.FloatField()
     nemopay_id = models.CharField(max_length=30)
@@ -84,10 +82,9 @@ class ItemSpecifications(models.Model):
 
 class AssociationMember(models.Model):
     """
-        Defines the link between Association and WoollyUser
+        Defines the link between Association and User
     """
-    woollyUser = models.ForeignKey(
-        'authentication.WoollyUser', on_delete=models.CASCADE, related_name='associationmembers')
+    User = models.ForeignKey('authentication.User', on_delete=models.CASCADE, related_name='associationmembers')
     association = models.ForeignKey(
         Association, on_delete=models.CASCADE, related_name='associationmembers')
     role = models.CharField(max_length=50)

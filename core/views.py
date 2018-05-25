@@ -12,7 +12,7 @@ def api_root(request, format=None):
 	return Response({
 		'login': 				reverse('auth.login', 				request=request, format=format),
 		'users': 				reverse('user-list', 				request=request, format=format),
-		'woollyusertypes': 		reverse('usertype-list', 			request=request, format=format),
+		'usertypes': 			reverse('usertype-list', 			request=request, format=format),
 		'associations': 		reverse('association-list', 		request=request, format=format),
 		'associationmembers': 	reverse('associationmember-list', 	request=request, format=format),
 		'sales': 				reverse('sale-list', 				request=request, format=format),

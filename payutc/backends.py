@@ -6,7 +6,7 @@ from urllib.parse import urlencode, urljoin
 from urllib.request import urlopen
 import json
 import datetime
-from authentication.models import WoollyUserType
+from authentication.models import UserType
 
 
 class UpdatedCASBackend(CASBackend):
@@ -59,7 +59,7 @@ class GingerCASBackend(UpdatedCASBackend):
     def configure_user(self, user):
         """
         Configures a user using Ginger
-        :param user: The WoollyUser to configure
+        :param user: The User to configure
         :return: The configurated user
         """
         params = {'key': settings.GINGER_KEY, }
@@ -77,10 +77,10 @@ class GingerCASBackend(UpdatedCASBackend):
         else:
             user.birthdate = datetime.date.today
         if json_data.get('is_cotisant'):
-            user.woollyusertype = WoollyUserType.objects.get(
-                name=WoollyUserType.COTISANT)
+            user.usertype = UserType.objects.get(
+                name=UserType.COTISANT)
         else:
-            user.woollyusertype = WoollyUserType.objects.get(
-                name=WoollyUserType.NON_COTISANT)
+            user.usertype = UserType.objects.get(
+                name=UserType.NON_COTISANT)
 
         return user

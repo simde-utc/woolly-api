@@ -2,8 +2,8 @@ from .models import Sale, Item, ItemSpecifications, Association, Order
 from .models import OrderLine, PaymentMethod, AssociationMember
 from rest_framework_json_api import serializers
 from rest_framework_json_api.relations import ResourceRelatedField
-from authentication.models import WoollyUserType
-from authentication.serializers import WoollyUserTypeSerializer
+from authentication.models import UserType
+from authentication.serializers import UserTypeSerializer
 
 
 class ItemSpecificationsSerializer(serializers.ModelSerializer):
@@ -11,8 +11,8 @@ class ItemSpecificationsSerializer(serializers.ModelSerializer):
         Defines how the ItemSpecifications fields are serialized
     """
     # Serializes a ForeignKey following JSON API convention
-    woolly_user_type = ResourceRelatedField(
-        queryset=WoollyUserType.objects,
+    usertype = ResourceRelatedField(
+        queryset=UserType.objects,
         related_link_view_name='usertype-list',
         related_link_url_kwarg='itemspec_pk',
         self_link_view_name='itemSpecification-relationships'
@@ -20,7 +20,7 @@ class ItemSpecificationsSerializer(serializers.ModelSerializer):
 
     # Required by JSON API
     included_serializers = {
-        'woolly_user_type': WoollyUserTypeSerializer,
+        'usertype': UserTypeSerializer,
     }
 
     class Meta:
@@ -28,13 +28,13 @@ class ItemSpecificationsSerializer(serializers.ModelSerializer):
             Precises which model and which fields to serialize
         """
         model = ItemSpecifications
-        fields = ('id', 'woolly_user_type', 'price', 'quantity', 'nemopay_id','fun_id')
+        fields = ('id', 'usertype', 'price', 'quantity', 'nemopay_id','fun_id')
 
     class JSONAPIMeta:
         """
             Required by JSON API if you want to include the ForeignKey fields into the JSON
         """
-        included_resources = ['woolly_user_type']
+        included_resources = ['usertype']
 
 
 class ItemSerializer(serializers.ModelSerializer):

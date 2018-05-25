@@ -1,25 +1,25 @@
 from django.conf.urls import url, include
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.urlpatterns import format_suffix_patterns
-from .views import WoollyUserViewSet, WoollyUserRelationshipView, WoollyUserTypeViewSet, AuthView, JWTView
+from .views import UserViewSet, UserRelationshipView, UserTypeViewSet, AuthView, JWTView
 import cas.views
 
 
-woollyuser_list = WoollyUserViewSet.as_view({
+user_list = UserViewSet.as_view({
 	'get': 'list',
 	'post': 'create'
 })
-woollyuser_detail = WoollyUserViewSet.as_view({
+user_detail = UserViewSet.as_view({
 	'get': 'retrieve',
 	'put': 'update',
 	'patch': 'partial_update',
 	'delete': 'destroy'
 })
-user_type_list = WoollyUserTypeViewSet.as_view({
+user_type_list = UserTypeViewSet.as_view({
 	'get': 'list',
 	'post': 'create'
 })
-user_type_detail = WoollyUserTypeViewSet.as_view({
+user_type_detail = UserTypeViewSet.as_view({
 	'get': 'retrieve',
 	'put': 'update',
 	'patch': 'partial_update',
@@ -37,7 +37,7 @@ urlpatterns = {
 
 	# Get login URL to log through Portail des Assos
 	url(r'^auth/login', AuthView.login, name = 'auth.login'),
-	# Log user in Woolly and get JWT
+	# Log user in  and get JWT
 	url(r'^auth/callback', AuthView.login_callback, name = 'auth.callback'),
 	# Get User information
 	url(r'^auth/me', AuthView.me, name = 'auth.me'),
@@ -69,33 +69,33 @@ urlpatterns = {
 	# 	Utilisateurs
 	# ============================================
 
-	# WoollyUsers
+	# Users
 	url(r'^users',
-		woollyuser_list,
+		user_list,
 		name = "user-list"),
 	url(r'^users/(?P<pk>[0-9]+)$',
-		woollyuser_detail,
+		user_detail,
 		name = 'user-detail'),
 
-	# WoollyUsersTypes
-	url(r'^users/(?P<user_pk>[0-9]+)/woollyusertypes$',
+	# UsersTypes
+	url(r'^users/(?P<user_pk>[0-9]+)/usertypes$',
 		user_type_list,
 		name = 'user-type-list'),
-	url(r'^users/(?P<user_pk>[0-9]+)/woollyusertypes/(?P<pk>[0-9]+)$',
+	url(r'^users/(?P<user_pk>[0-9]+)/usertypes/(?P<pk>[0-9]+)$',
 		user_type_detail,
 		name = 'user-type-detail'),
 	# OR ????
-	# WoollyUsersTypes
-	url(r'^woollyusertypes',
+	# UsersTypes
+	url(r'^usertypes',
 		user_type_list,
 		name = "user-type-list"),
-	url(r'^woollyusertypes/(?P<pk>[0-9]+)$',
+	url(r'^usertypes/(?P<pk>[0-9]+)$',
 		user_type_detail,
 		name = 'user-type-detail'),
 
 	url(
 		regex = r'^users/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
-		view = WoollyUserRelationshipView.as_view(),
+		view = UserRelationshipView.as_view(),
 		name = 'user-relationships'
 	),
 

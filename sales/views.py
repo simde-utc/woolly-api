@@ -35,7 +35,7 @@ class AssociationViewSet(viewsets.ModelViewSet):
 	permission_classes = (permissions.IsAuthenticated,)
 
 	def get_queryset(self):
-		queryset = self.queryset.filter(associationmembers__woollyUser=self.request.user_pk)
+		queryset = self.queryset.filter(associationmembers__user=self.request.user_pk)
 
 		# if 	
 
@@ -45,7 +45,7 @@ class AssociationViewSet(viewsets.ModelViewSet):
 
 		if 'user_pk' in self.kwargs:
 			user_pk = self.kwargs['user_pk']
-			queryset = Association.objects.all().filter(associationmembers__woollyUser=user_pk)
+			queryset = Association.objects.all().filter(associationmembers__user=user_pk)
 
 		return queryset
 
@@ -60,7 +60,7 @@ class AssociationMemberViewSet(viewsets.ModelViewSet):
 
 	def perform_create(self, serializer):
 		serializer.save(
-			woollyUser_id=self.request.user.id,
+			user_id=self.request.user.id,
 			association_id=self.kwargs['association_pk'],
 		)
 
@@ -69,7 +69,7 @@ class AssociationMemberViewSet(viewsets.ModelViewSet):
 
 		if 'user_pk' in self.kwargs:
 			user_pk = self.kwargs['user_pk']
-			queryset = queryset.filter(woollyUser__pk=user_pk)
+			queryset = queryset.filter(user__pk=user_pk)
 
 		if 'association_pk' in self.kwargs:
 			association_pk = self.kwargs['association_pk']
@@ -141,9 +141,9 @@ class OrderViewSet(viewsets.ModelViewSet):
 	def get_queryset(self):
 		queryset = self.queryset.filter(owner=self.request.user)
 
-		if 'woollyuser_pk' in self.kwargs:
-			woollyuser_pk = self.kwargs['woollyuser_pk']
-			queryset = queryset.filter(owner__pk=woollyuser_pk)
+		if 'user_pk' in self.kwargs:
+			user_pk = self.kwargs['user_pk']
+			queryset = queryset.filter(owner__pk=user_pk)
 
 		return queryset
 
@@ -196,7 +196,7 @@ class SaleViewSet(viewsets.ModelViewSet):
 
 	def get_queryset(self):
 		queryset = Sale.objects.all()
-					# .filter(items__itemspecifications__woolly_user_type__name=self.request.user.woollyusertype.name)
+					# .filter(items__itemspecifications__user_type__name=self.request.user.usertype.name)
 					# TODO filtrer par date ?
 
 		# if this viewset is accessed via the 'association-detail' route,
@@ -258,7 +258,7 @@ class ItemViewSet(viewsets.ModelViewSet):
 
 	def get_queryset(self):
 		queryset = self.queryset.filter(
-			itemspecifications__woolly_user_type__name=self.request.user.woollyusertype.name)
+			itemspecifications__user_type__name=self.request.user.usertype.name)
 
 		if 'sale_pk' in self.kwargs:
 			sale_pk = self.kwargs['sale_pk']
@@ -348,7 +348,7 @@ class PaymentMethodRelationshipView(RelationshipView):
 	"""
 	queryset = PaymentMethod.objects
 
-class WoollyUserViewSet(viewsets.ModelViewSet):
+class UserViewSet(viewsets.ModelViewSet):
 	"""
 		Defines the behavior of the association view
 	"""
@@ -357,7 +357,7 @@ class WoollyUserViewSet(viewsets.ModelViewSet):
 	permission_classes = (permissions.IsAuthenticated,)
 
 	def get_queryset(self):
-		queryset = self.queryset.filter(associationmembers__woollyUser=self.request.user)
+		queryset = self.queryset.filter(associationmembers__user=self.request.user)
 
 		if 'associationmember_pk' in self.kwargs:
 			associationmember_pk = self.kwargs['associationmember_pk']
@@ -365,6 +365,6 @@ class WoollyUserViewSet(viewsets.ModelViewSet):
 
 		if 'user_pk' in self.kwargs:
 			user_pk = self.kwargs['user_pk']
-			queryset = Association.objects.all().filter(associationmembers__woollyUser=user_pk)
+			queryset = Association.objects.all().filter(associationmembers__user=user_pk)
 
 		return queryset

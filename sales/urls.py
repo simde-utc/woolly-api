@@ -10,15 +10,15 @@ from .views import (
 	OrderLineItemViewSet, PaymentMethodViewSet, PaymentMethodRelationshipView,
 	AssociationMemberViewSet, AssociationMemberRelationshipView
 )
-from authentication.views import WoollyUserTypeViewSet
+from authentication.views import UserTypeViewSet
 
 # The following lines defines the behavior of each view
-# Here usertype_list will be the list and create behavior of the WoollyUserType view
-usertype_list = WoollyUserTypeViewSet.as_view({
+# Here usertype_list will be the list and create behavior of the UserType view
+usertype_list = UserTypeViewSet.as_view({
 	'get': 'list',
 	'post': 'create'
 })
-usertype_detail = WoollyUserTypeViewSet.as_view({
+usertype_detail = UserTypeViewSet.as_view({
 	'get': 'retrieve',
 	'put': 'update',
 	'patch': 'partial_update',
@@ -171,19 +171,19 @@ urlpatterns = [
 		name = 'itemSpecification-detail'),
 	url(r'^items/(?P<item_pk>[0-9]+)/itemspecifications$',
 		view = itemSpecifications_list, name = 'itemSpecification-list'),
-	url(r'^itemspecifications/(?P<itemspec_pk>[0-9]+)/woollyusertypes$',
+	url(r'^itemspecifications/(?P<itemspec_pk>[0-9]+)/usertypes$',
 		view = usertype_list, name = 'usertype-list'),
 
 	# User Type
-	url(r'^woollyusertypes$',
+	url(r'^usertypes$',
 		view = usertype_list, name = 'usertype-list'),
-	url(r'^woollyusertypes/(?P<pk>[0-9]+)$',
+	url(r'^usertypes/(?P<pk>[0-9]+)$',
 		view = usertype_detail, name = 'usertype-detail'),
 
 	# Orders
-	url(r'^users/(?P<woollyuser_pk>[0-9]+)/orders$',
+	url(r'^users/(?P<user_pk>[0-9]+)/orders$',
 		view = order_list, name = 'order-list'),
-	url(r'^users/(?P<woollyuser_pk>[0-9]+)/orders/(?P<pk>[0-9]+)$',
+	url(r'^users/(?P<user_pk>[0-9]+)/orders/(?P<pk>[0-9]+)$',
 		view = order_detail, name = 'order-detail'),
 	url(r'^orders$',
 		view = order_list, name = 'order-list'),

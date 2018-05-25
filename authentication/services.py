@@ -7,8 +7,8 @@ from authlib.client import OAuth2Session, OAuthException
 import time
 
 from woolly_api.settings import JWT_SECRET_KEY, JWT_TTL, OAUTH as OAuthConfig
-from .models import WoollyUser, WoollyUserType
-from .serializers import WoollyUserSerializer
+from .models import User, UserType
+from .serializers import UserSerializer
 
 from django.contrib.auth import login
 
@@ -20,11 +20,11 @@ def find_or_create_user(user_infos):
 	"""
 	try:
 		# Try to find user
-		user = WoollyUser.objects.get(email = user_infos['email'])		# TODO replace
-	except WoollyUser.DoesNotExist:
+		user = User.objects.get(email = user_infos['email'])		# TODO replace
+	except User.DoesNotExist:
 		# Create user
 		# TODO : birthdate, login
-		serializer = WoollyUserSerializer(data = {
+		serializer = UserSerializer(data = {
 			'email': user_infos['email'],
 			'first_name': user_infos['firstname'],
 			'last_name': user_infos['lastname'],
@@ -45,16 +45,16 @@ def find_or_create_user(user_infos):
 	# Process new informations
 	madeChanges = False
 
-	# Process WoollyUserType relation
-	userType = WoollyUserType.EXTERIEUR
+	# Process UserType relation
+	userType = UserType.EXTERIEUR
 	if user_infos['is_cas'] == True:
-		userType = WoollyUserType.NON_COTISANT			
+		userType = UserType.NON_COTISANT			
 	if user_infos['is_contributorBde'] == True:
-		userType = WoollyUserType.COTISANT			
+		userType = UserType.COTISANT			
 
 	# Mise à jour si besoin
-	if user.woollyusertype.name != userType:
-		user.woollyusertype = WoollyUserType.objects.get(name=userType)
+	if user.usertype.name != userType:
+		user.usertype = UserType.objects.get(name=userType)
 		madeChanges = True
 	if user.is_admin != user_infos['is_admin']:
 		user.is_admin = user_infos['is_admin']

@@ -5,36 +5,36 @@ from rest_framework_json_api.views import RelationshipView
 from authlib.specs.rfc7519 import JWTError
 
 from rest_framework.permissions import IsAuthenticated
-from .serializers import WoollyUserSerializer, WoollyUserTypeSerializer
-from .models import WoollyUserType, WoollyUser
+from .serializers import UserSerializer, UserTypeSerializer
+from .models import UserType, User
 
 from .services import OAuthAPI, JWTClient
 # from sales.models import AssociationMember
 
 
-class WoollyUserViewSet(viewsets.ModelViewSet):
+class UserViewSet(viewsets.ModelViewSet):
 	"""
 	API endpoint that allows Users to be viewed or edited.
-	support Post request to create a new WoollyUser
+	support Post request to create a new User
 	"""
-	queryset = WoollyUser.objects.all()
-	serializer_class = WoollyUserSerializer
+	queryset = User.objects.all()
+	serializer_class = UserSerializer
 	# permission_classes = (IsAuthenticated,)
 
 	# def perform_create(self, serializer):
-		# serializer.save(type_id = self.kwargs['woollyusertype_pk'])
+		# serializer.save(type_id = self.kwargs['usertype_pk'])
 		# serializer.save()
 
 		# def get_queryset(self):
 	# 	queryset = self.queryset.filter(login=self.request.user.login)
-	# 	if 'woollyuser_pk' in self.kwargs:
-	# 		association_pk = self.kwargs['woollyuser_pk']
+	# 	if 'user_pk' in self.kwargs:
+	# 		association_pk = self.kwargs['user_pk']
 	# 		queryset = queryset.filter(user__pk=association_pk)
 	# 	return queryset
 
-class WoollyUserTypeViewSet(viewsets.ModelViewSet):
-	queryset = WoollyUserType.objects.all()
-	serializer_class = WoollyUserTypeSerializer
+class UserTypeViewSet(viewsets.ModelViewSet):
+	queryset = UserType.objects.all()
+	serializer_class = UserTypeSerializer
 	permission_classes = (IsAuthenticated,)
 
 	# TODO : Normal que cela ne retourne que l'usertype loggué ?
@@ -43,17 +43,17 @@ class WoollyUserTypeViewSet(viewsets.ModelViewSet):
 
 	# 	if 'itemspec_pk' in self.kwargs:
 	# 		itemspec_pk = self.kwargs['itemspec_pk']
-	# 		queryset = WoollyUserType.objects.all().filter(itemspecifications__pk=itemspec_pk)
+	# 		queryset = UserType.objects.all().filter(itemspecifications__pk=itemspec_pk)
 
 	# 	if 'user_pk' in self.kwargs:
 	# 		user_pk = self.kwargs['user_pk']
-	# 		queryset = WoollyUserType.objects.all().filter(users__pk=user_pk)
+	# 		queryset = UserType.objects.all().filter(users__pk=user_pk)
 
 	# 	return queryset
 
 
-class WoollyUserRelationshipView(RelationshipView):
-	queryset = WoollyUser.objects
+class UserRelationshipView(RelationshipView):
+	queryset = User.objects
 
 
 # ========================================================
@@ -90,8 +90,10 @@ class AuthView:
 	@classmethod
 	def login_callback(cls, request):
 		"""
-		# Get user from API, find or create it in Woolly, store the OAuth token, create and return a user JWT or an error
-		Get user from API, find or create it in Woolly, store the OAuth token, create and redirect to the front with a code to get a JWT
+		# Get user from API, find or create it in Woolly, store the OAuth token, 
+		create and return a user JWT or an error
+		Get user from API, find or create it in Woolly, store the OAuth token, 
+		create and redirect to the front with a code to get a JWT
 		"""
 		resp = cls.oauth.callback_and_create_session(request);
 		print(resp)
@@ -105,7 +107,7 @@ class AuthView:
 		me = request.user
 		return JsonResponse({
 			'authenticated': me.is_authenticated,
-			'user': None if me.is_anonymous else WoollyUserSerializer(me).data
+			'user': None if me.is_anonymous else UserSerializer(me).data
 		})
 
 	@classmethod

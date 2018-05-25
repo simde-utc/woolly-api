@@ -25,7 +25,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = confidentials.SECRET_KEY
 JWT_SECRET_KEY = confidentials.JWT_SECRET_KEY
-JWT_TTL = 3600
+JWT_TTL = 3600 * 10
 
 # Payutc & Ginger config
 PAYUTC_KEY = confidentials.PAYUTC_KEY
@@ -164,7 +164,7 @@ AUTHENTICATION_BACKENDS = (
 	'authentication.backends.JWTBackend',
 )
 
-AUTH_USER_MODEL = 'authentication.WoollyUser'
+AUTH_USER_MODEL = 'authentication.User'
 
 # Password validation : https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
 AUTH_PASSWORD_VALIDATORS = [
