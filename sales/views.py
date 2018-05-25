@@ -15,11 +15,11 @@ from .permissions import IsOwner
 from rest_framework_json_api.views import RelationshipView
 
 from .models import (
-	Item, ItemGroup, Association, Sale, Order, OrderLine, PaymentMethod, AssociationMember, \
+	Item, ItemGroup, Association, Sale, Order, OrderLine, PaymentMethod, AssociationMember,
 	OrderLineField, ItemField, Field
 )
 from .serializers import (
-	ItemSerializer, ItemSpecificationsSerializer, AssociationSerializer,
+	ItemSerializer, AssociationSerializer,
 	OrderSerializer, OrderLineSerializer, SaleSerializer,
 	PaymentMethodSerializer, AssociationMemberSerializer
 )
@@ -103,6 +103,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 	serializer_class = OrderSerializer
 	permission_classes = (permissions.IsAuthenticated, IsOwner,)
 
+	"""
 	def perform_create(self, serializer):
 		# Get the customized Orderlines through JSON
 		# import pdb; pdb.set_trace()
@@ -136,6 +137,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 				q.quantity = line['quantity']
 
 				q.save()
+	"""
 
 
 	def get_queryset(self):
@@ -156,6 +158,7 @@ class OrderLineViewSet(viewsets.ModelViewSet):
 	serializer_class = OrderLineSerializer
 	permission_classes = (permissions.IsAuthenticated,)
 
+	"""
 	def perform_create(self, serializer):
 		serializer.save(order_id=self.kwargs['order_pk'])
 		queryset2 = OrderLine.objects.all().filter(order__pk=self.kwargs['order_pk'])
@@ -171,6 +174,7 @@ class OrderLineViewSet(viewsets.ModelViewSet):
 		return requests.get('http://localhost:8000/payutc/createTransaction?mail='+login+'&funId='+funId+"&orderlineId="+str(orderlineId),data=data)
 		# def perform_create(self, serializer):
 		# 	serializer.save()
+	"""
 
 	def get_queryset(self):
 		queryset = self.queryset.filter(order__owner=self.request.user)

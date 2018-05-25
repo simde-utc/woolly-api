@@ -2,28 +2,17 @@ from django.conf.urls import url, include
 from rest_framework.urlpatterns import format_suffix_patterns
 
 from .views import (
-	SaleViewSet, AssociationViewSet, ItemViewSet, ItemSpecificationsViewSet,
-	AssociationRelationshipView, SaleRelationshipView,
-	ItemSpecificationsRelationshipView, OrderRelationshipView,
-	AssociationRelationshipView, ItemRelationshipView,
-	OrderViewSet, OrderLineViewSet, OrderLineRelationshipView,
-	OrderLineItemViewSet, PaymentMethodViewSet, PaymentMethodRelationshipView,
-	AssociationMemberViewSet, AssociationMemberRelationshipView
+	AssociationViewSet, AssociationRelationshipView,
+	AssociationMemberViewSet, AssociationMemberRelationshipView,
+	SaleViewSet, SaleRelationshipView,
+	ItemViewSet, ItemRelationshipView,
+	OrderViewSet, OrderRelationshipView,
+	OrderLineViewSet, OrderLineRelationshipView,
+	OrderLineItemViewSet,
+	PaymentMethodViewSet, PaymentMethodRelationshipView,
 )
-from authentication.views import UserTypeViewSet
 
 # The following lines defines the behavior of each view
-# Here usertype_list will be the list and create behavior of the UserType view
-usertype_list = UserTypeViewSet.as_view({
-	'get': 'list',
-	'post': 'create'
-})
-usertype_detail = UserTypeViewSet.as_view({
-	'get': 'retrieve',
-	'put': 'update',
-	'patch': 'partial_update',
-	'delete': 'destroy'
-})
 
 sale_list = SaleViewSet.as_view({
 	'get': 'list',
@@ -152,12 +141,6 @@ urlpatterns = [
 		view = item_list, name = 'item-list'),
 	url(r'^associations/(?P<association_pk>[0-9]+)/sales/(?P<sale_pk>[0-9]+)/items/(?P<pk>[0-9]+)$',
 		view = item_detail, name = 'item-detail'),
-
-	# User Type
-	url(r'^usertypes$',
-		view = usertype_list, name = 'usertype-list'),
-	url(r'^usertypes/(?P<pk>[0-9]+)$',
-		view = usertype_detail, name = 'usertype-detail'),
 
 	# Orders
 	url(r'^users/(?P<user_pk>[0-9]+)/orders$',
