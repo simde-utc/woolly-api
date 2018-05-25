@@ -2,6 +2,7 @@ from django.http import JsonResponse
 from django.shortcuts import redirect
 from rest_framework import viewsets
 from rest_framework_json_api.views import RelationshipView
+from authlib.specs.rfc7519 import JWTError
 
 from rest_framework.permissions import IsAuthenticated
 from .serializers import WoollyUserSerializer, WoollyUserTypeSerializer
@@ -82,10 +83,8 @@ class AuthView:
 		"""
 		Redirect to OAuth api authorization url with an added front callback
 		"""
-		redirection = request.GET.get('redirect', '')
+		redirection = request.GET.get('redirect', None)
 		url = cls.oauth.get_auth_url(redirection)
-		# print(url)
-		# return JsonResponse({ 'url': url}) 			# DEBUG
 		return redirect(url)
 
 	@classmethod
@@ -94,10 +93,11 @@ class AuthView:
 		# Get user from API, find or create it in Woolly, store the OAuth token, create and return a user JWT or an error
 		Get user from API, find or create it in Woolly, store the OAuth token, create and redirect to the front with a code to get a JWT
 		"""
-		after = request.GET.get('after', '')
-		resp = cls.oauth.callback_and_create_session(request.GET.get('code', ''), request.GET.get('state', ''));
+		resp = cls.oauth.callback_and_create_session(request);
+		print(resp)
 		# !! Can return dict errors
-		# return JsonResponse({ 'redirect': resp })		# DEBUG
+		if 'error' in resp:
+			return JsonResponse(resp)
 		return redirect(resp)
 
 	@classmethod
