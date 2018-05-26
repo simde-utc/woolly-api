@@ -17,7 +17,6 @@ def api_root(request, format=None):
 		'associationmembers': 	reverse('associationmember-list', 	request=request, format=format),
 		'sales': 				reverse('sale-list', 				request=request, format=format),
 		'items': 				reverse('item-list', 				request=request, format=format),
-		'itemSpecifications': 	reverse('itemSpecification-list', 	request=request, format=format),
 		'orders': 				reverse('order-list', 				request=request, format=format),
 		'orderlines': 			reverse('orderline-list', 			request=request, format=format),
 		'paymentmethods': 		reverse('paymentmethod-list', 		request=request, format=format),

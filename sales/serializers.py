@@ -42,6 +42,7 @@ class ItemSerializer(serializers.ModelSerializer):
 	
 	class Meta:
 		model = Item
+		fields = '__all__'
 		# fields = ('id', 'name', 'description', 'remaining_quantity',
 				  # 'initial_quantity','sale_id', 'itemspecifications')
 
@@ -71,6 +72,7 @@ class SaleSerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = Sale
+		fields = '__all__'
 		# fields = ('id', 'name', 'description', 'creation_date', 'begin_date',
 				  # 'end_date', 'max_payment_date', 'max_item_quantity', 'association', 'items')
 
@@ -101,7 +103,8 @@ class AssociationSerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = Association
-		fields = ('id', 'name', 'bank_account', 'sales', 'foundation_id')
+		fields = '__all__'
+		# fields = ('id', 'name', 'bank_account', 'sales', 'foundation_id')
 
 	class JSONAPIMeta:
 		included_resources = ['sales']
@@ -130,6 +133,7 @@ class AssociationMemberSerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = AssociationMember
+		fields = '__all__'
 		# fields = ('id', 'association', 'role', 'rights')
 
 	class JSONAPIMeta:
@@ -159,7 +163,8 @@ class OrderLineSerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = OrderLine
-		fields = ('id', 'order', 'item', 'quantity')
+		fields = '__all__'
+		# fields = ('id', 'order', 'item', 'quantity')
 
 	class JSONAPIMeta:
 		included_resources = ['item']
@@ -183,7 +188,8 @@ class OrderSerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = Order
-		fields = ('id', 'date','price','hash_key', 'orderlines')
+		fields = '__all__'
+		# fields = ('id', 'date','price','hash_key', 'orderlines')
 
 	class JSONAPIMeta:
 		included_resources = ['orderlines']

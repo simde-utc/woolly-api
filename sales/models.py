@@ -25,13 +25,13 @@ class AssociationMember(models.Model):
 	"""
 	Defines the link between Association and User
 	"""
-	user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='association-members')
-	association = models.ForeignKey(Association, on_delete=models.CASCADE, related_name='association-members')
+	user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='associationmembers')
+	association = models.ForeignKey(Association, on_delete=models.CASCADE, related_name='associationmembers')
 	role = models.CharField(max_length=50)
 	rights = models.CharField(max_length=50)
 
 	class JSONAPIMeta:
-		resource_name = "association-members"
+		resource_name = "associationmembers"
 
 
 # ============================================
@@ -57,9 +57,9 @@ class Sale(models.Model):
 	begin_date = models.DateTimeField()
 	end_date = models.DateTimeField()
 	max_payment_date = models.DateTimeField()
-	payment_delay = models.DateTimeField()
+	# payment_delay = models.DateTimeField()
 	max_item_quantity = models.IntegerField()
-	is_active = models.BooleanField(default = True)
+	# is_active = models.BooleanField(default = True)
 
 	paymentmethods = models.ManyToManyField(PaymentMethod)
 
