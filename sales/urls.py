@@ -103,6 +103,7 @@ associationmember_detail = AssociationMemberViewSet.as_view({
 })
 
 # The urlpatterns defines the endpoints of the API
+# The urlpatterns defines the endpoints of the API
 urlpatterns = [
 	# Associations
 	url(r'^associations$', view = association_list, name = 'association-list'),

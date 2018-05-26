@@ -88,10 +88,10 @@ urlpatterns = {
 	# UsersTypes
 	url(r'^usertypes',
 		user_type_list,
-		name = "usertype-list"),
+		name = "user-type-list"),
 	url(r'^usertypes/(?P<pk>[0-9]+)$',
 		user_type_detail,
-		name = 'usertype-detail'),
+		name = 'user-type-detail'),
 
 	url(
 		regex = r'^users/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',

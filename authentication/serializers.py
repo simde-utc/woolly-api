@@ -40,7 +40,6 @@ class UserSerializer(serializers.ModelSerializer):
 		# 'associationmembers': AssociationMemberSerializer
 	}
 
-
 	class JSONAPIMeta:
 		# included_resources = ['usertype', 'associationmembers']
 		included_resources = ['usertype']
