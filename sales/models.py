@@ -50,8 +50,8 @@ class Sale(models.Model):
 	begin_at 	= models.DateTimeField()
 	end_at 		= models.DateTimeField()
 
-	max_payment_date = models.DateTimeField()
 	max_item_quantity = models.IntegerField()
+	max_payment_date = models.DateTimeField()
 
 	# TODO v2
 	# paymentmethods = models.ManyToManyField(PaymentMethod)
@@ -80,8 +80,8 @@ class Item(models.Model):
 	# Description
 	name 		= models.CharField(max_length = 200)
 	description = models.CharField(max_length = 1000)
-	sale 		= models.ForeignKey(Sale, related_name='items')
-	group 		= models.ForeignKey(ItemGroup, related_name='items')
+	sale 		= models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
+	group 		= models.ForeignKey(ItemGroup, on_delete=models.CASCADE, related_name='items')
 	
 	# Specification
 	quantity 	= models.IntegerField()
@@ -133,9 +133,8 @@ class Field(models.Model):
 	name 	= models.CharField(max_length = 200)
 	type 	= models.CharField(max_length = 1000)
 	default = models.CharField(max_length = 200)
+	items 	= models.ManyToManyField(Item, through='ItemField')
 
-	item 	= models.ManyToManyField(Item, through='ItemField')
-	orderline = models.ManyToManyField(OrderLine, through='OrderLineField')
 
 	class JSONAPIMeta:
 		resource_name = "fields"
@@ -145,14 +144,13 @@ class ItemField(models.Model):
 	"""
 	Defines the ItemField object
 	"""
-	editable = models.BooleanField(default = True)
+	editable 	= models.BooleanField(default = True)
+	item 		= models.ForeignKey(Item, on_delete=models.CASCADE, related_name='itemfields')
+	field 		= models.ForeignKey(Field, on_delete=models.CASCADE, related_name='itemfields')
 
-	sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
-	itemgroup = models.ForeignKey(ItemGroup, on_delete = None, related_name = 'itemgroups')
-	usertype = models.ManyToManyField('authentication.UserType')
-	item = models.ForeignKey(Item, on_delete=models.CASCADE)
-	# item = models.ManyToManyField(Item, through='ItemField')
-	field = models.ForeignKey(Field, on_delete=models.CASCADE)
+	# sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
+	# itemgroup = models.ForeignKey(ItemGroup, on_delete = None, related_name = 'itemgroups')
+	# usertype = models.ManyToManyField('authentication.UserType')
 
 	class JSONAPIMeta:
 		resource_name = "itemfields"
@@ -161,9 +159,9 @@ class OrderLineField(models.Model):
 	"""
 	Defines the OrderLineField object
 	"""
-	value = models.CharField(max_length=1000)
-	orderline = models.ForeignKey(OrderLine, on_delete=models.CASCADE)
-	field = models.ForeignKey(Field, on_delete=models.CASCADE)
+	value 		= models.CharField(max_length=1000)
+	field 		= models.ForeignKey(Field, on_delete=models.CASCADE, related_name="orderlines")
+	orderline 	= models.ForeignKey(OrderLine, on_delete=models.CASCADE, related_name="orderlines")
 
 	class JSONAPIMeta:
 		resource_name = "orderlinefields"
