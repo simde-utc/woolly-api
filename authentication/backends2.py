@@ -1,17 +1,16 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 
+from rest_framework import authentication
+from rest_framework import exceptions
+
 from .services import JWTClient
 from .views import get_jwt_from_request
 
-class JWTBackend:
+class JWTAuthentification(authentication.BaseAuthentification):
 	"""
-	Backend to log user frow JWT
+	Authenticate User frow JWT
 	"""
-	def __init__(self):
-		self.jwtClient = JWTClient()
-		# One-time configuration and initialization.
-
 	def authenticate(self, request):
 		"""
 		Return the user from the JWT sent in the request
@@ -19,23 +18,29 @@ class JWTBackend:
 		# Get JWT from request header
 		jwt = get_jwt_from_request(request)
 		if jwt == None:
-			return AnonymousUser
+			return None
 
 		# Get user id
-		claims = self.jwtClient.get_claims(jwt)
+		jwtClient = JWTClient()
+		claims = jwtClient.get_claims(jwt)
 		try:
 			user_id = claims['data']['user_id']
 		except KeyError:
-			return AnonymousUser
+			return None
 		if user_id == None:
-			return AnonymousUser
+			return None
 
 		# Try logging user
 		UserModel = get_user_model()
 		try:
-			return UserModel.objects.get(id=user_id)
+			user = UserModel.objects.get(id=user_id)
 		except UserModel.DoesNotExist:
-			return AnonymousUser
+			raise exceptions.AuthenticationFailed("User does not exist.")
+		return (user, None)
+
+
+
+
 
 
 # """
@@ -50,22 +55,21 @@ import json
 import datetime
 from django.contrib.sessions.backends.db import SessionStore
 from importlib import import_module
-from authentication.models import UserType
+from authentication.models import WoollyUserType
 
-"""
 def loggedCas(tree):
 	print("[CAS LOGIN CALLBACK]")
 class UpdatedCASBackend(CASBackend):
-	""."
+	"""
 	An extension of the CASBackend to make it functionnable 
 	with custom user models on user creation and selection
-	""."
+	"""
 
 	def authenticate(self, ticket, service):
-		""."
+		"""
 		Verifies CAS ticket and gets or creates User object
 		NB: Use of PT to identify proxy
-		""."
+		"""
 		print("_______________________ CAS Backend ________________")
 		# SessionStore = import_module(settings.SESSION_ENGINE).SessionStore		# Use ?
 		UserModel = get_user_model()
@@ -87,9 +91,9 @@ class UpdatedCASBackend(CASBackend):
 		return user
 
 	def configure_user(self, user):
-		""."
+		"""
 		Ginger overload
-		""."
+		"""
 		print("gggggggggggggggggggiiiiiiiiiiiiiiiiinnnnger")
 		params = {'key': settings.GINGER_KEY, }
 		url = urljoin(settings.GINGER_SERVER_URL, user.login) + \
@@ -106,10 +110,10 @@ class UpdatedCASBackend(CASBackend):
 		else:
 			user.birthdate = datetime.date.today
 		if json_data.get('is_cotisant'):
-			user.usertype = UserType.objects.get(
-				name=UserType.COTISANT)
+			user.woollyusertype = WoollyUserType.objects.get(
+				name=WoollyUserType.COTISANT)
 		else:
-			user.usertype = UserType.objects.get(
-				name=UserType.NON_COTISANT)
+			user.woollyusertype = WoollyUserType.objects.get(
+				name=WoollyUserType.NON_COTISANT)
 		return user
-"""
+# """

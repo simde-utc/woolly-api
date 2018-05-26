@@ -2,28 +2,17 @@ from django.conf.urls import url, include
 from rest_framework.urlpatterns import format_suffix_patterns
 
 from .views import (
-	SaleViewSet, AssociationViewSet, ItemViewSet, ItemSpecificationsViewSet,
-	AssociationRelationshipView, SaleRelationshipView,
-	ItemSpecificationsRelationshipView, OrderRelationshipView,
-	AssociationRelationshipView, ItemRelationshipView,
-	OrderViewSet, OrderLineViewSet, OrderLineRelationshipView,
-	OrderLineItemViewSet, PaymentMethodViewSet, PaymentMethodRelationshipView,
-	AssociationMemberViewSet, AssociationMemberRelationshipView
+	AssociationViewSet, AssociationRelationshipView,
+	AssociationMemberViewSet, AssociationMemberRelationshipView,
+	SaleViewSet, SaleRelationshipView,
+	ItemViewSet, ItemRelationshipView,
+	OrderViewSet, OrderRelationshipView,
+	OrderLineViewSet, OrderLineRelationshipView,
+	OrderLineItemViewSet,
+	PaymentMethodViewSet, PaymentMethodRelationshipView,
 )
-from authentication.views import WoollyUserTypeViewSet
 
 # The following lines defines the behavior of each view
-# Here usertype_list will be the list and create behavior of the WoollyUserType view
-usertype_list = WoollyUserTypeViewSet.as_view({
-	'get': 'list',
-	'post': 'create'
-})
-usertype_detail = WoollyUserTypeViewSet.as_view({
-	'get': 'retrieve',
-	'put': 'update',
-	'patch': 'partial_update',
-	'delete': 'destroy'
-})
 
 sale_list = SaleViewSet.as_view({
 	'get': 'list',
@@ -153,16 +142,10 @@ urlpatterns = [
 	url(r'^associations/(?P<association_pk>[0-9]+)/sales/(?P<sale_pk>[0-9]+)/items/(?P<pk>[0-9]+)$',
 		view = item_detail, name = 'item-detail'),
 
-	# User Type
-	url(r'^woollyusertypes$',
-		view = usertype_list, name = 'usertype-list'),
-	url(r'^woollyusertypes/(?P<pk>[0-9]+)$',
-		view = usertype_detail, name = 'usertype-detail'),
-
 	# Orders
-	url(r'^users/(?P<woollyuser_pk>[0-9]+)/orders$',
+	url(r'^users/(?P<user_pk>[0-9]+)/orders$',
 		view = order_list, name = 'order-list'),
-	url(r'^users/(?P<woollyuser_pk>[0-9]+)/orders/(?P<pk>[0-9]+)$',
+	url(r'^users/(?P<user_pk>[0-9]+)/orders/(?P<pk>[0-9]+)$',
 		view = order_detail, name = 'order-detail'),
 	url(r'^orders$',
 		view = order_list, name = 'order-list'),

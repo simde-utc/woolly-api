@@ -1,39 +1,40 @@
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import redirect
-from django.views import View
-from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets
 from rest_framework_json_api.views import RelationshipView
-from .serializers import WoollyUserSerializer, WoollyUserTypeSerializer
-from .models import WoollyUserType, WoollyUser
-from .oauth import OAuthAPI, JWTClient
+from authlib.specs.rfc7519 import JWTError
+
+from rest_framework.permissions import IsAuthenticated
+from .serializers import UserSerializer, UserTypeSerializer
+from .models import UserType, User
+
+from .services import OAuthAPI, JWTClient
 # from sales.models import AssociationMember
 
 
-class WoollyUserViewSet(viewsets.ModelViewSet):
+class UserViewSet(viewsets.ModelViewSet):
 	"""
 	API endpoint that allows Users to be viewed or edited.
-	support Post request to create a new WoollyUser
+	support Post request to create a new User
 	"""
-	queryset = WoollyUser.objects.all()
-	serializer_class = WoollyUserSerializer
-	permission_classes = (IsAuthenticated,)
+	queryset = User.objects.all()
+	serializer_class = UserSerializer
+	# permission_classes = (IsAuthenticated,)
 
 	# def perform_create(self, serializer):
-		# serializer.save(type_id = self.kwargs['woollyusertype_pk'])
+		# serializer.save(type_id = self.kwargs['usertype_pk'])
 		# serializer.save()
 
-	# TODO : Normal que cela ne retourne que l'user loggué ?
-	# def get_queryset(self):
+		# def get_queryset(self):
 	# 	queryset = self.queryset.filter(login=self.request.user.login)
-	# 	if 'woollyuser_pk' in self.kwargs:
-	# 		association_pk = self.kwargs['woollyuser_pk']
+	# 	if 'user_pk' in self.kwargs:
+	# 		association_pk = self.kwargs['user_pk']
 	# 		queryset = queryset.filter(user__pk=association_pk)
 	# 	return queryset
 
-class WoollyUserTypeViewSet(viewsets.ModelViewSet):
-	queryset = WoollyUserType.objects.all()
-	serializer_class = WoollyUserTypeSerializer
+class UserTypeViewSet(viewsets.ModelViewSet):
+	queryset = UserType.objects.all()
+	serializer_class = UserTypeSerializer
 	permission_classes = (IsAuthenticated,)
 
 	# TODO : Normal que cela ne retourne que l'usertype loggué ?
@@ -42,109 +43,106 @@ class WoollyUserTypeViewSet(viewsets.ModelViewSet):
 
 	# 	if 'itemspec_pk' in self.kwargs:
 	# 		itemspec_pk = self.kwargs['itemspec_pk']
-	# 		queryset = WoollyUserType.objects.all().filter(itemspecifications__pk=itemspec_pk)
+	# 		queryset = UserType.objects.all().filter(itemspecifications__pk=itemspec_pk)
 
 	# 	if 'user_pk' in self.kwargs:
 	# 		user_pk = self.kwargs['user_pk']
-	# 		queryset = WoollyUserType.objects.all().filter(users__pk=user_pk)
+	# 		queryset = UserType.objects.all().filter(users__pk=user_pk)
 
 	# 	return queryset
 
 
-class WoollyUserRelationshipView(RelationshipView):
-	queryset = WoollyUser.objects
+class UserRelationshipView(RelationshipView):
+	queryset = User.objects
 
 
-# ====================================================
-# 		Custom endpoints
-# ====================================================
+# ========================================================
+# 		Auth & JWT Management
+# ========================================================
+
+def get_jwt_from_request(request):
+	"""
+	Helper to get JWT from request
+	Return None if no JWT
+	"""
+	try:
+		jwt = request.META['HTTP_AUTHORIZATION']	# Traité automatiquement par Django
+	except KeyError:
+		return None
+	if not jwt or jwt == '':
+		return None
+	return jwt[7:]		# substring : Bearer ...
+
 
 class AuthView:
+	oauth = OAuthAPI()
+	jwtClient = JWTClient()
 
-	def __init__(self):
-		self.oauth = OAuthAPI()
-		self.jwtClient = JWTClient()
-
-	# ========================================================
-	# 		Login - Callback - Logout
-	# ========================================================
-
-	def login(self, request):
+	@classmethod
+	def login(cls, request):
 		"""
 		Redirect to OAuth api authorization url with an added front callback
 		"""
-		redirection = request.GET.get('redirect', '')
-		url = self.oauth.get_auth_url(redirection)
-		# print(url)
-		# return JsonResponse({ 'url': url}) 			# DEBUG
+		redirection = request.GET.get('redirect', None)
+		url = cls.oauth.get_auth_url(redirection)
 		return redirect(url)
 
-	def login_callback(self, request):
+	@classmethod
+	def login_callback(cls, request):
 		"""
-		# Get user from API, find or create it in Woolly, store the OAuth token, create and return a user JWT or an error
-		Get user from API, find or create it in Woolly, store the OAuth token, create and redirect to the front with a code to get a JWT
+		# Get user from API, find or create it in Woolly, store the OAuth token, 
+		create and return a user JWT or an error
+		Get user from API, find or create it in Woolly, store the OAuth token, 
+		create and redirect to the front with a code to get a JWT
 		"""
-		after = request.GET.get('after', '')
-		resp = self.oauth.callback_and_create_session(request.GET.get('code', ''), request.GET.get('state', ''));
+		resp = cls.oauth.callback_and_create_session(request);
+		print(resp)
 		# !! Can return dict errors
-		# return JsonResponse({ 'redirect': resp })		# DEBUG
+		if 'error' in resp:
+			return JsonResponse(resp)
 		return redirect(resp)
 
-	def userInfos(self, request):
-		# TODO
-		userId = request.session['_auth_user_id']
-		try:
-			queryset = WoollyUser.objects.get(id=userId)
-			login = queryset.login
-			lastName = queryset.last_name
-			firstName = queryset.first_name
-			# TODO serializer... + permissions
-			response = {"userId": userId, "login": login, "lastName": lastName, "firstName": firstName}
-		except WoollyUser.DoesNotExist:
-			response =  {"userId": None, "login": None, "lastName": None, "firstName": None}
-		return JsonResponse(response)
-
-	def me(self, request):
+	@classmethod
+	def me(cls, request):
 		me = request.user
-		print('a' if me.is_anonymous else 'b')
 		return JsonResponse({
 			'authenticated': me.is_authenticated,
-			'user': None if me.is_anonymous else WoollyUserSerializer(me).data
+			'user': None if me.is_anonymous else UserSerializer(me).data
 		})
 
-	def logout(self, request):
-		# TODO NOT FINISHED : revoke
-		return redirect(self.oauth.logout(get_jwt_from_request(request)))
+	@classmethod
+	def logout(cls, request):
+		jwt = get_jwt_from_request(request)
+		logout_url = cls.oauth.logout(jwt)
+		return JsonResponse({
+			'logout': True,
+			'logout_url': logout_url
+		})
 
 
+class JWTView:
+	jwtClient = JWTClient()
 
-	# ========================================================
-	# 		JWT Management
-	# ========================================================
-
-	# Static ?
-	def get_jwt_from_request(self, request):
-		return request.GET.get('jwt', '')
-
-		# TODO OOOOOOOOOOO
-	def get_jwt(self, request):
+	@classmethod
+	def get_jwt(cls, request):
 		"""
-		Get first JWT after login and got a random code
+		Get first JWT after login from random session code
 		"""
-		code = get_jwt_from_request(request)
-		return JsonResponse(self.oauth.get_jwt_after_login(code))
+		code = request.GET.get('code', '')
+		return JsonResponse(cls.jwtClient.get_jwt_after_login(code))
 
 	# TODO NOT FINISHED : revoke
-	def refresh_jwt(self, request):
+	@classmethod
+	def refresh_jwt(cls, request):
 		jwt = get_jwt_from_request(request)
-		return JsonResponse(self.jwtClient.refresh_jwt(jwt))
+		return JsonResponse(cls.jwtClient.refresh_jwt(jwt))
 
-
-	# TODO a virer
-	def validate_jwt(self, request):
+	@classmethod
+	def validate_jwt(cls, request):
 		jwt = get_jwt_from_request(request)
-		return JsonResponse(self.jwtClient.validate(jwt))
-	# TODO virer
-	def test_jwt(self, request):
-		jwt = get_jwt_from_request(request)
-		return JsonResponse(self.oauth.retrieve_token_from_jwt(jwt))
+		try:
+			cls.jwtClient.validate(jwt)
+			valid = True
+		except JWTError as error:
+			valid = False
+		return JsonResponse({ 'valid': valid })

@@ -1,29 +1,31 @@
 from django.conf.urls import url, include
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.urlpatterns import format_suffix_patterns
-from .views import WoollyUserViewSet, WoollyUserRelationshipView, WoollyUserTypeViewSet, AuthView
+from .views import UserViewSet, UserRelationshipView, UserTypeViewSet, AuthView, JWTView
 import cas.views
 
 
-woollyuser_list = WoollyUserViewSet.as_view({
+user_list = UserViewSet.as_view({
 	'get': 'list',
 	'post': 'create'
 })
-woollyuser_detail = WoollyUserViewSet.as_view({
+user_detail = UserViewSet.as_view({
 	'get': 'retrieve',
 	'put': 'update',
 	'patch': 'partial_update',
 	'delete': 'destroy'
 })
-user_type_list = WoollyUserTypeViewSet.as_view({
+user_type_list = UserTypeViewSet.as_view({
 	'get': 'list',
 	'post': 'create'
 })
-user_type_detail = WoollyUserTypeViewSet.as_view({
+user_type_detail = UserTypeViewSet.as_view({
 	'get': 'retrieve',
 	'put': 'update',
 	'patch': 'partial_update',
 	'delete': 'destroy'
 })
+
 
 
 # API endpoints
@@ -35,25 +37,25 @@ urlpatterns = {
 
 	# Get login URL to log through Portail des Assos
 	url(r'^auth/login', AuthView.login, name = 'auth.login'),
-	# Log user in Woolly and get JWT
+	# Log user in  and get JWT
 	url(r'^auth/callback', AuthView.login_callback, name = 'auth.callback'),
-	# Get the JWT after login
-	url(r'^auth/jwt$', AuthView.get_jwt, name = 'auth.jwt'),
-	
-	# Refresh JWT : TODO
-	url(r'^auth/refresh', AuthView.refresh_jwt, name = 'auth.refresh'),
-	# Revoke session, JWT and redirect to Portal's logout
-	url(r'^auth/logout', AuthView.logout, name = 'auth.logout'),
-
-	url(r'^auth/test', AuthView.test_jwt, name = 'jwt.validate'),
+	# Get User information
 	url(r'^auth/me', AuthView.me, name = 'auth.me'),
+	# Revoke session, JWT and redirect to Portal's logout
+	url(r'^auth/logout', csrf_exempt(AuthView.logout), name = 'auth.logout'),
+	
+	# Get the JWT after login
+	url(r'^auth/jwt$', JWTView.get_jwt, name = 'auth.jwt'),
+	# Refresh JWT : TODO
+	url(r'^auth/refresh', JWTView.refresh_jwt, name = 'auth.refresh'),
+	# Validate JWT : TODO
+	url(r'^auth/validate', JWTView.validate_jwt, name = 'auth.validate'),
 
 
 
 
 
-
-	# ==== A virer...
+	# ==== TODO A virer...
 	# CAS login/logout
 	url(r'^auth/cas/login$', cas.views.login, name = 'cas.login'),
 	url(r'^auth/cas/logout$', cas.views.logout, name = 'cas.logout'),
@@ -67,34 +69,33 @@ urlpatterns = {
 	# 	Utilisateurs
 	# ============================================
 
-	# WoollyUsers
+	# Users
 	url(r'^users',
-		woollyuser_list,
+		user_list,
 		name = "user-list"),
 	url(r'^users/(?P<pk>[0-9]+)$',
-		woollyuser_detail,
+		user_detail,
 		name = 'user-detail'),
-	# url(r'^users/me', userInfos), # "/store" will call the method "index" in "views.py"
 
-	# WoollyUsersTypes
-	url(r'^users/(?P<user_pk>[0-9]+)/woollyusertypes$',
+	# UsersTypes
+	url(r'^users/(?P<user_pk>[0-9]+)/usertypes$',
 		user_type_list,
 		name = 'user-type-list'),
-	url(r'^users/(?P<user_pk>[0-9]+)/woollyusertypes/(?P<pk>[0-9]+)$',
+	url(r'^users/(?P<user_pk>[0-9]+)/usertypes/(?P<pk>[0-9]+)$',
 		user_type_detail,
 		name = 'user-type-detail'),
 	# OR ????
-	# WoollyUsersTypes
-	url(r'^woollyusertypes',
+	# UsersTypes
+	url(r'^usertypes',
 		user_type_list,
-		name = "user-type-list"),
-	url(r'^woollyusertypes/(?P<pk>[0-9]+)$',
+		name = "usertype-list"),
+	url(r'^usertypes/(?P<pk>[0-9]+)$',
 		user_type_detail,
-		name = 'user-type-detail'),
+		name = 'usertype-detail'),
 
 	url(
 		regex = r'^users/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
-		view = WoollyUserRelationshipView.as_view(),
+		view = UserRelationshipView.as_view(),
 		name = 'user-relationships'
 	),
 

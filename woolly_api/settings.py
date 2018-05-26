@@ -25,7 +25,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = confidentials.SECRET_KEY
 JWT_SECRET_KEY = confidentials.JWT_SECRET_KEY
-JWT_TTL = 3600
+JWT_TTL = 3600 * 10
 
 # Payutc & Ginger config
 PAYUTC_KEY = confidentials.PAYUTC_KEY
@@ -44,7 +44,7 @@ OAUTH = {
 		'login_url': 		'https://portail-assos.alwaysdata.net/login',
 		'logout_url': 		'https://portail-assos.alwaysdata.net/logout',
 		'redirect_uri': 	'http://localhost:8000/auth/callback',
-		'scope': 			'user-get-assos-joined-now user-get-info'
+		'scope': 			'user-get-info user-get-roles user-get-assos-joined-now'
 	}
 }
 
@@ -71,6 +71,8 @@ CORS_ALLOW_METHODS = (
 
 # necessary in addition to the whitelist for protected requests
 CORS_ALLOW_CREDENTIALS = True
+CSRF_COOKIE_HTTPONLY = True # Useful ??
+CSRF_USE_SESSIONS = False	# Useful ??
 CSRF_TRUSTED_ORIGINS = (
 	"localhost"
 )
@@ -152,14 +154,17 @@ MIDDLEWARE = [
 	'django.middleware.clickjacking.XFrameOptionsMiddleware',
 	'cas.middleware.CASMiddleware',
 	'django.middleware.csrf.CsrfViewMiddleware',
+	'authentication.middlewares.JWTMiddleware',
 ]
 
+# Useful ?
 AUTHENTICATION_BACKENDS = (
-	'django.contrib.auth.backends.ModelBackend',
+	# 'django.contrib.auth.backends.ModelBackend',
 	# 'authentication.backends.UpdatedCASBackend',
+	'authentication.backends.JWTBackend',
 )
 
-AUTH_USER_MODEL = 'authentication.WoollyUser'
+AUTH_USER_MODEL = 'authentication.User'
 
 # Password validation : https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
 AUTH_PASSWORD_VALIDATORS = [

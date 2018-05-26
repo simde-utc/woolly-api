@@ -3,31 +3,11 @@ from django.contrib.auth.models import BaseUserManager
 from django.db import models
 import datetime
 
-"""
-class OAuth2Token(models.Model):
-	name = models.CharField(max_length=40)
-	token_type = models.CharField(max_length=20)
-	access_token = models.CharField(max_length=200)
-	refresh_token = models.CharField(max_length=200)
-	# oauth 2 expires time
-	expires_at = models.DateTimeField()
-	# ...
 
-	def to_token(self):
-		return dict(
-			access_token=self.access_token,
-			token_type=self.token_type,
-			refresh_token=self.refresh_token,
-			expires_at=self.expires_at,
-		)
-"""
-
-
-class WoollyUserType(models.Model):
+class UserType(models.Model):
 	name = models.CharField(max_length=50, unique=True)
 	# description = models.CharField(max_length=180, unique=True)
-	item = models.ManyToManyField(
-		'sales.Item')
+	# item = models.ManyToManyField('sales.Item')
 
 	# TODO : revoir ça ?
 	COTISANT = 'cotisant'
@@ -38,18 +18,19 @@ class WoollyUserType(models.Model):
 	@staticmethod
 	def init_values():
 		"""
-		initialize the different default WoollyUserTypes in DB
+		initialize the different default UserTypes in DB
 		"""
-		types = [WoollyUserType.COTISANT, WoollyUserType.NON_COTISANT, WoollyUserType.TREMPLIN, WoollyUserType.EXTERIEUR]
+		types = (UserType.COTISANT, UserType.NON_COTISANT, UserType.TREMPLIN, UserType.EXTERIEUR)
 		for value in types:
-			WoollyUserType(name=value).save()
+			UserType(name=value).save()
 
 	class JSONAPIMeta:
-		resource_name = "woollyusertypes"
+		resource_name = "usertypes"
 
 
 """
-class WoollyUserManager(BaseUserManager):
+TODO virer
+class UserManager(BaseUserManager):
 	# required by Django
 	def create_user(self, login='', password=None, **other_fields):
 		if not login:
@@ -68,28 +49,31 @@ class WoollyUserManager(BaseUserManager):
 """
 
 
-class WoollyUser(AbstractBaseUser):
+class User(AbstractBaseUser):
 	# Properties
 	email = models.EmailField(unique=True)
-	login = models.CharField(max_length=253, unique=True, blank=True, null=True) 
+	login = models.CharField(max_length=253, unique=True, blank=True, null=True)  # TODO : virer	
 	first_name = models.CharField(max_length=100)
 	last_name = models.CharField(max_length=100)
 	birthdate = models.DateField(default=datetime.date.today)
 
-	# Associations
-	woollyusertype = models.ForeignKey(WoollyUserType, on_delete=None, null=False, default=4, related_name='users')
-	associations = models.ManyToManyField('sales.Association', through='sales.AssociationMember')
+	# Relations
+	usertype = models.ForeignKey(UserType, on_delete=None, null=False, default=4, related_name='users')
+	# associations = models.ManyToManyField('sales.Association', through='sales.AssociationMember')
 
 	# required by Django.is_admin => A virer pour remplacer par les droits
 	is_active = models.BooleanField(default=True)
 	is_admin = models.BooleanField(default=False)
 
-	# objects = WoollyUserManager()
+	# objects = UserManager()
 
 	# Cas
 	USERNAME_FIELD = 'id'
 	EMAIL_FIELD = 'email'
 	REQUIRED_FIELDS = []
+
+	def __str__(self):
+		return '%s %s' % (self.email, self.usertype.name)
 
 	"""
 	# required by Django 1.11 for the User class
@@ -117,14 +101,14 @@ class WoollyUser(AbstractBaseUser):
 			self.login = None
 		# if not self.pk and self.has_usable_password() is False:
 			# self.set_password(self.password)
-		super(WoollyUser, self).save(*args, **kwargs)
+		super(User, self).save(*args, **kwargs)
 	"""
 
 	class Meta:
-		# default_manager_name = WoollyUserManager
+		# default_manager_name = UserManager
 		pass
 
 	class JSONAPIMeta:
-		resource_name = "woollyusers"
+		resource_name = "users"
 
 	# check set_unusable_password() for authentication against external source
