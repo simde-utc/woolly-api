@@ -35,6 +35,14 @@ class AssociationMember(models.Model):
 # 	Ventes
 # ============================================
 
+class PaymentMethod(models.Model):
+	# TODO à mettre à part, inutile pour la beta
+	name = models.CharField(max_length = 50)
+	api_url = models.CharField(max_length = 500)
+	class JSONAPIMeta:
+		resource_name = "paymentmethods"
+		
+
 class Sale(models.Model):
 	"""
 	Defines the Sale object
@@ -85,7 +93,7 @@ class Item(models.Model):
 	
 	# Specification
 	quantity 	= models.IntegerField()
-	usertype 	= models.ForeignKey(UserType)			# UserType ?
+	usertype 	= models.ForeignKey(UserType, on_delete=models.CASCADE)			# UserType ?
 	price 		= models.FloatField()
 	nemopay_id  = models.CharField(max_length = 30)		# TODO V2 : abstraire payment
 
