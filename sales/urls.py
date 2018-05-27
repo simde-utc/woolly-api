@@ -1,112 +1,40 @@
 from django.conf.urls import url, include
 from rest_framework.urlpatterns import format_suffix_patterns
 
-from .views import (
-	AssociationViewSet, AssociationRelationshipView,
-	AssociationMemberViewSet, AssociationMemberRelationshipView,
-	SaleViewSet, SaleRelationshipView,
-	ItemViewSet, ItemRelationshipView,
-	OrderViewSet, OrderRelationshipView,
-	OrderLineViewSet, OrderLineRelationshipView,
-	OrderLineItemViewSet,
-	PaymentMethodViewSet, PaymentMethodRelationshipView,
-)
+from woolly_api.settings import VIEWSET
+from .views import *
 
-# The following lines defines the behavior of each view
+# Configure Viewsets
+sale_list = SaleViewSet.as_view(VIEWSET['list'])
+sale_detail = SaleViewSet.as_view(VIEWSET['detail'])
 
-sale_list = SaleViewSet.as_view({
-	'get': 'list',
-	'post': 'create'
-})
-sale_detail = SaleViewSet.as_view({
-	'get': 'retrieve',
-	'put': 'update',
-	'patch': 'partial_update',
-	'delete': 'destroy'
-})
+association_list = AssociationViewSet.as_view(VIEWSET['list'])
+association_detail = AssociationViewSet.as_view(VIEWSET['detail'])
 
-association_list = AssociationViewSet.as_view({
-	'get': 'list',
-	'post': 'create'
-})
-association_detail = AssociationViewSet.as_view({
-	'get': 'retrieve',
-	'put': 'update',
-	'patch': 'partial_update',
-	'delete': 'destroy'
-})
+item_list = ItemViewSet.as_view(VIEWSET['list'])
+item_detail = ItemViewSet.as_view(VIEWSET['detail'])
 
-item_list = ItemViewSet.as_view({
-	'get': 'list',
-	'post': 'create'
-})
-item_detail = ItemViewSet.as_view({
-	'get': 'retrieve',
-	'put': 'update',
-	'patch': 'partial_update',
-	'delete': 'destroy'
-})
+order_list = OrderViewSet.as_view(VIEWSET['list'])
+order_detail = OrderViewSet.as_view(VIEWSET['detail'])
 
-order_list = OrderViewSet.as_view({
-	'get': 'list',
-	'post': 'create'
-})
-order_detail = OrderViewSet.as_view({
-	'get': 'retrieve',
-	'put': 'update',
-	'patch': 'partial_update',
-	'delete': 'destroy'
-})
+orderline_list = OrderLineViewSet.as_view(VIEWSET['list'])
+orderline_detail = OrderLineViewSet.as_view(VIEWSET['detail'])
 
-orderline_list = OrderLineViewSet.as_view({
-	'get': 'list',
-	'post': 'create'
-})
-orderline_detail = OrderLineViewSet.as_view({
-	'get': 'retrieve',
-	'put': 'update',
-	'patch': 'partial_update',
-	'delete': 'destroy'
-})
+orderlineitem_list = OrderLineItemViewSet.as_view(VIEWSET['list'])
+orderlineitem_detail = OrderLineItemViewSet.as_view(VIEWSET['detail'])
 
-orderlineitem_list = OrderLineItemViewSet.as_view({
-	'get': 'list',
-	'post': 'create'
-})
-orderlineitem_detail = OrderLineItemViewSet.as_view({
-	'get': 'retrieve',
-	'put': 'update',
-	'patch': 'partial_update',
-	'delete': 'destroy'
-})
+paymentmethod_list = PaymentMethodViewSet.as_view(VIEWSET['list'])
+paymentmethod_detail = PaymentMethodViewSet.as_view(VIEWSET['detail'])
 
-paymentmethod_list = PaymentMethodViewSet.as_view({
-	'get': 'list',
-	'post': 'create'
-})
-paymentmethod_detail = PaymentMethodViewSet.as_view({
-	'get': 'retrieve',
-	'put': 'update',
-	'patch': 'partial_update',
-	'delete': 'destroy'
-})
+associationmember_list = AssociationMemberViewSet.as_view(VIEWSET['list'])
+associationmember_detail = AssociationMemberViewSet.as_view(VIEWSET['detail'])
 
-associationmember_list = AssociationMemberViewSet.as_view({
-	'get': 'list',
-	'post': 'create'
-})
-associationmember_detail = AssociationMemberViewSet.as_view({
-	'get': 'retrieve',
-	'put': 'update',
-	'patch': 'partial_update',
-	'delete': 'destroy'
-})
 
-# The urlpatterns defines the endpoints of the API
 # The urlpatterns defines the endpoints of the API
 urlpatterns = [
 	# Associations
-	url(r'^associations$', view = association_list, name = 'association-list'),
+	url(r'^associations$',
+		view = association_list, name = 'association-list'),
 	url(r'^associations/(?P<pk>[0-9]+)$',
 		view = association_detail, name = 'association-detail'),
 	url(r'^associationmembers/(?P<associationmember_pk>[0-9]+)/associations$',
@@ -114,7 +42,8 @@ urlpatterns = [
 	url(r'^associationmembers/(?P<associationmember_pk>[0-9]+)/associations/(?P<pk>[0-9]+)$',
 		view = association_detail, name = 'association-detail'),
 
-	url(r'^associationmembers$', view = associationmember_list, name = 'associationmember-list'),
+	url(r'^associationmembers$',
+		view = associationmember_list, name = 'associationmember-list'),
 	url(r'^associationmembers/(?P<pk>[0-9]+)$',
 		view = associationmember_detail, name = 'associationmember-detail'),
 	url(r'^associations/(?P<association_pk>[0-9]+)/associationmembers$',
@@ -123,8 +52,10 @@ urlpatterns = [
 		view = associationmember_detail, name = 'associationmember-list'),
 
 	# Sales
-	url(r'^sales$', view = sale_list, name = 'sale-list'),
-	url(r'^sales/(?P<pk>[0-9]+)$', view = sale_detail, name = 'sale-detail'),
+	url(r'^sales$',
+		view = sale_list, name = 'sale-list'),
+	url(r'^sales/(?P<pk>[0-9]+)$',
+		view = sale_detail, name = 'sale-detail'),
 	url(r'^associations/(?P<association_pk>[0-9]+)/sales$',
 		view = sale_list, name = 'sale-list'),
 	url(r'^associations/(?P<association_pk>[0-9]+)/sales/(?P<pk>[0-9]+)$',
@@ -135,9 +66,12 @@ urlpatterns = [
 		view = sale_detail, name = 'sale-payment-detail'),
 
 	# Items
-	url(r'^items$', item_list, name = 'item-list'),
-	url(r'^items/(?P<pk>[0-9]+)$', item_detail, name = 'item-detail'),
-	url(r'^sales/(?P<sale_pk>[0-9]+)/items$', item_list, name = 'item-list'),
+	url(r'^items$',
+		view = item_list, name = 'item-list'),
+	url(r'^items/(?P<pk>[0-9]+)$',
+		view = item_detail, name = 'item-detail'),
+	url(r'^sales/(?P<sale_pk>[0-9]+)/items$',
+		view = item_list, name = 'item-list'),
 	url(r'^associations/(?P<association_pk>[0-9]+)/sales/(?P<sale_pk>[0-9]+)/items$',
 		view = item_list, name = 'item-list'),
 	url(r'^associations/(?P<association_pk>[0-9]+)/sales/(?P<sale_pk>[0-9]+)/items/(?P<pk>[0-9]+)$',

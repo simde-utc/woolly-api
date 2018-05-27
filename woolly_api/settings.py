@@ -113,7 +113,18 @@ REST_FRAMEWORK = {
 	'DEFAULT_METADATA_CLASS': 'rest_framework_json_api.metadata.JSONAPIMetadata',
 	'EXCEPTION_HANDLER': 'rest_framework_json_api.exceptions.exception_handler',
 }
-
+VIEWSET = {
+	'list': {
+		'get': 'list',
+		'post': 'create'
+	},
+	'detail': {
+		'get': 'retrieve',
+		'put': 'update',
+		'patch': 'partial_update',
+		'delete': 'destroy'
+	}
+}
 
 
 # --------------------------------------------------------------------------

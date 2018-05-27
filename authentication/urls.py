@@ -1,30 +1,17 @@
-from django.conf.urls import url, include
-from django.views.decorators.csrf import csrf_exempt
 from rest_framework.urlpatterns import format_suffix_patterns
+from django.views.decorators.csrf import csrf_exempt
+from django.conf.urls import url, include
+
+from woolly_api.settings import VIEWSET
 from .views import UserViewSet, UserRelationshipView, UserTypeViewSet, AuthView, JWTView
+
 import cas.views
 
-
-user_list = UserViewSet.as_view({
-	'get': 'list',
-	'post': 'create'
-})
-user_detail = UserViewSet.as_view({
-	'get': 'retrieve',
-	'put': 'update',
-	'patch': 'partial_update',
-	'delete': 'destroy'
-})
-user_type_list = UserTypeViewSet.as_view({
-	'get': 'list',
-	'post': 'create'
-})
-user_type_detail = UserTypeViewSet.as_view({
-	'get': 'retrieve',
-	'put': 'update',
-	'patch': 'partial_update',
-	'delete': 'destroy'
-})
+# Configure Viewsets
+user_list = UserViewSet.as_view(VIEWSET['list'])
+user_detail = UserViewSet.as_view(VIEWSET['detail'])
+user_type_list = UserTypeViewSet.as_view(VIEWSET['list'])
+user_type_detail = UserTypeViewSet.as_view(VIEWSET['detail'])
 
 
 
