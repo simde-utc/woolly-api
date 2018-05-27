@@ -3,8 +3,7 @@ from rest_framework_json_api.relations import ResourceRelatedField
 
 from authentication.models import User, UserType
 from authentication.serializers import UserSerializer, UserTypeSerializer
-from .models import Association, AssociationMember, PaymentMethod, Sale, Order, ItemGroup, Item, \
-					OrderLine, Field, ItemField, OrderLineField
+from .models import *
 
 
 # ============================================
@@ -88,6 +87,7 @@ class ItemSerializer(serializers.ModelSerializer):
 		included_resources = ['itemgroup', 'sale', 'usertype']
 		pass
 
+
 class SaleSerializer(serializers.ModelSerializer):
 	"""
 	Defines how the Sale fields are serialized, without the payment methods
@@ -123,7 +123,6 @@ class SaleSerializer(serializers.ModelSerializer):
 
 	class JSONAPIMeta:
 		included_resources = ['items', 'association']
-
 
 
 # ============================================
@@ -257,6 +256,7 @@ class OrderLineSerializer(serializers.ModelSerializer):
 
 	class JSONAPIMeta:
 		included_resources = ['item', 'fields', 'order']
+
 
 # ============================================
 # 	Fields

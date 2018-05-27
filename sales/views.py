@@ -1,44 +1,36 @@
-from rest_framework import viewsets
-from rest_framework import permissions
-from django.http import HttpResponse, JsonResponse
-from django.db.models import F
-
 import requests
 import json
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework.reverse import reverse
-from rest_framework.decorators import detail_route, list_route
-from rest_framework import permissions
-from .permissions import IsOwner
 
+from rest_framework import viewsets
 from rest_framework_json_api.views import RelationshipView
+from django.db.models import F
 
-from .models import (
-	Item, ItemGroup, Association, Sale, Order, OrderLine, PaymentMethod, AssociationMember,
-	OrderLineField, ItemField, Field
-)
-from .serializers import (
-	ItemSerializer, AssociationSerializer,
-	OrderSerializer, OrderLineSerializer, SaleSerializer,
-	PaymentMethodSerializer, AssociationMemberSerializer
-)
+from rest_framework import permissions
+from .permissions import *
+from core.permissions import *
+from .models import *
+from .serializers import *
+
 from payutc import payutc
 
+# queryset .all() ??????
+
+# ============================================
+# 	Association
+# ============================================
 
 class AssociationViewSet(viewsets.ModelViewSet):
 	"""
-		Defines the behavior of the association view
+	Defines the behavior of the association view
 	"""
 	queryset = Association.objects.all()
 	serializer_class = AssociationSerializer
-	permission_classes = (permissions.IsAuthenticated,)
+	permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
 	def get_queryset(self):
-		queryset = self.queryset.filter(associationmembers__user=self.request.user_pk)
-
-		# if 	
-
+		# print(self.request.user)
+		# queryset = self.queryset.filter(associationmembers__user=self.request.user_pk)
+		"""
 		if 'associationmember_pk' in self.kwargs:
 			associationmember_pk = self.kwargs['associationmember_pk']
 			queryset = Association.objects.all().filter(associationmembers__pk=associationmember_pk)
@@ -46,13 +38,19 @@ class AssociationViewSet(viewsets.ModelViewSet):
 		if 'user_pk' in self.kwargs:
 			user_pk = self.kwargs['user_pk']
 			queryset = Association.objects.all().filter(associationmembers__user=user_pk)
+		"""
+		return self.queryset
 
-		return queryset
+class AssociationRelationshipView(RelationshipView):
+	"""
+	Required by JSON API to display the associations related links
+	"""
+	queryset = Association.objects
 
 
 class AssociationMemberViewSet(viewsets.ModelViewSet):
 	"""
-		Defines the behavior link to the association member view
+	Defines the behavior link to the association member view
 	"""
 	queryset = AssociationMember.objects.all()
 	serializer_class = AssociationMemberSerializer
@@ -60,8 +58,8 @@ class AssociationMemberViewSet(viewsets.ModelViewSet):
 
 	def perform_create(self, serializer):
 		serializer.save(
-			user_id=self.request.user.id,
-			association_id=self.kwargs['association_pk'],
+			user_id = self.request.user.id,
+			association_id = self.kwargs['association_pk'],
 		)
 
 	def get_queryset(self):
@@ -77,10 +75,61 @@ class AssociationMemberViewSet(viewsets.ModelViewSet):
 
 		return queryset
 
+class AssociationMemberRelationshipView(RelationshipView):
+	"""
+	Required by JSON API to display the association members related links
+	"""
+	queryset = AssociationMember.objects
+
+
+# ============================================
+# 	Sale
+# ============================================
+
+class SaleViewSet(viewsets.ModelViewSet):
+	"""
+	Defines the behavior of the sale view
+	"""
+	serializer_class = SaleSerializer
+	permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+
+	def perform_create(self, serializer):
+		serializer.save(
+			association_id=self.kwargs['association_pk'],
+			paymentmethod_id=self.kwargs['paymentmethod_pk']
+		)
+
+	def get_queryset(self):
+		queryset = Sale.objects.all()
+					# .filter(items__itemspecifications__user_type__name=self.request.user.usertype.name)
+					# TODO filtrer par date ?
+
+		# if this viewset is accessed via the 'association-detail' route,
+		# it wll have been passed the `association_pk` kwarg and the queryset
+		# needs to be filtered accordingly
+		if 'association_pk' in self.kwargs:
+			association_pk = self.kwargs['association_pk']
+			queryset = Sale.objects.all().filter(association__pk=association_pk)
+
+		# TO DO : Remove this in order not to display all the sales link
+		# to a payment method on every Sale JSON
+		if 'payment_pk' in self.kwargs:
+			payment_pk = self.kwargs['payment_pk']
+			queryset = Sale.objects.all().filter(paymentmethods__pk=payment_pk)
+
+		return queryset
+
+class SaleRelationshipView(RelationshipView):
+	"""
+	Required by JSON API to display the sales related links
+	"""
+	queryset = Sale.objects
+
 
 class PaymentMethodViewSet(viewsets.ModelViewSet):
+	# TODO a virer
 	"""
-		Defines the behavior of the payment method view
+	Defines the behavior of the payment method view
 	"""
 	queryset = PaymentMethod.objects.all()
 	serializer_class = PaymentMethodSerializer
@@ -94,10 +143,64 @@ class PaymentMethodViewSet(viewsets.ModelViewSet):
 
 		return queryset
 
+class PaymentMethodRelationshipView(RelationshipView):
+	"""
+	Required by JSON API to display the payment methods related links
+	"""
+	queryset = PaymentMethod.objects
+
+
+# ============================================
+# 	Item
+# ============================================
+
+class ItemViewSet(viewsets.ModelViewSet):
+	"""
+	Defines the behavior of the item interactions
+	"""
+	queryset = Item.objects.all()
+	serializer_class = ItemSerializer
+	permission_classes = (permissions.IsAuthenticated,)
+
+	def perform_create(self, serializer):
+		if 'orderline_pk' in self.kwargs:
+			serializer.save(
+				sale_id=self.kwargs['sale_pk']
+			)
+
+		if 'orderline_pk' in self.kwargs:
+			serializer.save(
+				sale_id=self.kwargs['orderline_pk']
+			)
+
+	def get_queryset(self):
+		queryset = self.queryset.filter(
+			itemspecifications__user_type__name=self.request.user.usertype.name)
+
+		if 'sale_pk' in self.kwargs:
+			sale_pk = self.kwargs['sale_pk']
+			queryset = queryset.filter(sale__pk=sale_pk)
+
+		if 'orderline_pk' in self.kwargs:
+			orderline_pk = self.kwargs['orderline_pk']
+			queryset = queryset.filter(orderlines__pk=orderline_pk)
+
+		return queryset
+
+class ItemRelationshipView(RelationshipView):
+	"""
+	Required by JSON API to display the items related links
+	"""
+	queryset = Item.objects
+
+
+# ============================================
+# 	Order & OrderLine
+# ============================================
 
 class OrderViewSet(viewsets.ModelViewSet):
 	"""
-		Defines the behavior of the order CRUD
+	Defines the behavior of the order CRUD
 	"""
 	queryset = Order.objects.all()
 	serializer_class = OrderSerializer
@@ -149,10 +252,16 @@ class OrderViewSet(viewsets.ModelViewSet):
 
 		return queryset
 
+class OrderRelationshipView(RelationshipView):
+	"""
+	Required by JSON API to display the orders related links
+	"""
+	queryset = Order.objects
+
 
 class OrderLineViewSet(viewsets.ModelViewSet):
 	"""
-		Defines the behavior of the Orderline view
+	Defines the behavior of the Orderline view
 	"""
 	queryset = OrderLine.objects.all()
 	serializer_class = OrderLineSerializer
@@ -184,83 +293,56 @@ class OrderLineViewSet(viewsets.ModelViewSet):
 
 		return queryset
 
-
-class SaleViewSet(viewsets.ModelViewSet):
+class OrderLineRelationshipView(RelationshipView):
 	"""
-		Defines the behavior of the sale view
+	Required by JSON API to display the orderlines related links
 	"""
-	serializer_class = SaleSerializer
-	permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-
-	def perform_create(self, serializer):
-		serializer.save(
-			association_id=self.kwargs['association_pk'],
-			paymentmethod_id=self.kwargs['paymentmethod_pk']
-		)
-
-	def get_queryset(self):
-		queryset = Sale.objects.all()
-					# .filter(items__itemspecifications__user_type__name=self.request.user.usertype.name)
-					# TODO filtrer par date ?
-
-		# if this viewset is accessed via the 'association-detail' route,
-		# it wll have been passed the `association_pk` kwarg and the queryset
-		# needs to be filtered accordingly
-		if 'association_pk' in self.kwargs:
-			association_pk = self.kwargs['association_pk']
-			queryset = Sale.objects.all().filter(association__pk=association_pk)
-
-		# TO DO : Remove this in order not to display all the sales link
-		# to a payment method on every Sale JSON
-		if 'payment_pk' in self.kwargs:
-			payment_pk = self.kwargs['payment_pk']
-			queryset = Sale.objects.all().filter(paymentmethods__pk=payment_pk)
-
-		return queryset
+	queryset = OrderLine.objects
 
 
-class ItemViewSet(viewsets.ModelViewSet):
+# ============================================
+# 	Field, ItemField & OrderLineField
+# ============================================
+
+class FieldViewSet(viewsets.ModelViewSet):
 	"""
-		Defines the behavior of the item interactions
+	Defines the view which display the items of an orderline
 	"""
-	queryset = Item.objects.all()
-	serializer_class = ItemSerializer
+	queryset = Field.objects.all()
+	serializer_class = FieldSerializer
+	permission_classes = (IsAdminOrReadOnly,)
+
+class FieldRelationshipView(RelationshipView):
+	"""
+	Required by JSON API to display the orderlines related links
+	"""
+	queryset = Field.objects
+
+
+class ItemFieldViewSet(viewsets.ModelViewSet):
+	"""
+	Defines the view which display the items of an orderline
+	"""
+	queryset = ItemField.objects.all()
+	serializer_class = ItemFieldSerializer
+	permission_classes = (IsAdminOrReadOnly,)
+
+class ItemFieldRelationshipView(RelationshipView):
+	"""
+	Required by JSON API to display the orderlines related links
+	"""
+	queryset = ItemField.objects
+
+
+class OrderLineFieldViewSet(viewsets.ModelViewSet):
+	"""
+	Defines the view which display the items of an orderline
+	"""
+	queryset = OrderLineField.objects.all()
+	serializer_class = OrderLineField
 	permission_classes = (permissions.IsAuthenticated,)
 
-	def perform_create(self, serializer):
-		if 'orderline_pk' in self.kwargs:
-			serializer.save(
-				sale_id=self.kwargs['sale_pk']
-			)
-
-		if 'orderline_pk' in self.kwargs:
-			serializer.save(
-				sale_id=self.kwargs['orderline_pk']
-			)
-
-	def get_queryset(self):
-		queryset = self.queryset.filter(
-			itemspecifications__user_type__name=self.request.user.usertype.name)
-
-		if 'sale_pk' in self.kwargs:
-			sale_pk = self.kwargs['sale_pk']
-			queryset = queryset.filter(sale__pk=sale_pk)
-
-		if 'orderline_pk' in self.kwargs:
-			orderline_pk = self.kwargs['orderline_pk']
-			queryset = queryset.filter(orderlines__pk=orderline_pk)
-
-		return queryset
-
-
-class OrderLineItemViewSet(viewsets.ModelViewSet):
 	"""
-		Defines the view which display the items of an orderline
-	"""
-	queryset = Item.objects.all()
-	serializer_class = ItemSerializer
-	permission_classes = (permissions.IsAuthenticated,)
-
 	def perform_create(self, serializer):
 		serializer.save(
 			sale_id=self.kwargs['orderline_pk']
@@ -273,74 +355,11 @@ class OrderLineItemViewSet(viewsets.ModelViewSet):
 			queryset = queryset.filter(orderlines__pk=orderline_pk)
 
 		return queryset
-
-
-class OrderRelationshipView(RelationshipView):
 	"""
-		Required by JSON API to display the orders related links
+
+class OrderLineFieldRelationshipView(RelationshipView):
 	"""
-	queryset = Order.objects
-
-
-class OrderLineRelationshipView(RelationshipView):
+	Required by JSON API to display the orderlines related links
 	"""
-		Required by JSON API to display the orderlines related links
-	"""
-	queryset = OrderLine.objects
+	queryset = OrderLineField.objects
 
-
-class ItemRelationshipView(RelationshipView):
-	"""
-		Required by JSON API to display the items related links
-	"""
-	queryset = Item.objects
-
-
-class SaleRelationshipView(RelationshipView):
-	"""
-		Required by JSON API to display the sales related links
-	"""
-	queryset = Sale.objects
-
-
-class AssociationMemberRelationshipView(RelationshipView):
-	"""
-		Required by JSON API to display the association members related links
-	"""
-	queryset = AssociationMember.objects
-
-
-class AssociationRelationshipView(RelationshipView):
-	"""
-		Required by JSON API to display the associations related links
-	"""
-	queryset = Association.objects
-
-
-class PaymentMethodRelationshipView(RelationshipView):
-	"""
-		Required by JSON API to display the payment methods related links
-	"""
-	queryset = PaymentMethod.objects
-
-
-class UserViewSet(viewsets.ModelViewSet):
-	"""
-		Defines the behavior of the association view
-	"""
-	queryset = Association.objects.all()
-	serializer_class = AssociationSerializer
-	permission_classes = (permissions.IsAuthenticated,)
-
-	def get_queryset(self):
-		queryset = self.queryset.filter(associationmembers__user=self.request.user)
-
-		if 'associationmember_pk' in self.kwargs:
-			associationmember_pk = self.kwargs['associationmember_pk']
-			queryset = Association.objects.all().filter(associationmembers__pk=associationmember_pk)
-
-		if 'user_pk' in self.kwargs:
-			user_pk = self.kwargs['user_pk']
-			queryset = Association.objects.all().filter(associationmembers__user=user_pk)
-
-		return queryset

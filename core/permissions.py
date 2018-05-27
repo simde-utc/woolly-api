@@ -1,11 +1,23 @@
-from rest_framework.permissions import BasePermission
-from .models import Order
+from rest_framework import permissions
 
-class IsOwner(BasePermission):
-    """Custom permission class to allow only order owners to edit them."""
 
-    def has_object_permission(self, request, view, obj):
-        """Return True if permission is granted to the order owner."""
-        if isinstance(obj, Order):
-            return obj.user == request.user
-        return obj.user == request.user
+class IsAdmin(permissions.BasePermission):
+	"""Only Woolly admins have the permission"""
+	def has_permission(self, request, view):
+		return request.user.is_authenticated and request.user.is_admin
+
+class IsAdminOrReadOnly(permissions.BasePermission):
+	"""Only Woolly admins have the permission to modify, anyone can read"""
+	def has_permission(self, request, view):
+		if request.method in permissions.SAFE_METHODS:
+			return True
+		return request.user.is_authenticated and request.user.is_admin
+
+class IsAdminOrAuthenticatedReadOnly(permissions.BasePermission):
+	"""Only Woolly admins have the permission to modify, authenticated users can read"""
+	def has_permission(self, request, view):
+		if request.user.is_authenticated == False:
+			return False
+		if request.method in permissions.SAFE_METHODS:
+			return True
+		return request.user.is_admin

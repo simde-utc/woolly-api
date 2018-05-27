@@ -19,13 +19,12 @@ class UserViewSet(viewsets.ModelViewSet):
 	"""
 	queryset = User.objects.all()
 	serializer_class = UserSerializer
-	# permission_classes = (IsAuthenticated,)
+	permission_classes = (IsAuthenticated,)
 
-	# def perform_create(self, serializer):
-		# serializer.save(type_id = self.kwargs['usertype_pk'])
-		# serializer.save()
+	def create(self, request):
+		return redirect('auth.login')
 
-		# def get_queryset(self):
+	# def get_queryset(self):
 	# 	queryset = self.queryset.filter(login=self.request.user.login)
 	# 	if 'user_pk' in self.kwargs:
 	# 		association_pk = self.kwargs['user_pk']

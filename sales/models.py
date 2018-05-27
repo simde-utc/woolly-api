@@ -3,7 +3,7 @@ from authentication.models import User, UserType
 from enum import Enum
 
 # ============================================
-# 	Associations & Members
+# 	Association & Member
 # ============================================
 
 class Association(models.Model):
@@ -17,7 +17,6 @@ class Association(models.Model):
 
 	class JSONAPIMeta:
 		resource_name = "associations"
-
 
 class AssociationMember(models.Model):
 	"""
@@ -33,7 +32,7 @@ class AssociationMember(models.Model):
 
 
 # ============================================
-# 	Ventes
+# 	Sale
 # ============================================
 
 class PaymentMethod(models.Model):
@@ -44,7 +43,6 @@ class PaymentMethod(models.Model):
 	class JSONAPIMeta:
 		resource_name = "paymentmethods"
 		
-
 class Sale(models.Model):
 	"""
 	Defines the Sale object
@@ -72,7 +70,7 @@ class Sale(models.Model):
 
 
 # ============================================
-# 	Orders and Items
+# 	Item
 # ============================================
 
 class ItemGroup(models.Model):
@@ -81,7 +79,6 @@ class ItemGroup(models.Model):
 
 	class JSONAPIMeta:
 		resource_name = "itemgroups"
-
 
 class Item(models.Model):
 	"""
@@ -103,6 +100,9 @@ class Item(models.Model):
 	class JSONAPIMeta:
 		resource_name = "items"
 
+# ============================================
+# 	Order
+# ============================================
 
 class OrderStatus(Enum):
 	ONGOING = 0
@@ -137,7 +137,6 @@ class Order(models.Model):
 	class JSONAPIMeta:
 		resource_name = "orders"
 
-
 class OrderLine(models.Model):
 	"""
 	Defines the link between an Order and an Item
@@ -149,8 +148,9 @@ class OrderLine(models.Model):
 	class JSONAPIMeta:
 		resource_name = "orderlines"
 
+
 # ============================================
-# 	Fields
+# 	Field
 # ============================================
 
 
@@ -166,7 +166,6 @@ class Field(models.Model):
 	class JSONAPIMeta:
 		resource_name = "fields"
 
-
 class ItemField(models.Model):
 	"""
 	Defines the ItemField object
@@ -181,7 +180,6 @@ class ItemField(models.Model):
 
 	class JSONAPIMeta:
 		resource_name = "itemfields"
-
 
 class OrderLineField(models.Model):
 	"""
