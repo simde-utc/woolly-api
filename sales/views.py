@@ -6,10 +6,10 @@ from rest_framework_json_api.views import RelationshipView
 from django.db.models import F
 
 from rest_framework import permissions
-from .permissions import *
 from core.permissions import *
 from .models import *
 from .serializers import *
+from .permissions import *
 
 from payutc import payutc
 
@@ -27,10 +27,10 @@ class AssociationViewSet(viewsets.ModelViewSet):
 	serializer_class = AssociationSerializer
 	permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
+	"""
 	def get_queryset(self):
 		# print(self.request.user)
 		# queryset = self.queryset.filter(associationmembers__user=self.request.user_pk)
-		"""
 		if 'associationmember_pk' in self.kwargs:
 			associationmember_pk = self.kwargs['associationmember_pk']
 			queryset = Association.objects.all().filter(associationmembers__pk=associationmember_pk)
@@ -38,8 +38,8 @@ class AssociationViewSet(viewsets.ModelViewSet):
 		if 'user_pk' in self.kwargs:
 			user_pk = self.kwargs['user_pk']
 			queryset = Association.objects.all().filter(associationmembers__user=user_pk)
-		"""
-		return self.queryset
+		return queryset
+	"""
 
 class AssociationRelationshipView(RelationshipView):
 	"""
@@ -54,8 +54,9 @@ class AssociationMemberViewSet(viewsets.ModelViewSet):
 	"""
 	queryset = AssociationMember.objects.all()
 	serializer_class = AssociationMemberSerializer
-	permission_classes = (permissions.IsAuthenticated,)
+	permission_classes = (IsAdmin,)	# TODO V2 : bloquer pour l'instant
 
+	"""
 	def perform_create(self, serializer):
 		serializer.save(
 			user_id = self.request.user.id,
@@ -74,6 +75,7 @@ class AssociationMemberViewSet(viewsets.ModelViewSet):
 			queryset = queryset.filter(association__pk=association_pk)
 
 		return queryset
+	"""
 
 class AssociationMemberRelationshipView(RelationshipView):
 	"""
@@ -96,7 +98,7 @@ class SaleViewSet(viewsets.ModelViewSet):
 	def perform_create(self, serializer):
 		serializer.save(
 			association_id=self.kwargs['association_pk'],
-			paymentmethod_id=self.kwargs['paymentmethod_pk']
+			# paymentmethod_id=self.kwargs['paymentmethod_pk']
 		)
 
 	def get_queryset(self):
@@ -104,18 +106,18 @@ class SaleViewSet(viewsets.ModelViewSet):
 					# .filter(items__itemspecifications__user_type__name=self.request.user.usertype.name)
 					# TODO filtrer par date ?
 
-		# if this viewset is accessed via the 'association-detail' route,
-		# it wll have been passed the `association_pk` kwarg and the queryset
-		# needs to be filtered accordingly
+		queryset = queryset.filter(is_active=True)
+		# TODO V2 : filtering
+		# filters = ('active', )
+		# filterQuery = self.request.query_params.get('filterQuery', None)
+		# if filterQuery is not None:
+			# queryset = queryset.filter()
+			# pass
+
+		# Association detail route
 		if 'association_pk' in self.kwargs:
 			association_pk = self.kwargs['association_pk']
-			queryset = Sale.objects.all().filter(association__pk=association_pk)
-
-		# TO DO : Remove this in order not to display all the sales link
-		# to a payment method on every Sale JSON
-		if 'payment_pk' in self.kwargs:
-			payment_pk = self.kwargs['payment_pk']
-			queryset = Sale.objects.all().filter(paymentmethods__pk=payment_pk)
+			queryset = queryset.filter(association__pk=association_pk)
 
 		return queryset
 
@@ -190,8 +192,7 @@ class ItemViewSet(viewsets.ModelViewSet):
 			)
 
 	def get_queryset(self):
-		queryset = self.queryset.filter(
-			itemspecifications__user_type__name=self.request.user.usertype.name)
+		# queryset = self.queryset.filter(itemspecifications__user_type__name=self.request.user.usertype.name)
 
 		if 'sale_pk' in self.kwargs:
 			sale_pk = self.kwargs['sale_pk']
