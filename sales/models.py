@@ -1,5 +1,6 @@
 from django.db import models
 from authentication.models import User, UserType
+from enum import Enum
 
 # ============================================
 # 	Associations & Members
@@ -114,6 +115,9 @@ class Order(models.Model):
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField()
 
+	status = models.OrderStatus()
+	tra_id = models.IntegerField()
+
 	class JSONAPIMeta:
 		resource_name = "orders"
 
@@ -173,3 +177,12 @@ class OrderLineField(models.Model):
 
 	class JSONAPIMeta:
 		resource_name = "orderlinefields"
+
+
+class OrderStatus(Enum):
+	AWAITING_VALIDATION = 1
+	VALIDATED = 2
+	NOT_PAYED = 3
+	PAYED = 4
+	EXPIRED = 5
+	CANCELLED = 6

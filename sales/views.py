@@ -323,6 +323,7 @@ class PaymentMethodRelationshipView(RelationshipView):
 	"""
 	queryset = PaymentMethod.objects
 
+
 class UserViewSet(viewsets.ModelViewSet):
 	"""
 		Defines the behavior of the association view
