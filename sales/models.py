@@ -6,7 +6,6 @@ from enum import Enum
 # 	Associations & Members
 # ============================================
 
-
 class Association(models.Model):
 	"""
 	Represents the association information
@@ -39,7 +38,7 @@ class AssociationMember(models.Model):
 
 class PaymentMethod(models.Model):
 	# TODO à mettre à part, inutile pour la beta
-	name = models.CharField(max_length = 50)
+	name 	= models.CharField(max_length = 50)
 	api_url = models.CharField(max_length = 500)
 
 	class JSONAPIMeta:
@@ -51,18 +50,18 @@ class Sale(models.Model):
 	Defines the Sale object
 	"""
 	# Description
-	name = models.CharField(max_length=200)
-	description = models.CharField(max_length=1000)
-	association = models.ForeignKey(Association, on_delete=None, related_name='sales', blank=True)
+	name 		= models.CharField(max_length = 200)
+	description = models.CharField(max_length = 1000)
+	association = models.ForeignKey(Association, on_delete=None, related_name='sales')
 	
 	# Timestamps & Controls
-	is_active = models.BooleanField(default=True)
-	created_at = models.DateTimeField(auto_now_add=True)
-	begin_at = models.DateTimeField()
-	end_at = models.DateTimeField()
+	is_active 	= models.BooleanField(default=True)
+	created_at 	= models.DateTimeField(auto_now_add=True)
+	begin_at 	= models.DateTimeField()
+	end_at 		= models.DateTimeField()
 
 	max_item_quantity = models.IntegerField()
-	max_payment_date = models.DateTimeField()
+	max_payment_date  = models.DateTimeField()
 
 	# TODO v2
 	# paymentmethods = models.ManyToManyField(PaymentMethod)
@@ -77,7 +76,7 @@ class Sale(models.Model):
 # ============================================
 
 class ItemGroup(models.Model):
-	name = models.CharField(max_length = 200)
+	name 	 = models.CharField(max_length = 200)
 	quantity = models.IntegerField(default=True)
 
 	class JSONAPIMeta:
@@ -89,34 +88,51 @@ class Item(models.Model):
 	Defines the Item object
 	"""
 	# Description
-	name = models.CharField(max_length=200)
+	name 		= models.CharField(max_length=200)
 	description = models.CharField(max_length=1000)
-	sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
-	group = models.ForeignKey(ItemGroup, on_delete=models.CASCADE, related_name='items')
+	sale 		= models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
+	group 		= models.ForeignKey(ItemGroup, on_delete=models.CASCADE, related_name='items')
 	
 	# Specification
-	quantity = models.IntegerField()
-	usertype = models.ForeignKey(UserType, on_delete=models.CASCADE)			# UserType ?
-	price = models.FloatField()
-	nemopay_id = models.CharField(max_length=30)		# TODO V2 : abstraire payment
+	quantity 	= models.IntegerField()
+	usertype 	= models.ForeignKey(UserType, on_delete=models.CASCADE)			# UserType ?
+	price 		= models.FloatField()
+	nemopay_id 	= models.CharField(max_length=30)		# TODO V2 : abstraire payment
+	max_per_user = models.IntegerField(null=True)		# TODO V2 : moteur de contraintes
 
 	class JSONAPIMeta:
 		resource_name = "items"
 
 
+class OrderStatus(Enum):
+	ONGOING = 0
+	AWAITING_VALIDATION = 1
+	VALIDATED = 2
+	NOT_PAYED = 3
+	PAYED = 4
+	EXPIRED = 5
+	CANCELLED = 6
+
+	@classmethod
+	def choices(cls):
+		return tuple((i.name, i.value) for i in cls)
+
 class Order(models.Model):
 	"""
 	Defines the Order object
 	"""
-	status = models.CharField(max_length=50)
-	owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
-	sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='orders')
+	owner 	= models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
+	sale 	= models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='orders')
 
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField()
 
-	status = models.OrderStatus()
-	tra_id = models.IntegerField()
+	# status = models.OrderStatus()
+	status = models.PositiveSmallIntegerField(
+		choices = [(status, status.value) for status in OrderStatus],  # Choices is a list of Tuple
+		default = OrderStatus.ONGOING
+    )
+	tra_id = models.IntegerField(null = True)
 
 	class JSONAPIMeta:
 		resource_name = "orders"
@@ -124,10 +140,10 @@ class Order(models.Model):
 
 class OrderLine(models.Model):
 	"""
-		Defines the link between an Order and an Item
+	Defines the link between an Order and an Item
 	"""
-	item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='orderlines')
-	order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='orderlines')
+	item 	 = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='orderlines')
+	order 	 = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='orderlines')
 	quantity = models.IntegerField()
 
 	class JSONAPIMeta:
@@ -142,10 +158,10 @@ class Field(models.Model):
 	"""
 	Defines the Field object
 	"""
-	name = models.CharField(max_length=200)
-	type = models.CharField(max_length=1000)
+	name 	= models.CharField(max_length=200)
+	type 	= models.CharField(max_length=1000)
 	default = models.CharField(max_length=200)
-	items = models.ManyToManyField(Item, through='ItemField')
+	items 	= models.ManyToManyField(Item, through='ItemField') #, related_name='fields')
 
 	class JSONAPIMeta:
 		resource_name = "fields"
@@ -169,7 +185,7 @@ class ItemField(models.Model):
 
 class OrderLineField(models.Model):
 	"""
-		Defines the OrderLineField object
+	Defines the OrderLineField object
 	"""
 	value = models.CharField(max_length=1000)
 	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name="orderlines")
@@ -178,11 +194,3 @@ class OrderLineField(models.Model):
 	class JSONAPIMeta:
 		resource_name = "orderlinefields"
 
-
-class OrderStatus(Enum):
-	AWAITING_VALIDATION = 1
-	VALIDATED = 2
-	NOT_PAYED = 3
-	PAYED = 4
-	EXPIRED = 5
-	CANCELLED = 6
