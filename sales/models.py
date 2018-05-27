@@ -6,6 +6,7 @@ from enum import Enum
 # 	Association & Member
 # ============================================
 
+
 class Association(models.Model):
 	"""
 	Represents the association information
