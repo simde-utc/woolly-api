@@ -154,6 +154,21 @@ class PaymentMethodRelationshipView(RelationshipView):
 # 	Item
 # ============================================
 
+class ItemGroupViewSet(viewsets.ModelViewSet):
+	"""
+	Defines the behavior of the itemGroup interactions
+	"""
+	queryset = ItemGroup.objects.all()
+	serializer_class = ItemGroupSerializer
+	permission_classes = (permissions.IsAuthenticated,)
+
+class ItemGroupRelationshipView(RelationshipView):
+	"""
+	Required by JSON API to display the itemGroups related links
+	"""
+	queryset = ItemGroup.objects
+
+
 class ItemViewSet(viewsets.ModelViewSet):
 	"""
 	Defines the behavior of the item interactions
@@ -161,6 +176,7 @@ class ItemViewSet(viewsets.ModelViewSet):
 	queryset = Item.objects.all()
 	serializer_class = ItemSerializer
 	permission_classes = (permissions.IsAuthenticated,)
+
 
 	def perform_create(self, serializer):
 		if 'orderline_pk' in self.kwargs:
@@ -283,7 +299,6 @@ class OrderLineViewSet(viewsets.ModelViewSet):
 		return requests.get('http://localhost:8000/payutc/createTransaction?mail='+login+'&funId='+funId+"&orderlineId="+str(orderlineId),data=data)
 		# def perform_create(self, serializer):
 		# 	serializer.save()
-	"""
 
 	def get_queryset(self):
 		queryset = self.queryset.filter(order__owner=self.request.user)
@@ -292,6 +307,7 @@ class OrderLineViewSet(viewsets.ModelViewSet):
 			queryset = OrderLine.objects.all().filter(order__pk=order_pk)
 
 		return queryset
+	"""
 
 class OrderLineRelationshipView(RelationshipView):
 	"""
