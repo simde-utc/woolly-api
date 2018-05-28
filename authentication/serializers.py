@@ -16,15 +16,15 @@ class UserSerializer(serializers.ModelSerializer):
 
 	# password = serializers.CharField(required = True, write_only = True)
 	type = serializers.ReadOnlyField(source='usertype.name')
-	"""
 	usertype = ResourceRelatedField(
 		queryset = UserType.objects,
-		related_link_view_name = 'user-type-list',
+		related_link_view_name = 'usertype-list',
 		related_link_url_kwarg = 'user_pk',
 		self_link_view_name = 'user-relationships',
 		required = False
 	)
-	associationmembers = ResourceRelatedField(
+	"""
+	associations = ResourceRelatedField(
 		queryset=AssociationMember.objects,
 		related_link_view_name='associationmember-list',
 		related_link_url_kwarg='user_pk',
@@ -36,12 +36,10 @@ class UserSerializer(serializers.ModelSerializer):
 		model = User
 		exclude = ('password',)
 
-	"""
 	included_serializers = {
 		'usertype': UserTypeSerializer,
 		# 'associationmembers': AssociationMemberSerializer
 	}
-	"""
 
 	class JSONAPIMeta:
 		# included_resources = ['usertype', 'associationmembers']

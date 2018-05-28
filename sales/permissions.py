@@ -22,3 +22,18 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
 
 		# Instance must have an attribute named `owner`.
 		return obj.owner == request.user
+
+class IsManager(permissions.BasePermission):
+	"""Only assos' manager have the permission to modify"""
+	def has_permission(self, request, view):
+		# TODO
+		return request.user.is_authenticated and request.user.is_admin
+
+class IsManagerOrReadOnly(permissions.BasePermission):
+	"""Only assos' manager have the permission to modify, anyone can read"""
+	def has_permission(self, request, view):
+		if request.method in permissions.SAFE_METHODS:
+			return True
+		# TODO
+		return request.user.is_authenticated and request.user.is_admin
+

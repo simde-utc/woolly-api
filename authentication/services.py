@@ -54,7 +54,10 @@ def find_or_create_user(user_infos):
 
 	# Mise à jour si besoin
 	if user.usertype.name != userType:
-		user.usertype = UserType.objects.get(name=userType)
+		try:
+			user.usertype = UserType.objects.get(name=userType)
+		except UserType.DoesNotExist:
+			raise UserType.DoesNotExist("Met à jour les users_types avec UserType.init_values() !!!")
 		madeChanges = True
 	if user.is_admin != user_infos['is_admin']:
 		user.is_admin = user_infos['is_admin']
