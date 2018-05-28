@@ -10,10 +10,10 @@ class UserType(models.Model):
 	# item = models.ManyToManyField('sales.Item')
 
 	# TODO : revoir ça ?
-	COTISANT = 'cotisant'
-	NON_COTISANT = 'non-cotisant'
-	TREMPLIN = 'tremplin'
-	EXTERIEUR = 'extérieur'
+	COTISANT 	 = 'Cotisant BDE'
+	NON_COTISANT = 'UTC Non Cotisant'
+	TREMPLIN 	 = 'Tremplin UTC'
+	EXTERIEUR 	 = 'Extérieur'
 
 	@staticmethod
 	def init_values():
@@ -73,7 +73,7 @@ class User(AbstractBaseUser):
 	REQUIRED_FIELDS = []
 
 	def __str__(self):
-		return '%s %s' % (self.email, self.usertype.name)
+		return '%s %s %s' % (self.email, self.first_name, self.usertype.name)
 
 	"""
 	# required by Django 1.11 for the User class
