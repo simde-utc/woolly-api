@@ -72,7 +72,7 @@ class ItemSerializer(serializers.ModelSerializer):
 	)
 
 	included_serializers = {
-		'sale': 'SaleSerializer',
+		'sale': 'sales.serializers.SaleSerializer',
 		'itemgroup': ItemGroupSerializer,
 		'usertype': UserTypeSerializer
 	}
@@ -104,10 +104,10 @@ class SaleSerializer(serializers.ModelSerializer):
 		related_link_url_kwarg = 'sale_pk',
 		self_link_view_name = 'sale-relationships'
 	)
-	orders = ResourceRelatedField(
-		queryset = Order.objects,
-		many = True
-	)
+	# orders = ResourceRelatedField(
+	# 	queryset = Order.objects,
+	# 	many = True
+	# )
 
 	included_serializers = {
 		'association': 'sales.serializers.AssociationSerializer',
@@ -118,11 +118,10 @@ class SaleSerializer(serializers.ModelSerializer):
 	class Meta:
 		model = Sale
 		fields = '__all__' 		# DEBUG
-		# fields = ('id', 'name', 'description', 'creation_date', 'begin_date',
-				  # 'end_date', 'max_payment_date', 'max_item_quantity', 'association', 'items')
+		# fields = ('id', 'name', 'description', 'created_at', 'begin_at', 'end_at', 'max_payment_date', 'max_item_quantity', 'association', 'orders', 'items')
 
 	class JSONAPIMeta:
-		included_resources = ['items', 'association']
+		included_resources = ['items', 'association', 'orders']
 
 
 # ============================================

@@ -43,8 +43,8 @@ Now you will need to initialise the database, like this :
 
 ```
 python manage.py shell
->>> from authentication.models import WoollyUserType
->>> WoollyUserType.init_values()
+>>> from authentication.models import UserType
+>>> UserType.init_values()
 >>> exit()
 ```
 

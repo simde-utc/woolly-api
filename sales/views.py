@@ -177,22 +177,19 @@ class ItemViewSet(viewsets.ModelViewSet):
 	"""
 	queryset = Item.objects.all()
 	serializer_class = ItemSerializer
-	permission_classes = (permissions.IsAuthenticated,)
-
+	# permission_classes = (permissions.IsAuthenticated,)
 
 	def perform_create(self, serializer):
 		if 'orderline_pk' in self.kwargs:
 			serializer.save(
 				sale_id=self.kwargs['sale_pk']
-			)
-
-		if 'orderline_pk' in self.kwargs:
+			),
 			serializer.save(
 				sale_id=self.kwargs['orderline_pk']
 			)
 
 	def get_queryset(self):
-		# queryset = self.queryset.filter(itemspecifications__user_type__name=self.request.user.usertype.name)
+		queryset = self.queryset.filter()
 
 		if 'sale_pk' in self.kwargs:
 			sale_pk = self.kwargs['sale_pk']
@@ -203,6 +200,7 @@ class ItemViewSet(viewsets.ModelViewSet):
 			queryset = queryset.filter(orderlines__pk=orderline_pk)
 
 		return queryset
+
 
 class ItemRelationshipView(RelationshipView):
 	"""
