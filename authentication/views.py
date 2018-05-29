@@ -19,7 +19,7 @@ class UserViewSet(viewsets.ModelViewSet):
 	"""
 	queryset = User.objects.all()
 	serializer_class = UserSerializer
-	permission_classes = (IsAuthenticated,)
+	# permission_classes = (IsAuthenticated,)
 
 	def create(self, request):
 		return redirect('auth.login')

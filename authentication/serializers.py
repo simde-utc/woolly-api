@@ -1,10 +1,8 @@
-from authentication.models import User, UserType
-# from sales.models import AssociationMember
-# from sales.serializers import AssociationMemberSerializer
 from rest_framework_json_api import serializers
 from rest_framework_json_api.relations import ResourceRelatedField
-from django.db import IntegrityError
 
+from authentication.models import User, UserType
+from sales.models import Order
 
 class UserTypeSerializer(serializers.ModelSerializer):
 	class Meta:
@@ -31,6 +29,15 @@ class UserSerializer(serializers.ModelSerializer):
 		self_link_view_name='user-relationships'
 	)
 	"""
+	orders = ResourceRelatedField(
+		queryset = Order.objects,
+		many = True,
+		# related_link_view_name = 'orders-list',
+		# related_link_url_kwarg = 'user_pk',
+		# self_link_view_name = 'user-relationships',
+		required = False
+	)
+
 
 	class Meta:
 		model = User
@@ -38,6 +45,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 	included_serializers = {
 		'usertype': UserTypeSerializer,
+		'orders': 'sales.serializers.OrderSerializer'
 		# 'associationmembers': AssociationMemberSerializer
 	}
 

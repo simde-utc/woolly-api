@@ -89,13 +89,13 @@ class Item(models.Model):
 	name 		= models.CharField(max_length=200)
 	description = models.CharField(max_length=1000)
 	sale 		= models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
-	group 		= models.ForeignKey(ItemGroup, on_delete=models.CASCADE, related_name='items')
+	group 		= models.ForeignKey(ItemGroup, null=True, default=None, on_delete=models.SET_NULL, related_name='items')
 	
 	# Specification
-	quantity 	= models.IntegerField()
-	usertype 	= models.ForeignKey(UserType, on_delete=models.CASCADE)			# UserType ?
+	quantity 	= models.IntegerField(null=True)		# Null quand pas de restrinction sur l'item
+	usertype 	= models.ForeignKey(UserType, on_delete=models.PROTECT)			# UserType ?
 	price 		= models.FloatField()
-	nemopay_id 	= models.CharField(max_length=30)		# TODO V2 : abstraire payment
+	nemopay_id 	= models.CharField(max_length=30, null=True)		# TODO V2 : abstraire payment
 	max_per_user = models.IntegerField(null=True)		# TODO V2 : moteur de contraintes
 
 	class JSONAPIMeta:
