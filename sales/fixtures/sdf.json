@@ -1,0 +1,70 @@
+[
+	{
+		"model": "sales.association",
+		"pk": 1,
+		"fields": {
+			"name": "SDF",
+			"fun_id": 10
+		}
+	},
+	{
+		"model": "sales.sale",
+		"pk": 1,
+		"fields": {
+			"name": "Soirée des Finaux",
+			"description": "Viens c'est trop cool !!!",
+			"association": 1,
+			"is_active": true,
+			"created_at": "2018-05-27T17:00:00Z",
+			"begin_at": "2018-05-27T17:00:00Z",
+			"end_at": "2018-06-27T17:00:00Z",
+			"max_item_quantity": 4000,
+			"max_payment_date": "2018-06-27T17:00:00Z"
+		}
+	},
+	{
+		"model": "sales.item",
+		"pk": 1,
+		"fields": {
+			"name": "Place Cotisant",
+			"description": "Place Cotisant",
+			"sale": 1,
+			"group": null,
+			"quantity": null,
+			"usertype": 1,
+			"price": 6.0,
+			"nemopay_id": "12731",
+			"max_per_user": 1
+		}
+	},
+	{
+		"model": "sales.item",
+		"pk": 2,
+		"fields": {
+			"name": "Place Non Cotisant",
+			"description": "Place Non Cotisant",
+			"sale": 1,
+			"group": null,
+			"quantity": null,
+			"usertype": 2,
+			"price": 8.5,
+			"nemopay_id": "12733",
+			"max_per_user": 1
+		}
+	},
+	{
+		"model": "sales.item",
+		"pk": 3,
+		"fields": {
+			"name": "Place Extérieur",
+			"description": "Place Extérieur",
+			"sale": 1,
+			"group": null,
+			"quantity": null,
+			"usertype": 4,
+			"price": 10.0,
+			"nemopay_id": "12732",
+			"max_per_user": 10
+		}
+	}
+]
