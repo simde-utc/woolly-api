@@ -82,6 +82,7 @@ CSRF_TRUSTED_ORIGINS = (
 # 		CAS Configuration => A virer ?
 # --------------------------------------------------------------------------
 
+"""
 CAS_SERVER_URL = 'https://cas.utc.fr/cas/'
 CAS_LOGOUT_COMPLETELY = True
 CAS_PROVIDE_URL_TO_LOGOUT = True
@@ -89,6 +90,7 @@ CAS_AUTO_CREATE_USER = True
 CAS_RESPONSE_CALLBACKS = (
 	'authentication.backends.loggedCas',
 )
+"""
 
 
 # --------------------------------------------------------------------------
@@ -98,6 +100,7 @@ CAS_RESPONSE_CALLBACKS = (
 REST_FRAMEWORK = {
 	'DEFAULT_AUTHENTICATION_CLASSES': (
 		'rest_framework.authentication.SessionAuthentication',
+		'authentication.auth.JWTAuthentication'
 	),
 	'DEFAULT_PAGINATION_CLASS':	'rest_framework_json_api.pagination.PageNumberPagination',
 	'PAGE_SIZE': 10,
@@ -147,6 +150,7 @@ INSTALLED_APPS = [
 	'django.contrib.sessions',
 	'django.contrib.messages',
 	'django.contrib.staticfiles',
+	'django_seed',
 	'rest_framework',
 	'cas',
 	'corsheaders',
@@ -165,14 +169,12 @@ MIDDLEWARE = [
 	'django.middleware.clickjacking.XFrameOptionsMiddleware',
 	'cas.middleware.CASMiddleware',
 	'django.middleware.csrf.CsrfViewMiddleware',
-	'authentication.middlewares.JWTMiddleware',
 ]
 
 # Useful ?
 AUTHENTICATION_BACKENDS = (
 	# 'django.contrib.auth.backends.ModelBackend',
 	# 'authentication.backends.UpdatedCASBackend',
-	'authentication.backends.JWTBackend',
 )
 
 AUTH_USER_MODEL = 'authentication.User'

@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from .serializers import UserSerializer, UserTypeSerializer
 from .models import UserType, User
 
-from .services import OAuthAPI, JWTClient
+from .services import OAuthAPI, JWTClient, get_jwt_from_request
 # from sales.models import AssociationMember
 
 
@@ -58,20 +58,6 @@ class UserRelationshipView(RelationshipView):
 # ========================================================
 # 		Auth & JWT Management
 # ========================================================
-
-def get_jwt_from_request(request):
-	"""
-	Helper to get JWT from request
-	Return None if no JWT
-	"""
-	try:
-		jwt = request.META['HTTP_AUTHORIZATION']	# Traité automatiquement par Django
-	except KeyError:
-		return None
-	if not jwt or jwt == '':
-		return None
-	return jwt[7:]		# substring : Bearer ...
-
 
 class AuthView:
 	oauth = OAuthAPI()

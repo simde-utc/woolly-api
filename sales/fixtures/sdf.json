@@ -33,7 +33,7 @@
 			"quantity": null,
 			"usertype": 1,
 			"price": 6.0,
-			"nemopay_id": "12731",
+			"nemopay_id": 12731,
 			"max_per_user": 1
 		}
 	},
@@ -48,7 +48,7 @@
 			"quantity": null,
 			"usertype": 2,
 			"price": 8.5,
-			"nemopay_id": "12733",
+			"nemopay_id": 12733,
 			"max_per_user": 1
 		}
 	},
@@ -63,7 +63,7 @@
 			"quantity": null,
 			"usertype": 4,
 			"price": 10.0,
-			"nemopay_id": "12732",
+			"nemopay_id": 12732,
 			"max_per_user": 10
 		}
 	}

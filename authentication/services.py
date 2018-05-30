@@ -10,9 +10,24 @@ from woolly_api.settings import JWT_SECRET_KEY, JWT_TTL, OAUTH as OAuthConfig
 from .models import User, UserType
 from .serializers import UserSerializer
 
-from django.contrib.auth import login
 
 
+# ========================================================
+# 		Helpers
+# ========================================================
+
+def get_jwt_from_request(request):
+	"""
+	Helper to get JWT from request
+	Return None if no JWT
+	"""
+	try:
+		jwt = request.META['HTTP_AUTHORIZATION']	# Traité automatiquement par Django
+	except KeyError:
+		return None
+	if not jwt or jwt == '':
+		return None
+	return jwt[7:]		# substring : Bearer ...
 
 def find_or_create_user(user_infos):
 	"""
@@ -68,6 +83,9 @@ def find_or_create_user(user_infos):
 	return user
 
 
+# ========================================================
+# 		Services
+# ========================================================
 
 class JWTClient(JWT):
 	"""
