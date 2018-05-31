@@ -125,15 +125,15 @@ class Order(models.Model):
 	owner 	= models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
 	sale 	= models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='orders')
 
-	created_at = models.DateTimeField(auto_now_add=True)
-	updated_at = models.DateTimeField()
+	created_at = models.DateTimeField(auto_now_add = True)
+	updated_at = models.DateTimeField(auto_now_add = True)
 
 	# status = models.OrderStatus()
 	status = models.PositiveSmallIntegerField(
 		choices = [(status, status.value) for status in OrderStatus],  # Choices is a list of Tuple
 		default = OrderStatus.ONGOING
     )
-	tra_id = models.IntegerField(null = True)
+	tra_id = models.IntegerField(null = True, default = None)
 
 	class JSONAPIMeta:
 		resource_name = "orders"

@@ -84,11 +84,11 @@ class ItemSerializer(serializers.ModelSerializer):
 				  # 'initial_quantity','sale_id', 'itemspecifications')
 
 	class JSONAPIMeta:
-		included_resources = ['itemgroup', 'sale', 'usertype']
+		# included_resources = ['itemgroup', 'sale', 'usertype']
 		pass
 
 
-class SaleSerializer(serializers.ModelSerializer):
+class SaleSerializer(serializers.HyperlinkedModelSerializer):
 	"""
 	Defines how the Sale fields are serialized, without the payment methods
 	"""
@@ -121,7 +121,8 @@ class SaleSerializer(serializers.ModelSerializer):
 		# fields = ('id', 'name', 'description', 'created_at', 'begin_at', 'end_at', 'max_payment_date', 'max_item_quantity', 'association', 'orders', 'items')
 
 	class JSONAPIMeta:
-		included_resources = ['items', 'association', 'orders']
+		# included_resources = ['items', 'association', 'orders']		# TODO Inutiles par défault ??
+		pass
 
 
 # ============================================
@@ -191,9 +192,11 @@ class OrderSerializer(serializers.ModelSerializer):
 	"""
 	Defines how the Order fields are serialized
 	"""
-	user = ResourceRelatedField(
-		queryset = User.objects,
-		many = False
+	owner = ResourceRelatedField(
+		# queryset = User.objects,
+		many = False,
+		read_only = True,
+		required = False
 	)
 	sale = ResourceRelatedField(
 		queryset = Sale.objects,
@@ -204,11 +207,12 @@ class OrderSerializer(serializers.ModelSerializer):
 		many = True,
 		related_link_view_name='orderline-list',
 		related_link_url_kwarg='order_pk',
-		self_link_view_name='order-relationships'
+		self_link_view_name='order-relationships',
+		required = False
 	)
 
 	included_serializers = {
-		'user': UserSerializer,
+		'owner': UserSerializer,
 		'sale': SaleSerializer,
 		'orderlines': 'sales.serializers.OrderLineSerializer',
 	}
@@ -219,7 +223,8 @@ class OrderSerializer(serializers.ModelSerializer):
 		# fields = ('id', 'date','price', 'orderlines')
 
 	class JSONAPIMeta:
-		included_resources = ['orderlines', 'user', 'sale']
+		# included_resources = ['orderlines', 'owner', 'sale']
+		pass
 
 class OrderLineSerializer(serializers.ModelSerializer):
 	"""

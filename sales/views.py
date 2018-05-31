@@ -221,10 +221,11 @@ class OrderViewSet(viewsets.ModelViewSet):
 	serializer_class = OrderSerializer
 	permission_classes = (permissions.IsAuthenticated, IsOwner,)
 
-	"""
 	def perform_create(self, serializer):
 		# Get the customized Orderlines through JSON
 		# import pdb; pdb.set_trace()
+		print("azdddddddddddddddddddddddddddddddd*********")
+		"""
 		validate_items = []
 		if 'lines' in self.request.data:
 			if len(self.request.data['lines']) > 0:
@@ -235,13 +236,16 @@ class OrderViewSet(viewsets.ModelViewSet):
 					# If there is enough stock, add the article
 					# to the validate items list
 					validate_items.append(line)
-		print(self.request.session)
+		"""
 		print(self.request.user)
 		# Create the order
+		print('---------------------')
 		serializer.save(
-			
-			owner=self.request.user
+			owner = self.request.user,
+			orderlines = None
 		)
+		print(serializer)
+		return ''
 
 		if len(validate_items):
 			# Get the new order ID
@@ -253,13 +257,14 @@ class OrderViewSet(viewsets.ModelViewSet):
 				q.item = Item.objects.all().get(pk=line['item'])
 				q.order = Order.objects.all().get(pk=order_id)
 				q.quantity = line['quantity']
-
 				q.save()
+	"""
 	"""
 
 
 	def get_queryset(self):
-		queryset = self.queryset.filter(owner=self.request.user)
+		# queryset = self.queryset.filter(owner=self.request.user)
+		queryset = self.queryset
 
 		if 'user_pk' in self.kwargs:
 			user_pk = self.kwargs['user_pk']
@@ -280,7 +285,7 @@ class OrderLineViewSet(viewsets.ModelViewSet):
 	"""
 	queryset = OrderLine.objects.all()
 	serializer_class = OrderLineSerializer
-	permission_classes = (permissions.IsAuthenticated,)
+	# permission_classes = (permissions.IsAuthenticated,)
 
 	"""
 	def perform_create(self, serializer):
