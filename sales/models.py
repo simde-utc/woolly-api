@@ -130,8 +130,8 @@ class Order(models.Model):
 
 	# status = models.OrderStatus()
 	status = models.PositiveSmallIntegerField(
-		choices = [(status, status.value) for status in OrderStatus],  # Choices is a list of Tuple
-		default = OrderStatus.ONGOING
+		choices = OrderStatus.choices(),  # Choices is a list of Tuple
+		default = OrderStatus.ONGOING.value
     )
 	tra_id = models.IntegerField(null = True, default = None)
 
