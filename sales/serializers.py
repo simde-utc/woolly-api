@@ -239,19 +239,19 @@ class OrderLineSerializer(serializers.ModelSerializer):
 	item = ResourceRelatedField(
 		queryset = Item.objects,
 		many = False,
-		related_link_view_name='orderlineitem-list',
+		related_link_view_name='orderline-list',
 		related_link_url_kwarg='orderline_pk',
 		self_link_view_name='orderline-relationships'
 	)
-	fields = ResourceRelatedField(
-		queryset = OrderLineField.objects,
-		many = True
-	)
+	# fields = ResourceRelatedField(
+	# 	queryset = OrderLineField.objects,
+	# 	many = True
+	# )
 
 	included_serializers = {
 		'item': ItemSerializer,
 		'order': OrderSerializer,
-		'fields': 'sales.serializers.OrderLineFieldSerializer'
+		# 'fields': 'sales.serializers.OrderLineFieldSerializer'
 	}
 
 	class Meta:
@@ -260,7 +260,7 @@ class OrderLineSerializer(serializers.ModelSerializer):
 		# fields = ('id', 'order', 'item', 'quantity')
 
 	class JSONAPIMeta:
-		included_resources = ['item', 'fields', 'order']
+		included_resources = ['item', 'order'] # 'fields',
 
 
 # ============================================
