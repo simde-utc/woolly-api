@@ -4,7 +4,7 @@ import json
 # from django.db.models import F
 from rest_framework_json_api import views
 from rest_framework.response import Response
-from rest_framework import permissions
+from rest_framework import permissions, status
 
 from core.permissions import *
 from .models import *
@@ -222,41 +222,28 @@ class OrderViewSet(views.ModelViewSet):
 	permission_classes = (permissions.IsAuthenticated, IsOwner,)
 
 	def create(self, request):
-		serializer = self.get_serializer(data = {
-			'sale': request.data['sale'],
-			'owner': {
-				'id': request.user.id,
-				'types': 'users'
-			},
-			'orderlines': []
-		})
-		serializer.is_valid(raise_exception=True)
-		print(serializer.validated_data)
-		serializer.save()
-		# self.perform_create(serializer)
-		# headers = self.get_success_headers(serializer.data)
-		# return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-
 		"""
-		print('222222222---------------------')
-		print(serializer.is_valid())
-		print(serializer.errors)
-		print(serializer.validated_data)
-		return 'azdazdazd'
-
-		if len(validate_items):
-			# Get the new order ID
-			order_id = serializer.data['id']
-
-			# Then create the orderlines and link them to the order
-			for line in validate_items:
-				q = OrderLine()
-				q.item = Item.objects.all().get(pk=line['item'])
-				q.order = Order.objects.all().get(pk=order_id)
-				q.quantity = line['quantity']
-				q.save()
+		Find or create Order on POST
 		"""
+		try:
+			# TODO ajout de la limite de temps
+			order = Order.objects.get(sale=request.data['sale']['id'], owner=request.user.id)
+			serializer = OrderSerializer(order)
+		except Order.DoesNotExist as err:
+			# Configure Order
+			serializer = self.OrderSerializer(data = {
+				'sale': request.data['sale'],
+				'owner': {
+					'id': request.user.id,
+					'type': 'users'
+				},
+				'orderlines': []
+			})
+			serializer.is_valid(raise_exception=True)
+			self.perform_create(serializer)
+
+		headers = self.get_success_headers(serializer.data)
+		return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 	def get_queryset(self):

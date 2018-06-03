@@ -193,10 +193,10 @@ class OrderSerializer(serializers.ModelSerializer):
 	Defines how the Order fields are serialized
 	"""
 	owner = ResourceRelatedField(
-		# queryset = User.objects,
-		many = False,
-		read_only = True,
-		required = False
+		queryset = User.objects,
+		# read_only = True,
+		required = False,
+		# allow_null = True
 	)
 	sale = ResourceRelatedField(
 		queryset = Sale.objects,
