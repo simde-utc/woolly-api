@@ -11,7 +11,10 @@ from .models import *
 from .serializers import *
 from .permissions import *
 
-from payutc import payutc
+from payutc.payutc import Payutc
+from woolly_api.settings import PAYUTC_KEY
+from rest_framework.decorators import *
+from authentication.auth import JWTAuthentication
 
 # queryset .all() ??????
 
@@ -219,7 +222,7 @@ class OrderViewSet(views.ModelViewSet):
 	"""
 	queryset = Order.objects.all()
 	serializer_class = OrderSerializer
-	permission_classes = (permissions.IsAuthenticated,)
+	permission_classes = (permissions.IsAuthenticated, IsOwner)
 
 	def create(self, request):
 		"""
@@ -272,15 +275,20 @@ class OrderLineViewSet(views.ModelViewSet):
 	permission_classes = (permissions.IsAuthenticated,)
 
 	def create(self, request):
-		serializer = self.get_serializer(data={
-			'order': request.data['order'],
-			'item': request.data['item'],
-			'quantity': request.data['quantity']
-		})
-		print(request.data)
+		try:
+			# TODO ajout de la limite de temps
+			orderline = OrderLine.objects.get(order=request.data['order']['id'], item=request.data['item']['id'])
+			serializer = OrderLineSerializer(orderline, data={'quantity': request.data['quantity']}, partial=True)
+		except OrderLine.DoesNotExist as err:
+			# Configure Order
+			serializer = self.get_serializer(data={
+				'order': request.data['order'],
+				'item': request.data['item'],
+				'quantity': request.data['quantity']
+			})
 		serializer.is_valid(raise_exception=True)
-		serializer.save()
 		self.perform_create(serializer)
+
 		headers = self.get_success_headers(serializer.data)
 		return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
@@ -315,7 +323,6 @@ class OrderLineRelationshipView(views.RelationshipView):
 	Required by JSON API to display the orderlines related links
 	"""
 	queryset = OrderLine.objects
-
 
 # ============================================
 # 	Field, ItemField & OrderLineField
@@ -380,3 +387,56 @@ class OrderLineFieldRelationshipView(views.RelationshipView):
 	"""
 	queryset = OrderLineField.objects
 
+
+
+
+# ----------------------------------------------------------
+
+@api_view(['GET'])
+@authentication_classes((JWTAuthentication,))
+@permission_classes((permissions.IsAuthenticated, IsOwner))
+def pay(request, pk):
+	# Récupération de l'Order
+	try:
+		# TODO ajout de la limite de temps
+		order = Order.objects.filter(owner=request.user).get(pk=pk)
+	except Order.DoesNotExist as e:
+		return Response({'message': e}, status=status.HTTP_400_BAD_REQUEST)
+
+	# Retrieve orderlines
+	orderlines = order.orderlines.filter(quantity__gt=0).all()
+
+	# TODO Verifications
+
+	# Create Payutc params
+	payutc = Payutc({ 'app_key': PAYUTC_KEY })
+	params = {
+		# 'items': [],
+		'mail': request.user.email,
+		'return_url': request.GET.get('return_url', None),
+		'fun_id': order.sale.association.fun_id,
+		'callback_url': 'azdazd'
+	}
+
+	# Add items
+	# TODO perf
+	itemsArray = []
+	for orderline in orderlines:
+		itemsArray.append([int(orderline.item.nemopay_id), orderline.quantity])
+	params['items'] = itemsArray
+	print(itemsArray)
+
+	# Create transaction
+	transaction = payutc.createTransaction(params)
+	print(transaction)
+	print(params)
+
+	return ''
+
+	# TODO Save transaction info
+	order.tra_id = transaction
+	order.save()
+
+	# TODO Redirect to transaction url
+
+	return Response({'message': e}, status=status.HTTP_400_BAD_REQUEST)
