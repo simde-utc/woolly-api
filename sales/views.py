@@ -224,7 +224,6 @@ class OrderViewSet(viewsets.ModelViewSet):
 	def perform_create(self, serializer):
 		# Get the customized Orderlines through JSON
 		# import pdb; pdb.set_trace()
-		print("azdddddddddddddddddddddddddddddddd*********")
 		"""
 		validate_items = []
 		if 'lines' in self.request.data:
@@ -237,15 +236,16 @@ class OrderViewSet(viewsets.ModelViewSet):
 					# to the validate items list
 					validate_items.append(line)
 		"""
-		print(self.request.user)
+
 		# Create the order
-		print('---------------------')
+		print(self.request.POST)
 		serializer.save(
 			owner = self.request.user,
 			orderlines = None
+			# sale = self.
 		)
+		print('222222222---------------------')
 		print(serializer)
-		return ''
 
 		if len(validate_items):
 			# Get the new order ID

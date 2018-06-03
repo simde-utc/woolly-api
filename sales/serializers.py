@@ -205,10 +205,11 @@ class OrderSerializer(serializers.ModelSerializer):
 	orderlines = ResourceRelatedField(
 		queryset = OrderLine.objects,
 		many = True,
-		related_link_view_name='orderline-list',
-		related_link_url_kwarg='order_pk',
-		self_link_view_name='order-relationships',
-		required = False
+		related_link_url_kwarg = 'order_pk',
+		related_link_view_name = 'orderline-list',
+		self_link_view_name = 'order-relationships',
+		required = False,
+		allow_null = True
 	)
 
 	included_serializers = {
