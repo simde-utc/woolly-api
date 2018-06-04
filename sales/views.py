@@ -1,11 +1,13 @@
 import requests
 import json
+from functools import reduce
 
 # from django.db.models import F
 from rest_framework_json_api import views
 from rest_framework.response import Response
-from django.http import JsonResponse
 from rest_framework import permissions, status
+from django.http import JsonResponse
+from django.urls import reverse
 
 from core.permissions import *
 from .models import *
@@ -17,7 +19,6 @@ from woolly_api.settings import PAYUTC_KEY
 from rest_framework.decorators import *
 from authentication.auth import JWTAuthentication
 
-# queryset .all() ??????
 
 # ============================================
 # 	Association
@@ -50,7 +51,6 @@ class AssociationRelationshipView(views.RelationshipView):
 	Required by JSON API to display the associations related links
 	"""
 	queryset = Association.objects
-
 
 class AssociationMemberViewSet(views.ModelViewSet):
 	"""
@@ -400,32 +400,38 @@ def pay(request, pk):
 	# Récupération de l'Order
 	try:
 		# TODO ajout de la limite de temps
-		order = Order.objects.filter(owner=request.user).get(pk=pk)
+		order = Order.objects.filter(owner=request.user) \
+					.prefetch_related('sale').prefetch_related('orderlines') \
+					.get(pk=pk)
 	except Order.DoesNotExist as e:
 		return Response({'message': e}, status=status.HTTP_400_BAD_REQUEST)
 
-	# Retrieve orderlines
-	orderlines = order.orderlines.filter(quantity__gt=0).all()
 
-	# TODO Verifications
+	# Verifications
 	errors = verifyOrder(order, request.user)
+	if len(errors) > 0:
+		return orderErrorResponse(errors)
+
+	# Retrieve orderlines
+	orderlines = order.orderlines.filter(quantity__gt=0).prefetch_related('item').all()
+
+	# Add items
+	itemsArray = []
+	for orderline in orderlines:
+		itemsArray.append([int(orderline.item.nemopay_id), orderline.quantity])
+	if reduce(lambda acc, b: acc + b[1], itemsArray, 0) <= 0:
+		return orderErrorResponse(["Vous devez avoir un nombre d'items commandé strictement positif."])
 
 	# Create Payutc params
 	payutc = Payutc({ 'app_key': PAYUTC_KEY })
 	params = {
-		# 'items': [],
+		'items': str(itemsArray),
 		'mail': request.user.email,
-		'return_url': request.GET.get('return_url', None),
 		'fun_id': order.sale.association.fun_id,
-		'callback_url': request.GET.get('return_url', None)
+		'return_url': request.GET.get('return_url', None),
+		'callback_url': request.build_absolute_uri(reverse('pay-callback', kwargs={'pk': order.pk}))
 	}
-
-	# Add items
-	# TODO perf
-	itemsArray = []
-	for orderline in orderlines:
-		itemsArray.append([int(orderline.item.nemopay_id), orderline.quantity])
-	params['items'] = str(itemsArray)
+	print(params['callback_url'])
 
 	# Create transaction
 	transaction = payutc.createTransaction(params)
@@ -434,6 +440,7 @@ def pay(request, pk):
 		return Response({'message': transaction['error']['message']}, status=status.HTTP_400_BAD_REQUEST)
 
 	# Save transaction info
+	order.status = OrderStatus.NOT_PAYED.value
 	order.tra_id = transaction['tra_id']
 	order.save()
 
@@ -442,52 +449,75 @@ def pay(request, pk):
 	# return Response(OrderSerializer(order), status=status.HTTP_200_OK)
 
 
+@api_view(['GET'])
+@authentication_classes((JWTAuthentication,))
+@permission_classes((permissions.IsAuthenticated, IsOwner))
+def pay_callback(request, pk):
+	print("========= pay_callback =========")
+	pass
+
+
+
 def verifyOrder(order, user):
 	# Error bag to store all error messages
 	errors = list()
 	# OrderStatus considered as not canceled
-	statusList = [OrderStatus.AWAITING_VALIDATION, OrderStatus.VALIDATED, OrderStatus.NOT_PAYED, OrderStatus.PAYED]
+	statusList = [OrderStatus.AWAITING_VALIDATION.value, OrderStatus.VALIDATED.value,
+					OrderStatus.NOT_PAYED.value, OrderStatus.PAYED.value]
+
+
+	# Count quantity by order
+	quantityByOrder = reduce(lambda acc,orderline: acc + orderline.quantity, order.orderlines.all(), 0)
+	print("quantityByOrder", quantityByOrder)
+	print("orderlines")
+	for o in order.orderlines.all():
+		print(o.item.name, o.quantity)
 
 	# Fetch orders made by the user
 	userOrders = Order.objects \
-					.filter(user__pk=user.pk, sale__pk=order.sale.pk, status__in=statusList) \
-					.exclude(pk=order.pk)
+					.filter(owner__pk=user.pk, sale__pk=order.sale.pk, status__in=statusList) \
+					.exclude(pk=order.pk) \
+					.prefetch_related('orderlines')
 	# Count quantity bought by user
 	quantityByUser = dict()
 	quantityByUserTotal = 0
-	for orderline in userOrders.orderlines:
-		quantityByUser[orderline.item.pk] = orderline.quantity + quantityByUser.get(orderline.item.pk, 0)
-		quantityByUserTotal += orderline.quantity
-	# DEBUG
-	print("userOrders", userOrders)
-	print("quantityByUser", quantityByUser)
-	print("quantityByUserTotal", quantityByUserTotal)
+	for userOrder in userOrders:
+		for orderline in userOrder.orderlines:
+			quantityByUser[orderline.item.pk] = orderline.quantity + quantityByUser.get(orderline.item.pk, 0)
+			quantityByUserTotal += orderline.quantity
+	# # DEBUG
+	# print("userOrders", userOrders)
+	# print("quantityByUser", quantityByUser)
+	# print("quantityByUserTotal", quantityByUserTotal)
 
 	# Fetch all orders of the sale
 	saleOrders = Order.objects \
 					.filter(sale__pk=order.sale.pk, status__in=statusList) \
-					.exclude(pk=order.pk)
+					.exclude(pk=order.pk) \
+					.prefetch_related('orderlines')
 	# Count quantity bought by sale
 	quantityBySale = dict()
 	quantityBySaleTotal = 0
-	for orderline in saleOrders.orderlines:
-		quantityBySale[orderline.item.pk] = orderline.quantity + quantityBySale.get(orderline.item.pk, 0)
-		quantityBySaleTotal += orderline.quantity
-	# DEBUG
-	print("saleOrders", saleOrders)
-	print("quantityBySale", quantityBySale)
-	print("quantityBySaleTotal", quantityBySaleTotal)
+	for saleOrder in saleOrders:
+		for orderline in saleOrder.orderlines:
+			quantityBySale[orderline.item.pk] = orderline.quantity + quantityBySale.get(orderline.item.pk, 0)
+			quantityBySaleTotal += orderline.quantity
+	# # DEBUG
+	# print("saleOrders", saleOrders)
+	# print("quantityBySale", quantityBySale)
+	# print("quantityBySaleTotal", quantityBySaleTotal)
 
 
 	# Verify quantity left by sale
-	if order.max_item_quantity != None:
-		if order.max_item_quantity < quantityBySaleTotal + quantityByUserTotal:
-			errors.append("Il ne reste moins de {} items pour cette vente." \
-				.format(order.max_item_quantity - quantityBySaleTotal))
+	print("sale.max_item_quantity", order.sale.max_item_quantity)
+	if order.sale.max_item_quantity != None:
+		if order.sale.max_item_quantity < quantityBySaleTotal + quantityByOrder:
+			errors.append("Il reste moins de {} items pour cette vente." \
+				.format(quantityByOrder))
 
 
 	# Check for each orderlines
-	for orderline in order.orderlines:
+	for orderline in order.orderlines.all():
 
 		# Verif max_per_user // quantity
 		if orderline.quantity > orderline.item.max_per_user:
@@ -495,15 +525,15 @@ def verifyOrder(order, user):
 				.format(orderline.item.max_per_user, orderline.item.name))
 
 		# Verif max_per_user // user orders
-		if quantityBoughtByUser[orderline.item.pk] + orderline.quantity > orderline.item.max_per_user:
+		if quantityByUser.get(orderline.item.pk, 0) + orderline.quantity > orderline.item.max_per_user:
 			errors.append("Vous avez déjà pris {} {} sur un total de {} par personne." \
-				.format(quantityBoughtByUser[orderline.item.pk], orderline.item.name, orderline.item.max_per_user))
+				.format(quantityByUser.get(orderline.item.pk, 0), orderline.item.name, orderline.item.max_per_user))
 
 		# Verify quantity left // sale orders
 		if orderline.item.quantity != None:
-			if orderline.item.quantity < quantityBySale[orderline.item.pk] + orderline.quantity:
+			if orderline.item.quantity < quantityBySale.get(orderline.item.pk, 0) + orderline.quantity:
 				errors.append("Vous avez déjà pris {} {} sur un total de {} par personne." \
-					.format(quantityBySale[orderline.item.pk], orderline.item.name, orderline.item.max_per_user))
+					.format(quantityBySale.get(orderline.item.pk, 0), orderline.item.name, orderline.item.max_per_user))
 
 		# Verif cotisant
 		if orderline.item.usertype.name == UserType.COTISANT:
@@ -516,3 +546,11 @@ def verifyOrder(order, user):
 				errors.append("Vous devez être {} pour prendre {}.".format("UTCéen", orderline.item.name))
 
 	return errors
+
+
+def orderErrorResponse(errors):
+	resp = {
+		'message': 'Erreur lors de la vérification de la commande.',
+		'errors': [ {'detail': e} for e in errors ]
+	}
+	return JsonResponse(resp, status=status.HTTP_400_BAD_REQUEST)
