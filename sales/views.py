@@ -408,6 +408,7 @@ def pay(request, pk):
 	orderlines = order.orderlines.filter(quantity__gt=0).all()
 
 	# TODO Verifications
+	errors = verifyOrder(order, request.user)
 
 	# Create Payutc params
 	payutc = Payutc({ 'app_key': PAYUTC_KEY })
@@ -439,3 +440,79 @@ def pay(request, pk):
 	# TODO Redirect to transaction url
 	return JsonResponse({ 'url': transaction['url'] }, status=status.HTTP_200_OK)
 	# return Response(OrderSerializer(order), status=status.HTTP_200_OK)
+
+
+def verifyOrder(order, user):
+	# Error bag to store all error messages
+	errors = list()
+	# OrderStatus considered as not canceled
+	statusList = [OrderStatus.AWAITING_VALIDATION, OrderStatus.VALIDATED, OrderStatus.NOT_PAYED, OrderStatus.PAYED]
+
+	# Fetch orders made by the user
+	userOrders = Order.objects \
+					.filter(user__pk=user.pk, sale__pk=order.sale.pk, status__in=statusList) \
+					.exclude(pk=order.pk)
+	# Count quantity bought by user
+	quantityByUser = dict()
+	quantityByUserTotal = 0
+	for orderline in userOrders.orderlines:
+		quantityByUser[orderline.item.pk] = orderline.quantity + quantityByUser.get(orderline.item.pk, 0)
+		quantityByUserTotal += orderline.quantity
+	# DEBUG
+	print("userOrders", userOrders)
+	print("quantityByUser", quantityByUser)
+	print("quantityByUserTotal", quantityByUserTotal)
+
+	# Fetch all orders of the sale
+	saleOrders = Order.objects \
+					.filter(sale__pk=order.sale.pk, status__in=statusList) \
+					.exclude(pk=order.pk)
+	# Count quantity bought by sale
+	quantityBySale = dict()
+	quantityBySaleTotal = 0
+	for orderline in saleOrders.orderlines:
+		quantityBySale[orderline.item.pk] = orderline.quantity + quantityBySale.get(orderline.item.pk, 0)
+		quantityBySaleTotal += orderline.quantity
+	# DEBUG
+	print("saleOrders", saleOrders)
+	print("quantityBySale", quantityBySale)
+	print("quantityBySaleTotal", quantityBySaleTotal)
+
+
+	# Verify quantity left by sale
+	if order.max_item_quantity != None:
+		if order.max_item_quantity < quantityBySaleTotal + quantityByUserTotal:
+			errors.append("Il ne reste moins de {} items pour cette vente." \
+				.format(order.max_item_quantity - quantityBySaleTotal))
+
+
+	# Check for each orderlines
+	for orderline in order.orderlines:
+
+		# Verif max_per_user // quantity
+		if orderline.quantity > orderline.item.max_per_user:
+			errors.append("Vous ne pouvez prendre que {} {} par personne." \
+				.format(orderline.item.max_per_user, orderline.item.name))
+
+		# Verif max_per_user // user orders
+		if quantityBoughtByUser[orderline.item.pk] + orderline.quantity > orderline.item.max_per_user:
+			errors.append("Vous avez déjà pris {} {} sur un total de {} par personne." \
+				.format(quantityBoughtByUser[orderline.item.pk], orderline.item.name, orderline.item.max_per_user))
+
+		# Verify quantity left // sale orders
+		if orderline.item.quantity != None:
+			if orderline.item.quantity < quantityBySale[orderline.item.pk] + orderline.quantity:
+				errors.append("Vous avez déjà pris {} {} sur un total de {} par personne." \
+					.format(quantityBySale[orderline.item.pk], orderline.item.name, orderline.item.max_per_user))
+
+		# Verif cotisant
+		if orderline.item.usertype.name == UserType.COTISANT:
+			if user.usertype.name != UserType.COTISANT:
+				errors.append("Vous devez être {} pour prendre {}.".format(UserType.COTISANT, orderline.item.name))
+
+		# Verif non cotisant (ultra sale mais flemme)
+		if orderline.item.usertype.name == UserType.NON_COTISANT:
+			if user.usertype.name == UserType.EXTERIEUR:
+				errors.append("Vous devez être {} pour prendre {}.".format("UTCéen", orderline.item.name))
+
+	return errors

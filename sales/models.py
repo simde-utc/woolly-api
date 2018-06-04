@@ -59,7 +59,7 @@ class Sale(models.Model):
 	begin_at 	= models.DateTimeField()
 	end_at 		= models.DateTimeField()
 
-	max_item_quantity = models.IntegerField()
+	max_item_quantity = models.IntegerField(null = True)
 	max_payment_date  = models.DateTimeField()
 
 	# TODO v2
