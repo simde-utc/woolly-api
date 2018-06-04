@@ -39,7 +39,7 @@ class Payutc:
 				url += "&sessionid=" + self.config["sessionID"]
 
 		response = requests.post(url, data=json.dumps(data), headers={"Content-Type": "application/json"})
-		return response.text
+		return json.loads(response.text)
 
 
 
@@ -50,6 +50,7 @@ class Payutc:
 	def createTransaction(self, params):
 		keys = ('items', 'mail', 'return_url', 'fun_id', 'callback_url')
 		data = self.filterParams(params, keys)
+		data['fun_id'] = str(data['fun_id'])
 		return self.genericApiCall("WEBSALE", "createTransaction", data)
 
 	def getTransactionInfo(self, params):

@@ -4,6 +4,7 @@ import json
 # from django.db.models import F
 from rest_framework_json_api import views
 from rest_framework.response import Response
+from django.http import JsonResponse
 from rest_framework import permissions, status
 
 from core.permissions import *
@@ -415,7 +416,7 @@ def pay(request, pk):
 		'mail': request.user.email,
 		'return_url': request.GET.get('return_url', None),
 		'fun_id': order.sale.association.fun_id,
-		'callback_url': 'azdazd'
+		'callback_url': request.GET.get('return_url', None)
 	}
 
 	# Add items
@@ -423,20 +424,18 @@ def pay(request, pk):
 	itemsArray = []
 	for orderline in orderlines:
 		itemsArray.append([int(orderline.item.nemopay_id), orderline.quantity])
-	params['items'] = itemsArray
-	print(itemsArray)
+	params['items'] = str(itemsArray)
 
 	# Create transaction
 	transaction = payutc.createTransaction(params)
 	print(transaction)
-	print(params)
+	if 'error' in transaction:
+		return Response({'message': transaction['error']['message']}, status=status.HTTP_400_BAD_REQUEST)
 
-	return ''
-
-	# TODO Save transaction info
-	order.tra_id = transaction
+	# Save transaction info
+	order.tra_id = transaction['tra_id']
 	order.save()
 
 	# TODO Redirect to transaction url
-
-	return Response({'message': e}, status=status.HTTP_400_BAD_REQUEST)
+	return JsonResponse({ 'url': transaction['url'] }, status=status.HTTP_200_OK)
+	# return Response(OrderSerializer(order), status=status.HTTP_200_OK)
