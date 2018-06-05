@@ -10,12 +10,11 @@ class UserTypeSerializer(serializers.ModelSerializer):
 		fields = ('id', 'name')
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.HyperlinkedModelSerializer):
 
-	# password = serializers.CharField(required = True, write_only = True)
-	type = serializers.ReadOnlyField(source='usertype.name')
 	usertype = ResourceRelatedField(
-		queryset = UserType.objects,
+		read_only = True,
+		# queryset = UserType.objects,
 		related_link_view_name = 'usertype-list',
 		related_link_url_kwarg = 'user_pk',
 		self_link_view_name = 'user-relationships',
@@ -32,12 +31,11 @@ class UserSerializer(serializers.ModelSerializer):
 	orders = ResourceRelatedField(
 		queryset = Order.objects,
 		many = True,
-		# related_link_view_name = 'orders-list',
-		# related_link_url_kwarg = 'user_pk',
-		# self_link_view_name = 'user-relationships',
+		related_link_view_name = 'orders-list',
+		related_link_url_kwarg = 'user_pk',
+		self_link_view_name = 'user-relationships',
 		required = False
 	)
-
 
 	class Meta:
 		model = User

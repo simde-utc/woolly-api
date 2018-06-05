@@ -1,7 +1,6 @@
 from django.http import JsonResponse
 from django.shortcuts import redirect
-from rest_framework import viewsets
-from rest_framework_json_api.views import RelationshipView
+from rest_framework_json_api import views
 from authlib.specs.rfc7519 import JWTError
 
 from rest_framework.permissions import IsAuthenticated
@@ -12,26 +11,26 @@ from .services import OAuthAPI, JWTClient, get_jwt_from_request
 # from sales.models import AssociationMember
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(views.ModelViewSet):
 	"""
 	API endpoint that allows Users to be viewed or edited.
 	support Post request to create a new User
 	"""
 	queryset = User.objects.all()
 	serializer_class = UserSerializer
-	# permission_classes = (IsAuthenticated,)
+	permission_classes = (IsAuthenticated,)
 
 	def create(self, request):
 		return redirect('auth.login')
 
-	# def get_queryset(self):
-	# 	queryset = self.queryset.filter(login=self.request.user.login)
+	def get_queryset(self):
+		queryset = self.queryset.filter(pk=self.request.user.pk)
 	# 	if 'user_pk' in self.kwargs:
 	# 		association_pk = self.kwargs['user_pk']
 	# 		queryset = queryset.filter(user__pk=association_pk)
-	# 	return queryset
+		return queryset
 
-class UserTypeViewSet(viewsets.ModelViewSet):
+class UserTypeViewSet(views.ModelViewSet):
 	queryset = UserType.objects.all()
 	serializer_class = UserTypeSerializer
 	permission_classes = (IsAuthenticated,)
@@ -51,7 +50,7 @@ class UserTypeViewSet(viewsets.ModelViewSet):
 	# 	return queryset
 
 
-class UserRelationshipView(RelationshipView):
+class UserRelationshipView(views.RelationshipView):
 	queryset = User.objects
 
 

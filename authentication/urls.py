@@ -58,33 +58,22 @@ urlpatterns = {
 
 	# Users
 	url(r'^users',
-		user_list,
-		name = "user-list"),
+		user_list, name = "user-list"),
 	url(r'^users/(?P<pk>[0-9]+)$',
-		user_detail,
-		name = 'user-detail'),
+		user_detail, name = 'user-detail'),
+	url(r'^users/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
+		view = UserRelationshipView.as_view(), name = 'user-relationships'
+	),
 
-	# UsersTypes
-	url(r'^users/(?P<user_pk>[0-9]+)/usertypes$',
-		user_type_list,
-		name = 'usertype-list'),
-	url(r'^users/(?P<user_pk>[0-9]+)/usertypes/(?P<pk>[0-9]+)$',
-		user_type_detail,
-		name = 'usertype-detail'),
-	# OR ????
 	# UsersTypes
 	url(r'^usertypes',
-		user_type_list,
-		name = "usertype-list"),
+		user_type_list, name = "usertype-list"),
 	url(r'^usertypes/(?P<pk>[0-9]+)$',
-		user_type_detail,
-		name = 'usertype-detail'),
-
-	url(
-		regex = r'^users/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
-		view = UserRelationshipView.as_view(),
-		name = 'user-relationships'
-	),
+		user_type_detail, name = 'usertype-detail'),
+	url(r'^users/(?P<user_pk>[0-9]+)/usertypes$',
+		user_type_list, name = 'usertype-list'),
+	url(r'^users/(?P<user_pk>[0-9]+)/usertypes/(?P<pk>[0-9]+)$',
+		user_type_detail, name = 'usertype-detail'),
 
 }
 

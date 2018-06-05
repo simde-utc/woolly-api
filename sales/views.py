@@ -1,5 +1,6 @@
 import requests
 import json
+from django.utils import timezone
 from functools import reduce
 
 # from django.db.models import F
@@ -15,7 +16,7 @@ from .serializers import *
 from .permissions import *
 
 from payutc.payutc import Payutc
-from woolly_api.settings import PAYUTC_KEY
+from woolly_api.settings import PAYUTC_KEY, PAYUTC_TRANSACTION_BASE_URL
 from rest_framework.decorators import *
 from authentication.auth import JWTAuthentication
 
@@ -224,6 +225,7 @@ class OrderViewSet(views.ModelViewSet):
 	queryset = Order.objects.all()
 	serializer_class = OrderSerializer
 	permission_classes = (permissions.IsAuthenticated, IsOwner)
+	validStatusList = [OrderStatus.ONGOING.value, OrderStatus.AWAITING_VALIDATION.value, OrderStatus.NOT_PAYED.value]
 
 	def create(self, request):
 		"""
@@ -231,8 +233,12 @@ class OrderViewSet(views.ModelViewSet):
 		"""
 		try:
 			# TODO ajout de la limite de temps
-			order = Order.objects.get(sale=request.data['sale']['id'], owner=request.user.id)
+			order = Order.objects \
+				.filter(status__in=self.validStatusList) \
+				.get(sale=request.data['sale']['id'], owner=request.user.id)
+
 			serializer = OrderSerializer(order)
+			httpStatus = status.HTTP_200_OK
 		except Order.DoesNotExist as err:
 			# Configure Order
 			serializer = OrderSerializer(data = {
@@ -245,9 +251,10 @@ class OrderViewSet(views.ModelViewSet):
 			})
 			serializer.is_valid(raise_exception=True)
 			self.perform_create(serializer)
+			httpStatus = status.HTTP_201_CREATED
 
 		headers = self.get_success_headers(serializer.data)
-		return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+		return Response(serializer.data, status=httpStatus, headers=headers)
 
 
 	def get_queryset(self):
@@ -406,6 +413,31 @@ def pay(request, pk):
 	except Order.DoesNotExist as e:
 		return Response({'message': e}, status=status.HTTP_400_BAD_REQUEST)
 
+	# Payutc Instance
+	payutc = Payutc({ 'app_key': PAYUTC_KEY })
+
+	if order.status == OrderStatus.NOT_PAYED.value:
+		transaction = payutc.getTransactionInfo({ 'tra_id': order.tra_id, 'fun_id': order.sale.association.fun_id })
+		if transaction['status'] == 'A':
+			order.status = OrderStatus.EXPIRED.value
+			order.save()
+			resp = {
+				'status': 'EXPIRED',
+				'message': 'Votre commande a expiré.'
+			}
+		elif transaction['status'] == 'V':
+			order.status = OrderStatus.PAYED.value
+			order.save()
+			resp = {
+				'status': 'PAYED',
+				'message': 'Votre commande a été payée.'
+			}
+		else:
+			resp = {
+				'status': 'ONGOING',
+				'url': PAYUTC_TRANSACTION_BASE_URL + str(transaction['id'])
+			}
+		return JsonResponse(resp, status=status.HTTP_200_OK)
 
 	# Verifications
 	errors = verifyOrder(order, request.user)
@@ -423,7 +455,6 @@ def pay(request, pk):
 		return orderErrorResponse(["Vous devez avoir un nombre d'items commandé strictement positif."])
 
 	# Create Payutc params
-	payutc = Payutc({ 'app_key': PAYUTC_KEY })
 	params = {
 		'items': str(itemsArray),
 		'mail': request.user.email,
@@ -431,11 +462,9 @@ def pay(request, pk):
 		'return_url': request.GET.get('return_url', None),
 		'callback_url': request.build_absolute_uri(reverse('pay-callback', kwargs={'pk': order.pk}))
 	}
-	print(params['callback_url'])
 
 	# Create transaction
 	transaction = payutc.createTransaction(params)
-	print(transaction)
 	if 'error' in transaction:
 		return Response({'message': transaction['error']['message']}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -444,9 +473,8 @@ def pay(request, pk):
 	order.tra_id = transaction['tra_id']
 	order.save()
 
-	# TODO Redirect to transaction url
+	# Redirect to transaction url
 	return JsonResponse({ 'url': transaction['url'] }, status=status.HTTP_200_OK)
-	# return Response(OrderSerializer(order), status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -461,17 +489,22 @@ def pay_callback(request, pk):
 def verifyOrder(order, user):
 	# Error bag to store all error messages
 	errors = list()
+
+	# Check active & date
+	if order.sale.is_active == False:
+		errors.append("La vente n'est pas disponible.")
+	now = timezone.now()
+	if now < order.sale.begin_at:
+		errors.append("La vente n'a pas encore commencé.")
+	if now > order.sale.end_at:
+		errors.append("La vente est terminée.")
+	# Checkpoint
+	if len(errors) > 0:
+		return errors
+
 	# OrderStatus considered as not canceled
 	statusList = [OrderStatus.AWAITING_VALIDATION.value, OrderStatus.VALIDATED.value,
 					OrderStatus.NOT_PAYED.value, OrderStatus.PAYED.value]
-
-
-	# Count quantity by order
-	quantityByOrder = reduce(lambda acc,orderline: acc + orderline.quantity, order.orderlines.all(), 0)
-	print("quantityByOrder", quantityByOrder)
-	print("orderlines")
-	for o in order.orderlines.all():
-		print(o.item.name, o.quantity)
 
 	# Fetch orders made by the user
 	userOrders = Order.objects \
@@ -482,13 +515,9 @@ def verifyOrder(order, user):
 	quantityByUser = dict()
 	quantityByUserTotal = 0
 	for userOrder in userOrders:
-		for orderline in userOrder.orderlines:
+		for orderline in userOrder.orderlines.all():
 			quantityByUser[orderline.item.pk] = orderline.quantity + quantityByUser.get(orderline.item.pk, 0)
 			quantityByUserTotal += orderline.quantity
-	# # DEBUG
-	# print("userOrders", userOrders)
-	# print("quantityByUser", quantityByUser)
-	# print("quantityByUserTotal", quantityByUserTotal)
 
 	# Fetch all orders of the sale
 	saleOrders = Order.objects \
@@ -499,22 +528,15 @@ def verifyOrder(order, user):
 	quantityBySale = dict()
 	quantityBySaleTotal = 0
 	for saleOrder in saleOrders:
-		for orderline in saleOrder.orderlines:
+		for orderline in saleOrder.orderlines.all():
 			quantityBySale[orderline.item.pk] = orderline.quantity + quantityBySale.get(orderline.item.pk, 0)
 			quantityBySaleTotal += orderline.quantity
-	# # DEBUG
-	# print("saleOrders", saleOrders)
-	# print("quantityBySale", quantityBySale)
-	# print("quantityBySaleTotal", quantityBySaleTotal)
 
 
 	# Verify quantity left by sale
-	print("sale.max_item_quantity", order.sale.max_item_quantity)
 	if order.sale.max_item_quantity != None:
-		if order.sale.max_item_quantity < quantityBySaleTotal + quantityByOrder:
-			errors.append("Il reste moins de {} items pour cette vente." \
-				.format(quantityByOrder))
-
+		if order.sale.max_item_quantity < quantityBySaleTotal + quantityByUserTotal:
+			errors.append("Il reste moins de {} items pour cette vente.".format(quantityByUserTotal))
 
 	# Check for each orderlines
 	for orderline in order.orderlines.all():

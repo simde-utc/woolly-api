@@ -29,6 +29,7 @@ JWT_TTL = 3600 * 10
 
 # Payutc & Ginger config
 PAYUTC_KEY = confidentials.PAYUTC_KEY
+PAYUTC_TRANSACTION_BASE_URL = 'https://payutc.nemopay.net/validation?tra_id='
 GINGER_KEY = confidentials.GINGER_KEY
 GINGER_SERVER_URL = 'https://assos.utc.fr/ginger/v1/'
 
@@ -209,12 +210,11 @@ TEMPLATES = [
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
-
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
-
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
+LANGUAGE_CODE = 'fr'
+TIME_ZONE = 'Europe/Paris'
+
 
 
