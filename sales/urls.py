@@ -33,10 +33,6 @@ itemfield_detail = ItemFieldViewSet.as_view(VIEWSET['detail'])
 orderlinefield_list   = OrderLineFieldViewSet.as_view(VIEWSET['list'])
 orderlinefield_detail = OrderLineFieldViewSet.as_view(VIEWSET['detail'])
 
-paymentmethod_list   = PaymentMethodViewSet.as_view(VIEWSET['list'])
-paymentmethod_detail = PaymentMethodViewSet.as_view(VIEWSET['detail'])
-
-
 
 # The urlpatterns defines the endpoints of the API
 urlpatterns = [
@@ -236,28 +232,5 @@ urlpatterns = [
 		view = orderlinefield_list, name = 'orderlinefield-list'),
 	url(r'^orderlines/(?P<orderline_pk>[0-9]+)/orderlinefields/(?P<pk>[0-9]+)$',
 		view = orderline_detail, name = 'orderlinefields-detail'),
-
-
-
-
-
-	# ============================================
-	# 	Payment Methods : A VIRER
-	# ============================================
-	url(r'^paymentmethods$',
-		view = paymentmethod_list, name = 'paymentmethod-list'),
-	url(r'^paymentmethods/(?P<pk>[0-9]+)$',
-		view = paymentmethod_detail, name = 'paymentmethod-detail'),
-	url(r'^paymentmethods/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
-		view = PaymentMethodRelationshipView.as_view(), name = 'paymentmethod-relationships'),
-
-	url(r'^sales/(?P<sale_pk>[0-9]+)/paymentmethods$',
-		view = paymentmethod_list, name = 'paymentmethod-list'),
-	url(r'^sales/(?P<sale_pk>[0-9]+)/paymentmethods/(?P<pk>[0-9]+)$',
-		view = paymentmethod_detail, name = 'paymentmethod-detail'),
-	url(r'^paymentmethods/(?P<payment_pk>[0-9]+)/sales$',
-		view = sale_list, name = 'sale-payment-list'),
-	url(r'^paymentmethods/(?P<payment_pk>[0-9]+)/sales/(?P<pk>[0-9]+)$',
-		view = sale_detail, name = 'sale-payment-detail'),
 
 ]

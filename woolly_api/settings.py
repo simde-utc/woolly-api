@@ -152,8 +152,8 @@ INSTALLED_APPS = [
 	'django.contrib.messages',
 	'django.contrib.staticfiles',
 	'rest_framework',
-	'cas',
 	'corsheaders',
+	# 'cas',
 	'core',
 	'authentication',
 	'sales',
@@ -168,7 +168,7 @@ MIDDLEWARE = [
 	'django.contrib.auth.middleware.AuthenticationMiddleware',
 	'django.contrib.messages.middleware.MessageMiddleware',
 	'django.middleware.clickjacking.XFrameOptionsMiddleware',
-	'cas.middleware.CASMiddleware',
+	# 'cas.middleware.CASMiddleware',
 	'django.middleware.csrf.CsrfViewMiddleware',
 ]
 

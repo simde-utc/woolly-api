@@ -122,29 +122,6 @@ class SaleRelationshipView(views.RelationshipView):
 	queryset = Sale.objects
 
 
-class PaymentMethodViewSet(views.ModelViewSet):
-	# TODO a virer
-	"""
-	Defines the behavior of the payment method view
-	"""
-	queryset = PaymentMethod.objects.all()
-	serializer_class = PaymentMethodSerializer
-	permission_classes = (permissions.IsAuthenticated,)
-
-	def get_queryset(self):
-		queryset = self.queryset
-		if 'sale_pk' in self.kwargs:
-			sale_pk = self.kwargs['sale_pk']
-			queryset = queryset.filter(sales__pk=sale_pk)
-
-		return queryset
-
-class PaymentMethodRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the payment methods related links
-	"""
-	queryset = PaymentMethod.objects
-
 
 # ============================================
 # 	Item

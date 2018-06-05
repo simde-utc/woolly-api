@@ -7,35 +7,8 @@ from .models import *
 
 
 # ============================================
-# 	Payment, Items & Sales
+# 	Items & Sales
 # ============================================
-
-# TODO degager pour mettre dans un module à part
-class PaymentMethodSerializer(serializers.ModelSerializer):
-	"""
-	Defines how the PaymentMethod fields are serialized
-	"""
-	"""
-	sales = ResourceRelatedField(
-		queryset=Sale.objects,
-		many=True,
-		related_link_view_name='sale-payment-list',
-		related_link_url_kwarg='payment_pk',
-		self_link_view_name='paymentmethod-relationships'
-	)
-
-	included_serializers = {
-		'sales': SaleSerializer
-	}
-	"""
-	class Meta:
-		model = PaymentMethod
-		fields = '__all__'		# DEBUG
-		# fields = ('id', 'name', 'api_url', 'sales')
-
-	class JSONAPIMeta:
-		pass
-		# included_resources = ['sales']
 
 class ItemGroupSerializer(serializers.ModelSerializer):
 	# sale = ResourceRelatedField(
@@ -244,7 +217,7 @@ class OrderLineSerializer(serializers.ModelSerializer):
 		self_link_view_name='orderline-relationships'
 	)
 
-	fields = ResourceRelatedField(
+	orderlinefields = ResourceRelatedField(
 		queryset = OrderLineField.objects,
 		many = True,
 		related_link_url_kwarg='orderline_pk',
@@ -257,7 +230,7 @@ class OrderLineSerializer(serializers.ModelSerializer):
 	included_serializers = {
 		'item': ItemSerializer,
 		'order': OrderSerializer,
-		'fields': 'sales.serializers.OrderLineFieldSerializer'
+		'orderlinefields': 'sales.serializers.OrderLineFieldSerializer'
 	}
 
 	class Meta:
@@ -266,7 +239,8 @@ class OrderLineSerializer(serializers.ModelSerializer):
 		# fields = ('id', 'order', 'item', 'quantity')
 
 	class JSONAPIMeta:
-		included_resources = ['item', 'order', 'fields']
+		# included_resources = ['item', 'order', 'fields']
+		pass
 
 
 # ============================================

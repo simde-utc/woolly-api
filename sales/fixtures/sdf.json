@@ -66,5 +66,113 @@
 			"nemopay_id": 12732,
 			"max_per_user": 10
 		}
+	},
+	{
+		"model": "sales.field",
+		"pk": 1,
+		"fields": {
+			"name": "hash",
+			"type": "string",
+			"default": null
+		}
+	},
+	{
+		"model": "sales.field",
+		"pk": 2,
+		"fields": {
+			"name": "nom",
+			"type": "string",
+			"default": "owner.last_name"
+		}
+	},
+	{
+		"model": "sales.field",
+		"pk": 3,
+		"fields": {
+			"name": "prenom",
+			"type": "string",
+			"default": "owner.first_name"
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 1,
+		"fields": {
+			"field": 1,
+			"item": 1,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 2,
+		"fields": {
+			"field": 1,
+			"item": 2,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 3,
+		"fields": {
+			"field": 1,
+			"item": 3,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 4,
+		"fields": {
+			"field": 2,
+			"item": 1,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 5,
+		"fields": {
+			"field": 2,
+			"item": 2,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 6,
+		"fields": {
+			"field": 2,
+			"item": 3,
+			"editable": true
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 7,
+		"fields": {
+			"field": 3,
+			"item": 1,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 8,
+		"fields": {
+			"field": 3,
+			"item": 2,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 9,
+		"fields": {
+			"field": 3,
+			"item": 3,
+			"editable": true
+		}
 	}
 ]

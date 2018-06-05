@@ -35,14 +35,6 @@ class AssociationMember(models.Model):
 # ============================================
 # 	Sale
 # ============================================
-
-class PaymentMethod(models.Model):
-	# TODO à mettre à part, inutile pour la beta
-	name 	= models.CharField(max_length = 50)
-	api_url = models.CharField(max_length = 500)
-
-	class JSONAPIMeta:
-		resource_name = "paymentmethods"
 		
 class Sale(models.Model):
 	"""
@@ -97,6 +89,8 @@ class Item(models.Model):
 	price 		= models.FloatField()
 	nemopay_id 	= models.CharField(max_length=30, null=True)		# TODO V2 : abstraire payment
 	max_per_user = models.IntegerField(null=True)		# TODO V2 : moteur de contraintes
+
+	fields 	= models.ManyToManyField('Field', through='ItemField', through_fields=('item','field')) #, related_name='fields')
 
 	class JSONAPIMeta:
 		resource_name = "items"
@@ -161,9 +155,9 @@ class Field(models.Model):
 	Defines the Field object
 	"""
 	name 	= models.CharField(max_length=200)
-	type 	= models.CharField(max_length=1000)
-	default = models.CharField(max_length=200)
-	items 	= models.ManyToManyField(Item, through='ItemField') #, related_name='fields')
+	type 	= models.CharField(max_length=200)
+	default = models.CharField(max_length=200, null=True)
+	items 	= models.ManyToManyField(Item, through='ItemField', through_fields=('field','item'))
 
 	class JSONAPIMeta:
 		resource_name = "fields"
@@ -173,9 +167,9 @@ class ItemField(models.Model):
 	"""
 	Defines the ItemField object
 	"""
-	editable = models.BooleanField(default=True)
-	item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='itemfields')
 	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='itemfields')
+	item  = models.ForeignKey(Item,  on_delete=models.CASCADE, related_name='itemfields')
+	editable = models.BooleanField(default=True)
 
 	# sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
 	# itemgroup = models.ForeignKey(ItemGroup, on_delete = None, related_name = 'itemgroups')
@@ -190,8 +184,8 @@ class OrderLineField(models.Model):
 	Defines the OrderLineField object
 	"""
 	value = models.CharField(max_length=1000)
-	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name="orderlinesfields")
-	orderline = models.ForeignKey(OrderLine, on_delete=models.CASCADE, related_name="orderlinesfields")
+	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name="orderlinefields")
+	orderline = models.ForeignKey(OrderLine, on_delete=models.CASCADE, related_name="orderlinefields")
 
 	class JSONAPIMeta:
 		resource_name = "orderlinefields"
