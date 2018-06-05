@@ -132,11 +132,12 @@ class Order(models.Model):
 	status = models.PositiveSmallIntegerField(
 		choices = OrderStatus.choices(),  # Choices is a list of Tuple
 		default = OrderStatus.ONGOING.value
-    )
+	)
 	tra_id = models.IntegerField(null = True, default = None)
 
 	class JSONAPIMeta:
 		resource_name = "orders"
+
 
 class OrderLine(models.Model):
 	"""
@@ -167,6 +168,7 @@ class Field(models.Model):
 	class JSONAPIMeta:
 		resource_name = "fields"
 
+
 class ItemField(models.Model):
 	"""
 	Defines the ItemField object
@@ -182,13 +184,14 @@ class ItemField(models.Model):
 	class JSONAPIMeta:
 		resource_name = "itemfields"
 
+
 class OrderLineField(models.Model):
 	"""
 	Defines the OrderLineField object
 	"""
 	value = models.CharField(max_length=1000)
-	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name="orderlines")
-	orderline = models.ForeignKey(OrderLine, on_delete=models.CASCADE, related_name="orderlines")
+	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name="orderlinesfields")
+	orderline = models.ForeignKey(OrderLine, on_delete=models.CASCADE, related_name="orderlinesfields")
 
 	class JSONAPIMeta:
 		resource_name = "orderlinefields"
