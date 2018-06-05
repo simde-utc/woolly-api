@@ -306,7 +306,7 @@ class OrderLineRelationshipView(views.RelationshipView):
 	queryset = OrderLine.objects
 
 # ============================================
-# 	Field, ItemField & OrderLineField
+# 	Field & ItemField
 # ============================================
 
 class FieldViewSet(views.ModelViewSet):
@@ -338,10 +338,19 @@ class ItemFieldRelationshipView(views.RelationshipView):
 	"""
 	queryset = ItemField.objects
 
+# ============================================
+# 	OrderLineItem & OrderLineField
+# ============================================
 
 class OrderLineItemViewSet(views.ModelViewSet):
 	queryset = OrderLineItem.objects.all()
 	serializer_class = OrderLineItemSerializer
+
+class OrderLineItemRelationshipView(views.RelationshipView):
+	"""
+	Required by JSON API to display the orderlines related links
+	"""
+	queryset = OrderLineItem.objects
 
 
 class OrderLineFieldViewSet(views.ModelViewSet):

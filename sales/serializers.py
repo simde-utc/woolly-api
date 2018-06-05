@@ -175,6 +175,9 @@ class OrderSerializer(serializers.ModelSerializer):
 		# read_only = True,
 		required = False,
 		# allow_null = True
+		# related_link_view_name = 'order-owner-detail',
+		# related_link_url_kwarg = 'order_pk',
+		# self_link_view_name = 'order-relationships',
 	)
 	sale = ResourceRelatedField(
 		queryset = Sale.objects,
@@ -183,9 +186,9 @@ class OrderSerializer(serializers.ModelSerializer):
 	orderlines = ResourceRelatedField(
 		queryset = OrderLine.objects,
 		many = True,
-		related_link_url_kwarg = 'order_pk',
-		related_link_view_name = 'orderline-list',
-		self_link_view_name = 'order-relationships',
+		# related_link_view_name = 'order-list',
+		# related_link_url_kwarg = 'order_pk',
+		# self_link_view_name = 'order-relationships',
 		required = False,
 		allow_null = True
 	)
@@ -217,7 +220,7 @@ class OrderLineSerializer(serializers.ModelSerializer):
 	item = ResourceRelatedField(
 		queryset = Item.objects,
 		many = False,
-		related_link_view_name='orderline-list',
+		related_link_view_name='orderline-item-list',
 		related_link_url_kwarg='orderline_pk',
 		self_link_view_name='orderline-relationships'
 	)
@@ -225,7 +228,10 @@ class OrderLineSerializer(serializers.ModelSerializer):
 		queryset = OrderLineItem.objects,
 		many = True,
 		required = False,
-		allow_null=True
+		allow_null = True,
+		# related_link_view_name='orderline-orderlineitem-list',
+		# related_link_url_kwarg='orderline_pk',
+		# self_link_view_name='orderline-relationships'
 	)
 
 	included_serializers = {
@@ -289,14 +295,17 @@ class ItemFieldSerializer(serializers.ModelSerializer):
 class OrderLineItemSerializer(serializers.ModelSerializer):
 	orderline = ResourceRelatedField(
 		queryset = OrderLine.objects,
-		many = False
+		many = False,
+		# related_link_url_kwarg='orderlineitem_pk',
+		# related_link_view_name='orderlineitem-list',
+		# self_link_view_name='orderlineitem-relationships'
 	)
 	orderlinefields = ResourceRelatedField(
 		queryset = OrderLineField.objects,
 		many = True,
-		related_link_url_kwarg='orderline_pk',
-		related_link_view_name='orderlinefield-list',
-		self_link_view_name='orderline-relationships',
+		# related_link_url_kwarg='orderlineitem_pk',
+		# related_link_view_name='orderlineitem-list',
+		# self_link_view_name='orderlineitem-relationships',
 		required=False,
 		allow_null=True
 	)
