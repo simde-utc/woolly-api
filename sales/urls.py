@@ -30,6 +30,9 @@ field_detail = FieldViewSet.as_view(VIEWSET['detail'])
 itemfield_list   = ItemFieldViewSet.as_view(VIEWSET['list'])
 itemfield_detail = ItemFieldViewSet.as_view(VIEWSET['detail'])
 
+orderlineitem_list   = OrderLineItemViewSet.as_view(VIEWSET['list'])
+orderlineitem_detail = OrderLineItemViewSet.as_view(VIEWSET['detail'])
+
 orderlinefield_list   = OrderLineFieldViewSet.as_view(VIEWSET['list'])
 orderlinefield_detail = OrderLineFieldViewSet.as_view(VIEWSET['detail'])
 

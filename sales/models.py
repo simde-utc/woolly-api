@@ -1,6 +1,7 @@
 from django.db import models
 from authentication.models import User, UserType
 from enum import Enum
+import uuid
 
 # ============================================
 # 	Association & Member
@@ -178,14 +179,20 @@ class ItemField(models.Model):
 	class JSONAPIMeta:
 		resource_name = "itemfields"
 
+class OrderLineItem(models.Model):
+	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+	orderline = models.ForeignKey(OrderLine, on_delete=models.CASCADE, related_name="orderlineitems")
+
+	class JSONAPIMeta:
+		resource_name = "orderlineitems"
 
 class OrderLineField(models.Model):
 	"""
 	Defines the OrderLineField object
 	"""
-	value = models.CharField(max_length=1000)
-	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name="orderlinefields")
-	orderline = models.ForeignKey(OrderLine, on_delete=models.CASCADE, related_name="orderlinefields")
+	orderlineitem = models.ForeignKey(OrderLineItem, on_delete=models.CASCADE, related_name='orderlinefields')
+	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='orderlinefields')
+	value = models.CharField(max_length=1000, null = True) # TODO ??
 
 	class JSONAPIMeta:
 		resource_name = "orderlinefields"

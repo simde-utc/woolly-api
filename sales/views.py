@@ -122,7 +122,6 @@ class SaleRelationshipView(views.RelationshipView):
 	queryset = Sale.objects
 
 
-
 # ============================================
 # 	Item
 # ============================================
@@ -172,7 +171,6 @@ class ItemViewSet(views.ModelViewSet):
 
 		return queryset
 
-
 class ItemRelationshipView(views.RelationshipView):
 	"""
 	Required by JSON API to display the items related links
@@ -190,7 +188,7 @@ class OrderViewSet(views.ModelViewSet):
 	"""
 	queryset = Order.objects.all()
 	serializer_class = OrderSerializer
-	permission_classes = (permissions.IsAuthenticated, IsOwner)
+	permission_classes = (permissions.IsAuthenticated,)
 	validStatusList = [OrderStatus.ONGOING.value, OrderStatus.AWAITING_VALIDATION.value, OrderStatus.NOT_PAYED.value]
 
 	def create(self, request):
@@ -246,7 +244,7 @@ class OrderLineViewSet(views.ModelViewSet):
 	"""
 	queryset = OrderLine.objects.all()
 	serializer_class = OrderLineSerializer
-	permission_classes = (permissions.IsAuthenticated,)
+	# permission_classes = (permissions.IsAuthenticated,)
 
 	def create(self, request):
 		try:
@@ -341,13 +339,18 @@ class ItemFieldRelationshipView(views.RelationshipView):
 	queryset = ItemField.objects
 
 
+class OrderLineItemViewSet(views.ModelViewSet):
+	queryset = OrderLineItem.objects.all()
+	serializer_class = OrderLineItemSerializer
+
+
 class OrderLineFieldViewSet(views.ModelViewSet):
 	"""
 	Defines the view which display the items of an orderline
 	"""
 	queryset = OrderLineField.objects.all()
-	serializer_class = OrderLineField
-	permission_classes = (permissions.IsAuthenticated,)
+	serializer_class = OrderLineFieldSerializer
+	# permission_classes = (permissions.IsAuthenticated,)
 
 	"""
 	def perform_create(self, serializer):

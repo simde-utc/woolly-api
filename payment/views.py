@@ -30,36 +30,17 @@ def pay(request, pk):
 	try:
 		# TODO ajout de la limite de temps
 		order = Order.objects.filter(owner=request.user) \
-					.prefetch_related('sale').prefetch_related('orderlines') \
+					.prefetch_related('sale').prefetch_related('orderlines').prefetch_related('owner') \
 					.get(pk=pk)
 	except Order.DoesNotExist as e:
-		return Response({'message': e}, status=status.HTTP_400_BAD_REQUEST)
+		return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 	# Payutc Instance
 	payutc = Payutc({ 'app_key': PAYUTC_KEY })
 
 	if order.status == OrderStatus.NOT_PAYED.value:
 		transaction = payutc.getTransactionInfo({ 'tra_id': order.tra_id, 'fun_id': order.sale.association.fun_id })
-		if transaction['status'] == 'A':
-			order.status = OrderStatus.EXPIRED.value
-			order.save()
-			resp = {
-				'status': OrderStatus.EXPIRED.name,
-				'message': 'Votre commande a expiré.'
-			}
-		elif transaction['status'] == 'V':
-			order.status = OrderStatus.PAYED.value
-			order.save()
-			resp = {
-				'status': OrderStatus.PAYED.name,
-				'message': 'Votre commande a été payée.'
-			}
-		else:
-			resp = {
-				'status': OrderStatus.NOT_PAYED.name,
-				'url': PAYUTC_TRANSACTION_BASE_URL + str(transaction['id'])
-			}
-		return JsonResponse(resp, status=status.HTTP_200_OK)
+		changeOrderStatus(order, transaction)
 
 	# Verifications
 	errors = verifyOrder(order, request.user)
@@ -107,32 +88,16 @@ def pay(request, pk):
 def pay_callback(request, pk):
 	print("========= pay_callback =========")
 	try:
-		order = Order.objects.prefetch_related('sale').get(pk=pk)
+		order = Order.objects \
+					.prefetch_related('sale').prefetch_related('orderlines').prefetch_related('owner') \
+					.get(pk=pk)
 	except Order.DoesNotExist as e:
-		return Response({'message': e}, status=status.HTTP_400_BAD_REQUEST)
+		return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 	payutc = Payutc({ 'app_key': PAYUTC_KEY })
 	transaction = payutc.getTransactionInfo({ 'tra_id': order.tra_id, 'fun_id': order.sale.association.fun_id })
-	if transaction['status'] == 'A':
-		order.status = OrderStatus.EXPIRED.value
-		order.save()
-		resp = {
-			'status': OrderStatus.EXPIRED.name,
-			'message': 'Votre commande a expiré.'
-		}
-	elif transaction['status'] == 'V':
-		order.status = OrderStatus.PAYED.value
-		order.save()
-		resp = {
-			'status': OrderStatus.PAYED.name,
-			'message': 'Votre commande a été payée.'
-		}
-	else:
-		resp = {
-			'status': OrderStatus.NOT_PAYED.name,
-			'url': PAYUTC_TRANSACTION_BASE_URL + str(transaction['id'])
-		}
-	return JsonResponse(resp, status=status.HTTP_200_OK)
+	return changeOrderStatus(order, transaction)
+
 
 
 
@@ -218,6 +183,71 @@ def verifyOrder(order, user):
 				errors.append("Vous devez être {} pour prendre {}.".format("UTCéen", orderline.item.name))
 
 	return errors
+
+
+
+def changeOrderStatus(order, transaction):
+	if transaction['status'] == 'A':
+		order.status = OrderStatus.EXPIRED.value
+		order.save()
+		resp = {
+			'status': OrderStatus.EXPIRED.name,
+			'message': 'Votre commande a expiré.'
+		}
+	elif transaction['status'] == 'V':
+		if order.status == OrderStatus.NOT_PAYED.value:
+			createOrderLineItemsAndFields(order)
+		order.status = OrderStatus.PAYED.value
+		# order.save()	# TODO DEBUG
+		resp = {
+			'status': OrderStatus.PAYED.name,
+			'message': 'Votre commande a été payée.'
+		}
+	else:
+		resp = {
+			'status': OrderStatus.NOT_PAYED.name,
+			'url': PAYUTC_TRANSACTION_BASE_URL + str(transaction['id'])
+		}
+	return JsonResponse(resp, status=status.HTTP_200_OK)
+
+
+# OrderLine
+def getFieldDefaultValue(default, order):
+	if default is None:
+		return None
+	return {
+		'owner.first_name': order.owner.first_name,
+		'owner.last_name': order.owner.last_name,
+	}[default]
+
+def createOrderLineItemsAndFields(order):
+	# Create OrderLineItems
+	for orderline in order.orderlines.all():
+		orderlineitem = OrderLineItemSerializer(data = {
+			'orderline': {
+				'id': orderline.id,
+				'type': 'orderlines'
+			}	
+		})
+		orderlineitem.is_valid(raise_exception=True)
+		orderlineitem.save()
+
+		# Create OrderLineFields
+		for field in orderline.item.fields.all():
+			orderlinefield = OrderLineFieldSerializer(data = {
+				'orderlineitem': {
+					'id': orderlineitem.data['id'],
+					'type': 'orderlineitems'
+				},
+				'field': {
+					'id': field.id,
+					'type': 'fields'
+				},
+				'value': getFieldDefaultValue(field.default, order)
+			})
+			orderlinefield.is_valid(raise_exception=True)
+			orderlinefield.save()
+
 
 
 def errorResponse(message, errors, httpStatus):
