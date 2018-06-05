@@ -31,9 +31,9 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
 	orders = ResourceRelatedField(
 		queryset = Order.objects,
 		many = True,
-		related_link_view_name = 'orders-list',
-		related_link_url_kwarg = 'user_pk',
-		self_link_view_name = 'user-relationships',
+		# related_link_view_name = 'orders-list',
+		# related_link_url_kwarg = 'user_pk',
+		# self_link_view_name = 'user-relationships',
 		required = False
 	)
 

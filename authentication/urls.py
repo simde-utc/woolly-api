@@ -57,7 +57,7 @@ urlpatterns = {
 	# ============================================
 
 	# Users
-	url(r'^users',
+	url(r'^users$',
 		user_list, name = "user-list"),
 	url(r'^users/(?P<pk>[0-9]+)$',
 		user_detail, name = 'user-detail'),
@@ -66,7 +66,7 @@ urlpatterns = {
 	),
 
 	# UsersTypes
-	url(r'^usertypes',
+	url(r'^usertypes$',
 		user_type_list, name = "usertype-list"),
 	url(r'^usertypes/(?P<pk>[0-9]+)$',
 		user_type_detail, name = 'usertype-detail'),

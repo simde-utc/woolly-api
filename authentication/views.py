@@ -23,12 +23,14 @@ class UserViewSet(views.ModelViewSet):
 	def create(self, request):
 		return redirect('auth.login')
 
+	"""
 	def get_queryset(self):
 		queryset = self.queryset.filter(pk=self.request.user.pk)
-	# 	if 'user_pk' in self.kwargs:
-	# 		association_pk = self.kwargs['user_pk']
-	# 		queryset = queryset.filter(user__pk=association_pk)
+		if 'user_pk' in self.kwargs:
+			association_pk = self.kwargs['user_pk']
+			queryset = queryset.filter(user__pk=association_pk)
 		return queryset
+	"""
 
 class UserTypeViewSet(views.ModelViewSet):
 	queryset = UserType.objects.all()
