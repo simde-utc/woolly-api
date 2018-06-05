@@ -157,6 +157,7 @@ INSTALLED_APPS = [
 	'core',
 	'authentication',
 	'sales',
+	'payment',
 ]
 
 MIDDLEWARE = [

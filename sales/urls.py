@@ -1,6 +1,4 @@
 from django.conf.urls import url, include
-from rest_framework.urlpatterns import format_suffix_patterns
-
 from woolly_api.settings import VIEWSET
 from .views import *
 
@@ -156,11 +154,6 @@ urlpatterns = [
 		view = order_list, name = 'order-list'),
 	url(r'^orders/(?P<pk>[0-9]+)$',
 		view = order_detail, name = 'order-detail'),
-
-	url(r'^orders/(?P<pk>[0-9]+)/pay$', pay, name = 'order-pay'),
-	url(r'^orders/(?P<pk>[0-9]+)/pay_callback$', pay_callback, name = 'pay-callback'),
-
-
 	url(r'^orders/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
 		view = OrderRelationshipView.as_view(), name = 'order-relationships'),
 

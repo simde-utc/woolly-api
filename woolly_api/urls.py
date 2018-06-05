@@ -23,4 +23,5 @@ urlpatterns = [
 	url(r'^',		include('authentication.urls')),	# Routes d'authentification
 	url(r'^',		include('sales.urls')),				# Routes pour les assos, les ventes et autres
 	url(r'^',		include('payutc.urls')),			# Routes pour payutc
+	url(r'^',		include('payment.urls')),			# Routes pour les paiements
 ]
