@@ -18,7 +18,7 @@
 			"created_at": "2018-05-27T17:00:00Z",
 			"begin_at": "2018-05-27T17:00:00Z",
 			"end_at": "2018-06-27T17:00:00Z",
-			"max_item_quantity": 4000,
+			"max_item_quantity": 2200,
 			"max_payment_date": "2018-06-27T17:00:00Z"
 		}
 	},
@@ -26,13 +26,13 @@
 		"model": "sales.item",
 		"pk": 1,
 		"fields": {
-			"name": "Place Cotisant",
-			"description": "Place Cotisant",
+			"name": "Place Early Early Bird Cotisant",
+			"description": "Place Cotisant pour les plus chauds bouillants",
 			"sale": 1,
 			"group": null,
-			"quantity": null,
+			"quantity": 115,
 			"usertype": 1,
-			"price": 6.0,
+			"price": 12.0,
 			"nemopay_id": 12731,
 			"max_per_user": 1
 		}
@@ -40,6 +40,21 @@
 	{
 		"model": "sales.item",
 		"pk": 2,
+		"fields": {
+			"name": "Place Early Bird Cotisant",
+			"description": "Place Cotisant pour les plus chauds mais pas trop quand même, le réchauffement climatique toussa toussa",
+			"sale": 1,
+			"group": null,
+			"quantity": 858,
+			"usertype": 1,
+			"price": 13.0,
+			"nemopay_id": 12731,
+			"max_per_user": 1
+		}
+	},
+	{
+		"model": "sales.item",
+		"pk": 3,
 		"fields": {
 			"name": "Place Non Cotisant",
 			"description": "Place Non Cotisant",
@@ -54,7 +69,7 @@
 	},
 	{
 		"model": "sales.item",
-		"pk": 3,
+		"pk": 4,
 		"fields": {
 			"name": "Place Extérieur",
 			"description": "Place Extérieur",
@@ -71,7 +86,7 @@
 		"model": "sales.field",
 		"pk": 1,
 		"fields": {
-			"name": "nom",
+			"name": "Nom",
 			"type": "string",
 			"default": "owner.last_name"
 		}
@@ -80,7 +95,7 @@
 		"model": "sales.field",
 		"pk": 2,
 		"fields": {
-			"name": "prenom",
+			"name": "Prénom",
 			"type": "string",
 			"default": "owner.first_name"
 		}

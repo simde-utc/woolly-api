@@ -8,7 +8,8 @@ from core.permissions import *
 from .models import *
 from .serializers import *
 from .permissions import *
-
+# TODO export core
+from core.helpers import errorResponse
 
 # ============================================
 # 	Association
@@ -189,22 +190,19 @@ class OrderViewSet(views.ModelViewSet):
 	queryset = Order.objects.all()
 	serializer_class = OrderSerializer
 	permission_classes = (permissions.IsAuthenticated,)
-	validStatusList = [OrderStatus.ONGOING.value, OrderStatus.AWAITING_VALIDATION.value, OrderStatus.NOT_PAYED.value]
 
 	def create(self, request):
-		"""
-		Find or create Order on POST
-		"""
+		"""Find if user has a Buyable Order or create"""
 		try:
 			# TODO ajout de la limite de temps
 			order = Order.objects \
-				.filter(status__in=self.validStatusList) \
+				.filter(status__in=OrderStatus.BUYABLE_STATUS_LIST.value) \
 				.get(sale=request.data['sale']['id'], owner=request.user.id)
 
 			serializer = OrderSerializer(order)
 			httpStatus = status.HTTP_200_OK
 		except Order.DoesNotExist as err:
-			# Configure Order
+			# Configure new Order
 			serializer = OrderSerializer(data = {
 				'sale': request.data['sale'],
 				'owner': {
@@ -219,7 +217,6 @@ class OrderViewSet(views.ModelViewSet):
 
 		headers = self.get_success_headers(serializer.data)
 		return Response(serializer.data, status=httpStatus, headers=headers)
-
 
 	def get_queryset(self):
 		# queryset = self.queryset.filter(owner=self.request.user)
@@ -244,7 +241,7 @@ class OrderLineViewSet(views.ModelViewSet):
 	"""
 	queryset = OrderLine.objects.all()
 	serializer_class = OrderLineSerializer
-	# permission_classes = (permissions.IsAuthenticated,)
+	permission_classes = (permissions.IsAuthenticated,)
 
 	def create(self, request):
 		try:
@@ -304,6 +301,7 @@ class OrderLineRelationshipView(views.RelationshipView):
 	Required by JSON API to display the orderlines related links
 	"""
 	queryset = OrderLine.objects
+
 
 # ============================================
 # 	Field & ItemField

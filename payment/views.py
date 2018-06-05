@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework import permissions, status
 from django.http import JsonResponse
 from django.urls import reverse
+from core.helpers import errorResponse
 
 from core.permissions import *
 from sales.models import *
@@ -26,38 +27,41 @@ class PaymentView:
 @authentication_classes((JWTAuthentication,))
 @permission_classes((permissions.IsAuthenticated, IsOwner))
 def pay(request, pk):
-	# Récupération de l'Order
+	"""
+	Permet le paiement d'une order
+	Étapes:
+		1. Retrieve Order
+		2. Verify Order
+		3. Process OrderLines
+		4. Instanciate PaymentService
+		5. Create Transaction
+		6. Save Transaction info and redirect
+	"""
+
+	# 1. Retrieve Order
 	try:
 		# TODO ajout de la limite de temps
 		order = Order.objects.filter(owner=request.user) \
+					.filter(status__in = OrderStatus.BUYABLE_STATUS_LIST.value) \
 					.prefetch_related('sale').prefetch_related('orderlines').prefetch_related('owner') \
 					.get(pk=pk)
 	except Order.DoesNotExist as e:
 		return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-	# Payutc Instance
-	payutc = Payutc({ 'app_key': PAYUTC_KEY })
-
-	if order.status == OrderStatus.NOT_PAYED.value:
-		transaction = payutc.getTransactionInfo({ 'tra_id': order.tra_id, 'fun_id': order.sale.association.fun_id })
-		changeOrderStatus(order, transaction)
-
-	# Verifications
+	# 2. Verify Order
 	errors = verifyOrder(order, request.user)
 	if len(errors) > 0:
 		return orderErrorResponse(errors)
 
-	# Retrieve orderlines
+	# 3. Process orderlines
 	orderlines = order.orderlines.filter(quantity__gt=0).prefetch_related('item').all()
-
-	# Add items
-	itemsArray = []
-	for orderline in orderlines:
-		itemsArray.append([int(orderline.item.nemopay_id), orderline.quantity])
+	# Tableau pour Weez
+	itemsArray = [ [int(orderline.item.nemopay_id), orderline.quantity] for orderline in orderlines ]
 	if reduce(lambda acc, b: acc + b[1], itemsArray, 0) <= 0:
 		return orderErrorResponse(["Vous devez avoir un nombre d'items commandé strictement positif."])
 
-	# Create Payutc params
+	# 4. Instanciate PaymentService
+	payutc = Payutc({ 'app_key': PAYUTC_KEY })
 	params = {
 		'items': str(itemsArray),
 		'mail': request.user.email,
@@ -66,19 +70,19 @@ def pay(request, pk):
 		'callback_url': request.build_absolute_uri(reverse('pay-callback', kwargs={'pk': order.pk}))
 	}
 
-	# Create transaction
+	# 5. Create Transaction
 	transaction = payutc.createTransaction(params)
 	if 'error' in transaction:
 		return Response({'message': transaction['error']['message']}, status=status.HTTP_400_BAD_REQUEST)
 
-	# Save transaction info
-	order.status = OrderStatus.NOT_PAYED.value
+	# 6. Save Transaction info and redirect
+	order.status = OrderStatus.NOT_PAID.value
 	order.tra_id = transaction['tra_id']
 	order.save()
 
 	# Redirect to transaction url
 	resp = {
-		'status': 'NOT_PAYED',
+		'status': 'NOT_PAID',
 		'url': transaction['url']
 	}
 	return JsonResponse(resp, status=status.HTTP_200_OK)
@@ -86,7 +90,6 @@ def pay(request, pk):
 
 @api_view(['GET'])
 def pay_callback(request, pk):
-	print("========= pay_callback =========")
 	try:
 		order = Order.objects \
 					.prefetch_related('sale').prefetch_related('orderlines').prefetch_related('owner') \
@@ -96,7 +99,7 @@ def pay_callback(request, pk):
 
 	payutc = Payutc({ 'app_key': PAYUTC_KEY })
 	transaction = payutc.getTransactionInfo({ 'tra_id': order.tra_id, 'fun_id': order.sale.association.fun_id })
-	return changeOrderStatus(order, transaction)
+	return updateOrderStatus(order, transaction)
 
 
 
@@ -104,6 +107,10 @@ def pay_callback(request, pk):
 def verifyOrder(order, user):
 	# Error bag to store all error messages
 	errors = list()
+
+	# Check if still buyable
+	if order.status not in OrderStatus.BUYABLE_STATUS_LIST.value:
+		errors.append("Votre commande n'est pas payable.")
 
 	# Check active & date
 	if order.sale.is_active == False:
@@ -119,7 +126,7 @@ def verifyOrder(order, user):
 
 	# OrderStatus considered as not canceled
 	statusList = [OrderStatus.AWAITING_VALIDATION.value, OrderStatus.VALIDATED.value,
-					OrderStatus.NOT_PAYED.value, OrderStatus.PAYED.value]
+					OrderStatus.NOT_PAID.value, OrderStatus.PAID.value]
 
 	# Fetch orders made by the user
 	userOrders = Order.objects \
@@ -186,7 +193,7 @@ def verifyOrder(order, user):
 
 
 
-def changeOrderStatus(order, transaction):
+def updateOrderStatus(order, transaction):
 	if transaction['status'] == 'A':
 		order.status = OrderStatus.EXPIRED.value
 		order.save()
@@ -195,17 +202,17 @@ def changeOrderStatus(order, transaction):
 			'message': 'Votre commande a expiré.'
 		}
 	elif transaction['status'] == 'V':
-		if order.status == OrderStatus.NOT_PAYED.value:
+		if order.status == OrderStatus.NOT_PAID.value:
 			createOrderLineItemsAndFields(order)
-		order.status = OrderStatus.PAYED.value
-		# order.save()	# TODO DEBUG
+		order.status = OrderStatus.PAID.value
+		order.save()
 		resp = {
-			'status': OrderStatus.PAYED.name,
+			'status': OrderStatus.PAID.name,
 			'message': 'Votre commande a été payée.'
 		}
 	else:
 		resp = {
-			'status': OrderStatus.NOT_PAYED.name,
+			'status': OrderStatus.NOT_PAID.name,
 			'url': PAYUTC_TRANSACTION_BASE_URL + str(transaction['id'])
 		}
 	return JsonResponse(resp, status=status.HTTP_200_OK)
@@ -222,7 +229,8 @@ def getFieldDefaultValue(default, order):
 
 def createOrderLineItemsAndFields(order):
 	# Create OrderLineItems
-	for orderline in order.orderlines.all():
+	orderlines = order.orderlines.filter(quantity__gt=0).prefetch_related('item').all()
+	for orderline in orderlines:
 		orderlineitem = OrderLineItemSerializer(data = {
 			'orderline': {
 				'id': orderline.id,
@@ -249,13 +257,19 @@ def createOrderLineItemsAndFields(order):
 			orderlinefield.save()
 
 
-
-def errorResponse(message, errors, httpStatus):
-	resp = {
-		'message': message,
-		'errors': [ {'detail': e} for e in errors ]
-	}
-	return JsonResponse(resp, status=httpStatus)
-
 def orderErrorResponse(errors):
 	return errorResponse('Erreur lors de la vérification de la commande.', errors, status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
+
+
+
+
+
+	# if order.status in OrderStatus.BUYABLE_STATUS_LIST.value:
+		# Check on Weezevent if 
+		# transaction = payutc.getTransactionInfo({ 'tra_id': order.tra_id, 'fun_id': order.sale.association.fun_id })
+		# updateOrderStatus(order, transaction)

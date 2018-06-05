@@ -255,11 +255,15 @@ class OrderLineSerializer(serializers.ModelSerializer):
 # ============================================
 
 class FieldSerializer(serializers.ModelSerializer):
-	# itemfields = ResourceRelatedField(
-	# 	queryset = 'ItemField.objects',
-	# 	many = True
-	# )
+	itemfields = ResourceRelatedField(
+		queryset = 'ItemField.objects',
+		many = True
+	)
 	# editable = serializers.BooleanField(source='itemfields.editable')
+
+	included_serializers = {
+		'itemfields': 'sales.serializers.ItemFieldSerializer',
+	}
 
 	class Meta:
 		model = Field
@@ -267,7 +271,6 @@ class FieldSerializer(serializers.ModelSerializer):
 
 	class JSONAPIMeta:
 		included_resources = []
-
 
 class ItemFieldSerializer(serializers.ModelSerializer):
 	item = ResourceRelatedField(
@@ -306,8 +309,8 @@ class OrderLineItemSerializer(serializers.ModelSerializer):
 		# related_link_url_kwarg='orderlineitem_pk',
 		# related_link_view_name='orderlineitem-list',
 		# self_link_view_name='orderlineitem-relationships',
-		required=False,
-		allow_null=True
+		required = False,
+		allow_null = True
 	)
 
 	included_serializers = {
@@ -322,7 +325,6 @@ class OrderLineItemSerializer(serializers.ModelSerializer):
 	class JSONAPIMeta:
 		included_resources = ['orderlinefields']
 
-
 class OrderLineFieldSerializer(serializers.ModelSerializer):
 	orderlineitem = ResourceRelatedField(
 		queryset = OrderLineItem.objects,
@@ -335,7 +337,7 @@ class OrderLineFieldSerializer(serializers.ModelSerializer):
 
 	name 	 = serializers.CharField(read_only=True, source='field.name')
 	type 	 = serializers.CharField(read_only=True, source='field.type')
-	editable = serializers.CharField(read_only=True, source='field.itemfields.editable')
+	editable = serializers.BooleanField(read_only=True, source='field.itemfields.editable')
 
 	included_serializers = {
 		'orderlineitem': OrderLineItemSerializer,

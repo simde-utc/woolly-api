@@ -104,10 +104,12 @@ class OrderStatus(Enum):
 	ONGOING = 0
 	AWAITING_VALIDATION = 1
 	VALIDATED = 2
-	NOT_PAYED = 3
-	PAYED = 4
+	NOT_PAID = 3
+	PAID = 4
 	EXPIRED = 5
 	CANCELLED = 6
+
+	BUYABLE_STATUS_LIST = [ONGOING, AWAITING_VALIDATION, NOT_PAID]
 
 	@classmethod
 	def choices(cls):
@@ -163,7 +165,6 @@ class Field(models.Model):
 	class JSONAPIMeta:
 		resource_name = "fields"
 
-
 class ItemField(models.Model):
 	"""
 	Defines the ItemField object
@@ -178,6 +179,7 @@ class ItemField(models.Model):
 
 	class JSONAPIMeta:
 		resource_name = "itemfields"
+
 
 class OrderLineItem(models.Model):
 	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
