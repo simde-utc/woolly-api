@@ -56,14 +56,14 @@
 		"model": "sales.item",
 		"pk": 3,
 		"fields": {
-			"name": "Place Non Cotisant",
-			"description": "Place Non Cotisant",
+			"name": "Place Cotisant",
+			"description": "Place Cotisant pour les plus moins chauds mais c'est quand même cool de venir",
 			"sale": 1,
 			"group": null,
 			"quantity": null,
-			"usertype": 2,
-			"price": 8.5,
-			"nemopay_id": 12733,
+			"usertype": 1,
+			"price": 14.0,
+			"nemopay_id": 12731,
 			"max_per_user": 1
 		}
 	},
@@ -71,13 +71,28 @@
 		"model": "sales.item",
 		"pk": 4,
 		"fields": {
+			"name": "Place Non Cotisant",
+			"description": "Place Non Cotisant",
+			"sale": 1,
+			"group": null,
+			"quantity": null,
+			"usertype": 2,
+			"price": 15.0,
+			"nemopay_id": 12733,
+			"max_per_user": 1
+		}
+	},
+	{
+		"model": "sales.item",
+		"pk": 5,
+		"fields": {
 			"name": "Place Extérieur",
 			"description": "Place Extérieur",
 			"sale": 1,
 			"group": null,
 			"quantity": null,
 			"usertype": 4,
-			"price": 10.0,
+			"price": 15.0,
 			"nemopay_id": 12732,
 			"max_per_user": 10
 		}
@@ -98,6 +113,15 @@
 			"name": "Prénom",
 			"type": "string",
 			"default": "owner.first_name"
+		}
+	},
+	{
+		"model": "sales.field",
+		"pk": 3,
+		"fields": {
+			"name": "Code",
+			"type": "string",
+			"default": null
 		}
 	},
 	{
@@ -131,6 +155,24 @@
 		"model": "sales.itemfield",
 		"pk": 4,
 		"fields": {
+			"field": 1,
+			"item": 4,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 5,
+		"fields": {
+			"field": 1,
+			"item": 5,
+			"editable": true
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 6,
+		"fields": {
 			"field": 2,
 			"item": 1,
 			"editable": false
@@ -138,7 +180,7 @@
 	},
 	{
 		"model": "sales.itemfield",
-		"pk": 5,
+		"pk": 7,
 		"fields": {
 			"field": 2,
 			"item": 2,
@@ -147,11 +189,74 @@
 	},
 	{
 		"model": "sales.itemfield",
-		"pk": 6,
+		"pk": 8,
 		"fields": {
 			"field": 2,
 			"item": 3,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 9,
+		"fields": {
+			"field": 2,
+			"item": 4,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 10,
+		"fields": {
+			"field": 2,
+			"item": 5,
 			"editable": true
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 11,
+		"fields": {
+			"field": 3,
+			"item": 1,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 12,
+		"fields": {
+			"field": 3,
+			"item": 2,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 13,
+		"fields": {
+			"field": 3,
+			"item": 3,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 14,
+		"fields": {
+			"field": 3,
+			"item": 4,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 15,
+		"fields": {
+			"field": 3,
+			"item": 5,
+			"editable": false
 		}
 	}
 ]

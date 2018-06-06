@@ -104,7 +104,7 @@ def pay_callback(request, pk):
 
 
 
-def verifyOrder(order, user):
+def 	verifyOrder(order, user):
 	# Error bag to store all error messages
 	errors = list()
 
@@ -231,30 +231,34 @@ def createOrderLineItemsAndFields(order):
 	# Create OrderLineItems
 	orderlines = order.orderlines.filter(quantity__gt=0).prefetch_related('item').all()
 	for orderline in orderlines:
-		orderlineitem = OrderLineItemSerializer(data = {
-			'orderline': {
-				'id': orderline.id,
-				'type': 'orderlines'
-			}	
-		})
-		orderlineitem.is_valid(raise_exception=True)
-		orderlineitem.save()
-
-		# Create OrderLineFields
-		for field in orderline.item.fields.all():
-			orderlinefield = OrderLineFieldSerializer(data = {
-				'orderlineitem': {
-					'id': orderlineitem.data['id'],
-					'type': 'orderlineitems'
-				},
-				'field': {
-					'id': field.id,
-					'type': 'fields'
-				},
-				'value': getFieldDefaultValue(field.default, order)
+		qte = orderline.quantity
+		while qte > 0:
+			orderlineitem = OrderLineItemSerializer(data = {
+				'orderline': {
+					'id': orderline.id,
+					'type': 'orderlines'
+				}
 			})
-			orderlinefield.is_valid(raise_exception=True)
-			orderlinefield.save()
+			orderlineitem.is_valid(raise_exception=True)
+			orderlineitem.save()
+
+
+			# Create OrderLineFields
+			for field in orderline.item.fields.all():
+				orderlinefield = OrderLineFieldSerializer(data = {
+					'orderlineitem': {
+						'id': orderlineitem.data['id'],
+						'type': 'orderlineitems'
+					},
+					'field': {
+						'id': field.id,
+						'type': 'fields'
+					},
+					'value': getFieldDefaultValue(field.default, order)
+				})
+				orderlinefield.is_valid(raise_exception=True)
+				orderlinefield.save()
+			qte -= 1
 
 
 def orderErrorResponse(errors):

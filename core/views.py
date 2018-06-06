@@ -33,7 +33,8 @@ def api_root(request, format=None):
 		# INUTILE ??
 		'itemfields': 			reverse('itemfield-list', 			request=request, format=format),
 		'orderlinefields': 		reverse('orderlinefield-list', 		request=request, format=format),
+		'orderlineitems': 		reverse('orderlineitem-list', 		request=request, format=format),
 
 		# PaymentMethods
-		'paymentmethods': 		reverse('paymentmethod-list', 		request=request, format=format),
+		# 'paymentmethods': 		reverse('paymentmethod-list', 		request=request, format=format),
 	})

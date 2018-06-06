@@ -209,7 +209,8 @@ class OrderViewSet(views.ModelViewSet):
 					'id': request.user.id,
 					'type': 'users'
 				},
-				'orderlines': []
+				'orderlines': [],
+				'status': OrderStatus.ONGOING.value
 			})
 			serializer.is_valid(raise_exception=True)
 			self.perform_create(serializer)
@@ -258,12 +259,13 @@ class OrderLineViewSet(views.ModelViewSet):
 			orderline = OrderLine.objects.get(order=request.data['order']['id'], item=request.data['item']['id'])
 			serializer = OrderLineSerializer(orderline, data={'quantity': request.data['quantity']}, partial=True)
 		except OrderLine.DoesNotExist as err:
-			# Configure Order
-			serializer = self.get_serializer(data={
-				'order': request.data['order'],
-				'item': request.data['item'],
-				'quantity': request.data['quantity']
-			})
+			if request.data['quantity'] > 0:
+				# Configure Order
+				serializer = self.get_serializer(data={
+					'order': request.data['order'],
+					'item': request.data['item'],
+					'quantity': request.data['quantity']
+				})
 		serializer.is_valid(raise_exception=True)
 		self.perform_create(serializer)
 
@@ -357,7 +359,7 @@ class OrderLineFieldViewSet(views.ModelViewSet):
 	"""
 	queryset = OrderLineField.objects.all()
 	serializer_class = OrderLineFieldSerializer
-	# permission_classes = (permissions.IsAuthenticated,)
+	permission_classes = (permissions.IsAuthenticated,)
 
 	"""
 	def perform_create(self, serializer):

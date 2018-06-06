@@ -253,10 +253,10 @@ urlpatterns = [
 		view = orderline_detail, name = 'orderlineitem-detail'),
 
 	# To OrderLines
-	# url(r'^orderlineitems/(?P<orderlineitem_pk>[0-9a-f-]+)/orderlines$',
-		# view = orderline_list, name = 'orderline-list'),
-	# url(r'^orderlineitems/(?P<orderlineitem_pk>[0-9a-f-]+)/orderlines/(?P<pk>[0-9]+)$',
-		# view = orderline_detail, name = 'orderline-detail'),
+	url(r'^orderlineitems$',
+		view=orderlineitem_list, name='orderlineitem-list'),
+	url(r'^orderlineitems/(?P<orderlineitem_pk>[0-9a-f-]+)/orderlines$',
+		view = orderlineitem_detail, name = 'orderlineitem-detail'),
 
 
 	# ============================================
