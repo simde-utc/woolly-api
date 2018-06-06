@@ -116,15 +116,6 @@
 		}
 	},
 	{
-		"model": "sales.field",
-		"pk": 3,
-		"fields": {
-			"name": "Code",
-			"type": "string",
-			"default": null
-		}
-	},
-	{
 		"model": "sales.itemfield",
 		"pk": 1,
 		"fields": {
@@ -212,51 +203,6 @@
 			"field": 2,
 			"item": 5,
 			"editable": true
-		}
-	},
-	{
-		"model": "sales.itemfield",
-		"pk": 11,
-		"fields": {
-			"field": 3,
-			"item": 1,
-			"editable": false
-		}
-	},
-	{
-		"model": "sales.itemfield",
-		"pk": 12,
-		"fields": {
-			"field": 3,
-			"item": 2,
-			"editable": false
-		}
-	},
-	{
-		"model": "sales.itemfield",
-		"pk": 13,
-		"fields": {
-			"field": 3,
-			"item": 3,
-			"editable": false
-		}
-	},
-	{
-		"model": "sales.itemfield",
-		"pk": 14,
-		"fields": {
-			"field": 3,
-			"item": 4,
-			"editable": false
-		}
-	},
-	{
-		"model": "sales.itemfield",
-		"pk": 15,
-		"fields": {
-			"field": 3,
-			"item": 5,
-			"editable": false
 		}
 	}
 ]
