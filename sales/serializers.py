@@ -259,7 +259,6 @@ class FieldSerializer(serializers.ModelSerializer):
 		queryset = 'ItemField.objects',
 		many = True
 	)
-	# editable = serializers.BooleanField(source='itemfields.editable')
 
 	included_serializers = {
 		'itemfields': 'sales.serializers.ItemFieldSerializer',
@@ -337,7 +336,7 @@ class OrderLineFieldSerializer(serializers.ModelSerializer):
 
 	name 	 = serializers.CharField(read_only=True, source='field.name')
 	type 	 = serializers.CharField(read_only=True, source='field.type')
-	editable = serializers.BooleanField(read_only=True, source='field.itemfields.editable')
+	editable = serializers.BooleanField(read_only=True, source='isEditable')
 
 	included_serializers = {
 		'orderlineitem': OrderLineItemSerializer,
