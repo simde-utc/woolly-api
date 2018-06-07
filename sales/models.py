@@ -69,7 +69,7 @@ class Sale(models.Model):
 
 class ItemGroup(models.Model):
 	name 	 = models.CharField(max_length = 200)
-	quantity = models.IntegerField(default=True)
+	quantity = models.IntegerField(null=True)
 	max_per_user = models.IntegerField(null=True)		# TODO V2 : moteur de contraintes
 
 	class JSONAPIMeta:

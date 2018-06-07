@@ -23,13 +23,22 @@
 		}
 	},
 	{
+		"model": "sales.itemgroup",
+		"pk": 1,
+		"fields": {
+			"name": "Tarif Réduit",
+			"quantity": null,
+			"max_per_user": 1
+		}
+	},
+	{
 		"model": "sales.item",
 		"pk": 1,
 		"fields": {
 			"name": "Place Early Early Bird Cotisant",
 			"description": "Place Cotisant pour les plus chauds bouillants",
 			"sale": 1,
-			"group": null,
+			"group": 1,
 			"quantity": 115,
 			"usertype": 1,
 			"price": 12.0,
@@ -44,7 +53,7 @@
 			"name": "Place Early Bird Cotisant",
 			"description": "Place Cotisant pour les plus chauds mais pas trop quand même, le réchauffement climatique toussa toussa",
 			"sale": 1,
-			"group": null,
+			"group": 1,
 			"quantity": 858,
 			"usertype": 1,
 			"price": 13.0,
@@ -59,7 +68,7 @@
 			"name": "Place Cotisant",
 			"description": "Place Cotisant pour les plus moins chauds mais c'est quand même cool de venir",
 			"sale": 1,
-			"group": null,
+			"group": 1,
 			"quantity": null,
 			"usertype": 1,
 			"price": 14.0,
@@ -74,7 +83,7 @@
 			"name": "Place Non Cotisant",
 			"description": "Place Non Cotisant",
 			"sale": 1,
-			"group": null,
+			"group": 1,
 			"quantity": null,
 			"usertype": 2,
 			"price": 15.0,
@@ -89,7 +98,7 @@
 			"name": "Place Extérieur",
 			"description": "Place Extérieur",
 			"sale": 1,
-			"group": null,
+			"group": 1,
 			"quantity": null,
 			"usertype": 4,
 			"price": 15.0,

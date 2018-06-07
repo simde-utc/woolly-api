@@ -104,7 +104,7 @@ def pay_callback(request, pk):
 
 
 
-def 	verifyOrder(order, user):
+def verifyOrder(order, user):
 	# Error bag to store all error messages
 	errors = list()
 
@@ -132,20 +132,38 @@ def 	verifyOrder(order, user):
 	userOrders = Order.objects \
 					.filter(owner__pk=user.pk, sale__pk=order.sale.pk, status__in=statusList) \
 					.exclude(pk=order.pk) \
-					.prefetch_related('orderlines')
+					.prefetch_related('orderlines').prefetch_related('orderline__item') \
+					.prefetch_related('orderline__item__group')
 	# Count quantity bought by user
+	quantityByGroup = dict()
 	quantityByUser = dict()
 	quantityByUserTotal = 0
 	for userOrder in userOrders:
 		for orderline in userOrder.orderlines.all():
+			quantityByGroup[orderline.item.group.pk] = orderline.quantity + quantityByGroup.get(orderline.item.group.pk, 0)
 			quantityByUser[orderline.item.pk] = orderline.quantity + quantityByUser.get(orderline.item.pk, 0)
 			quantityByUserTotal += orderline.quantity
+			if userOrder.status in OrderStatus.BUYABLE_STATUS_LIST:
+				errors.append("Vous avez déjà une commande en cours pour cette vente.")
+
+
+	# Check group max per user
+	for orderline in order.orderlines.filter(quantity__gt=0).all():
+		quantityByGroup[orderline.item.group.pk] = quantityByGroup.get(orderline.item.group.pk, 0) - orderline.quantity
+		if quantityByGroup[orderline.item.group.pk] < 0:
+			errors.append("Vous ne pouvez pas prendre plus de {} {} par personne." \
+				.format(orderline.item.group.max_per_user, orderline.item.group.name))
+
+	# Checkpoint
+	if len(errors) > 0:
+		return errors
+
 
 	# Fetch all orders of the sale
 	saleOrders = Order.objects \
 					.filter(sale__pk=order.sale.pk, status__in=statusList) \
 					.exclude(pk=order.pk) \
-					.prefetch_related('orderlines')
+					.prefetch_related('orderlines').prefetch_related('orderline__item')
 	# Count quantity bought by sale
 	quantityBySale = dict()
 	quantityBySaleTotal = 0
