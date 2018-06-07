@@ -361,6 +361,20 @@ class OrderLineFieldViewSet(views.ModelViewSet):
 	serializer_class = OrderLineFieldSerializer
 	permission_classes = (permissions.IsAuthenticated,)
 
+	def update(self, request, pk=None, partial=False):
+		instance = self.queryset.get(pk=pk)
+		if instance.isEditable() == True:
+			serializer = OrderLineFieldSerializer(instance, data={'value': request.data['value']}, partial=True)
+			serializer.is_valid(raise_exception=True)
+			serializer.save()
+		else:
+			serializer = OrderLineFieldSerializer(instance)
+		return Response(serializer.data)
+
+
+	def partial_update(self, request, pk=None):
+		return self.update(request, pk, True)
+
 	"""
 	def perform_create(self, serializer):
 		serializer.save(

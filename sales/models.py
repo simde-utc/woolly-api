@@ -44,11 +44,11 @@ class Sale(models.Model):
 	# Description
 	name 		= models.CharField(max_length = 200)
 	description = models.CharField(max_length = 1000)
-	association = models.ForeignKey(Association, on_delete=None, related_name='sales')
+	association = models.ForeignKey(Association, on_delete=None, related_name='sales', editable=False)
 	
 	# Timestamps & Controls
 	is_active 	= models.BooleanField(default=True)
-	created_at 	= models.DateTimeField(auto_now_add=True)
+	created_at 	= models.DateTimeField(auto_now_add=True, editable=False)
 	begin_at 	= models.DateTimeField()
 	end_at 		= models.DateTimeField()
 
@@ -70,6 +70,7 @@ class Sale(models.Model):
 class ItemGroup(models.Model):
 	name 	 = models.CharField(max_length = 200)
 	quantity = models.IntegerField(default=True)
+	max_per_user = models.IntegerField(null=True)		# TODO V2 : moteur de contraintes
 
 	class JSONAPIMeta:
 		resource_name = "itemgroups"
@@ -119,10 +120,10 @@ class Order(models.Model):
 	"""
 	Defines the Order object
 	"""
-	owner 	= models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
-	sale 	= models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='orders')
+	owner 	= models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders', editable=False)
+	sale 	= models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='orders', editable=False)
 
-	created_at = models.DateTimeField(auto_now_add = True)
+	created_at = models.DateTimeField(auto_now_add = True, editable=False)
 	updated_at = models.DateTimeField(auto_now_add = True)
 
 	# status = models.OrderStatus()
@@ -140,8 +141,8 @@ class OrderLine(models.Model):
 	"""
 	Defines the link between an Order and an Item
 	"""
-	item 	 = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='orderlines')
-	order 	 = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='orderlines')
+	item 	 = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='orderlines', editable=False)
+	order 	 = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='orderlines', editable=False)
 	quantity = models.IntegerField()
 
 	class JSONAPIMeta:
@@ -169,8 +170,8 @@ class ItemField(models.Model):
 	"""
 	Defines the ItemField object
 	"""
-	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='itemfields')
-	item  = models.ForeignKey(Item,  on_delete=models.CASCADE, related_name='itemfields')
+	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='itemfields', editable=False)
+	item  = models.ForeignKey(Item,  on_delete=models.CASCADE, related_name='itemfields', editable=False)
 	editable = models.BooleanField(default=True)
 
 	# sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
@@ -183,7 +184,7 @@ class ItemField(models.Model):
 
 class OrderLineItem(models.Model):
 	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-	orderline = models.ForeignKey(OrderLine, on_delete=models.CASCADE, related_name="orderlineitems")
+	orderline = models.ForeignKey(OrderLine, on_delete=models.CASCADE, related_name="orderlineitems", editable=False)
 
 	class JSONAPIMeta:
 		resource_name = "orderlineitems"
@@ -192,9 +193,9 @@ class OrderLineField(models.Model):
 	"""
 	Defines the OrderLineField object
 	"""
-	orderlineitem = models.ForeignKey(OrderLineItem, on_delete=models.CASCADE, related_name='orderlinefields')
-	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='orderlinefields')
-	value = models.CharField(max_length=1000, null = True) # TODO ??
+	orderlineitem = models.ForeignKey(OrderLineItem, on_delete=models.CASCADE, related_name='orderlinefields', editable=False)
+	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='orderlinefields', editable=False)
+	value = models.CharField(max_length=1000, null = True, editable='isEditable') # TODO ??
 
 	def isEditable(self):
 		itemfield = ItemField.objects.get(field__pk=self.field.pk, item__pk=self.orderlineitem.orderline.item.pk)
