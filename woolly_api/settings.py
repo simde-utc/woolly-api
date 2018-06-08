@@ -59,8 +59,7 @@ OAUTH = {
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 ALLOWED_HOSTS = (
-	'http://assos.utc.fr',
-	'https://assos.utc.fr',
+	'woolly.etu-utc.fr'
 	'assos.utc.fr',
 )
 # CSRF_COOKIE_SECURE = True
@@ -197,7 +196,7 @@ AUTH_PASSWORD_VALIDATORS = [
 	{ 'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',			},
 ]
 
-STATIC_ROOT = '/var/woolly/woolly-api/static/'
+STATIC_ROOT = '../static/'
 STATIC_URL = '/static/'
 ROOT_URLCONF = 'woolly_api.urls'
 WSGI_APPLICATION = 'woolly_api.wsgi.application'

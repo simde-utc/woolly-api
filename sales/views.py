@@ -191,6 +191,16 @@ class OrderViewSet(views.ModelViewSet):
 	serializer_class = OrderSerializer
 	permission_classes = (permissions.IsAuthenticated,)
 
+	def get_queryset(self):
+		# queryset = self.queryset.filter(owner=self.request.user)
+		queryset = self.queryset
+
+		if 'user_pk' in self.kwargs:
+			user_pk = self.kwargs['user_pk']
+			queryset = queryset.filter(owner__pk=user_pk)
+
+		return queryset
+
 	def create(self, request):
 		"""Find if user has a Buyable Order or create"""
 		try:
@@ -219,15 +229,15 @@ class OrderViewSet(views.ModelViewSet):
 		headers = self.get_success_headers(serializer.data)
 		return Response(serializer.data, status=httpStatus, headers=headers)
 
-	def get_queryset(self):
-		# queryset = self.queryset.filter(owner=self.request.user)
-		queryset = self.queryset
-
-		if 'user_pk' in self.kwargs:
-			user_pk = self.kwargs['user_pk']
-			queryset = queryset.filter(owner__pk=user_pk)
-
-		return queryset
+	def destroy(self, request, pk=None):
+		try:
+			# TODO Add time
+			order = Order.objects \
+				.filter(owner=request.user.id, status__in=OrderStatus.CANCELLABLE_LIST.value, pk=pk) \
+				.update(status=OrderStatus.CANCELLED.value)
+			return Response(None, status=status.HTTP_200_OK)
+		except Order.DoesNotExist as err:
+			return Response(None, status=status.HTTP_404_NOT_FOUND)
 
 class OrderRelationshipView(views.RelationshipView):
 	"""
@@ -251,13 +261,17 @@ class OrderLineViewSet(views.ModelViewSet):
 			msg = "Impossible de trouver la commande."
 			return errorResponse(msg, [msg], status.HTTP_404_NOT_FOUND)
 		if order.status != OrderStatus.ONGOING.value:
-			msg = "La commande n'accepte plus d'ajout."
+			msg = "La commande n'accepte plus de changement."
 			return errorResponse(msg, [msg], status.HTTP_400_BAD_REQUEST)
 
 		try:
-			# TODO ajout de la limite de temps
 			orderline = OrderLine.objects.get(order=request.data['order']['id'], item=request.data['item']['id'])
+			# TODO ajout de la vérification de la limite de temps
 			serializer = OrderLineSerializer(orderline, data={'quantity': request.data['quantity']}, partial=True)
+			# On delete les orderlines vides
+			if request.data['quantity'] <= 0:
+				orderline.delete()
+				return Response(serializer.initial_data, status=status.HTTP_205_RESET_CONTENT)
 		except OrderLine.DoesNotExist as err:
 			if request.data['quantity'] > 0:
 				# Configure Order
@@ -266,6 +280,8 @@ class OrderLineViewSet(views.ModelViewSet):
 					'item': request.data['item'],
 					'quantity': request.data['quantity']
 				})
+			else:
+				return Response(request.data, status=status.HTTP_204_NO_CONTENT)
 		serializer.is_valid(raise_exception=True)
 		self.perform_create(serializer)
 

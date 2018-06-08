@@ -98,7 +98,7 @@
 			"name": "Place Extérieur",
 			"description": "Place Extérieur",
 			"sale": 1,
-			"group": 1,
+			"group": null,
 			"quantity": null,
 			"usertype": 4,
 			"price": 15.0,

@@ -120,6 +120,13 @@ def verifyOrder(order, user):
 		errors.append("La vente n'a pas encore commencé.")
 	if now > order.sale.end_at:
 		errors.append("La vente est terminée.")
+		
+	# TODO
+	print("date")
+	print(now)
+	print(order.sale.begin_at)
+	print(order.sale.end_at)
+
 	# Checkpoint
 	if len(errors) > 0:
 		return errors
@@ -140,19 +147,26 @@ def verifyOrder(order, user):
 	quantityByUserTotal = 0
 	for userOrder in userOrders:
 		for orderline in userOrder.orderlines.all():
-			quantityByGroup[orderline.item.group.pk] = orderline.quantity + quantityByGroup.get(orderline.item.group.pk, 0)
+			print("orderline.item.group")
+			print(orderline.item.group)
+			if orderline.item.group is not None:
+				quantityByGroup[orderline.item.group.pk] = orderline.quantity + quantityByGroup.get(orderline.item.group.pk, 0)
 			quantityByUser[orderline.item.pk] = orderline.quantity + quantityByUser.get(orderline.item.pk, 0)
 			quantityByUserTotal += orderline.quantity
 			if userOrder.status in OrderStatus.BUYABLE_STATUS_LIST:
 				errors.append("Vous avez déjà une commande en cours pour cette vente.")
 
+	# print("quantityByGroup")
+	# print(quantityByGroup)
 
 	# Check group max per user
 	for orderline in order.orderlines.filter(quantity__gt=0).all():
-		quantityByGroup[orderline.item.group.pk] = quantityByGroup.get(orderline.item.group.pk, 0) - orderline.quantity
-		if quantityByGroup[orderline.item.group.pk] < 0:
-			errors.append("Vous ne pouvez pas prendre plus de {} {} par personne." \
-				.format(orderline.item.group.max_per_user, orderline.item.group.name))
+		if orderline.item.group is not None:
+			quantityByGroup[orderline.item.group.pk] = quantityByGroup.get(orderline.item.group.pk, 0) + orderline.quantity
+			if orderline.item.group.max_per_user is not None and \
+				quantityByGroup[orderline.item.group.pk] > orderline.item.group.max_per_user:
+				errors.append("Vous ne pouvez pas prendre plus de {} {} par personne." \
+					.format(orderline.item.group.max_per_user, orderline.item.group.name))
 
 	# Checkpoint
 	if len(errors) > 0:
@@ -163,7 +177,7 @@ def verifyOrder(order, user):
 	saleOrders = Order.objects \
 					.filter(sale__pk=order.sale.pk, status__in=statusList) \
 					.exclude(pk=order.pk) \
-					.prefetch_related('orderlines').prefetch_related('orderline__item')
+					.prefetch_related('orderlines').prefetch_related('orderlines__item')
 	# Count quantity bought by sale
 	quantityBySale = dict()
 	quantityBySaleTotal = 0
@@ -258,6 +272,7 @@ def createOrderLineItemsAndFields(order):
 				}
 			})
 			orderlineitem.is_valid(raise_exception=True)
+			print(orderlineitem.data)
 			orderlineitem.save()
 
 
