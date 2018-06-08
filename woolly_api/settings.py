@@ -45,6 +45,7 @@ OAUTH = {
 		'login_url': 		'https://portail-assos.alwaysdata.net/login',
 		'logout_url': 		'https://portail-assos.alwaysdata.net/logout',
 		'redirect_uri': 	'http://localhost:8000/auth/callback',
+		# 'redirect_uri': 	'http://woolly.etu-utc.fr/auth/callback',
 		'scope': 			'user-get-info user-get-roles user-get-assos-joined-now'
 	}
 }
@@ -57,7 +58,15 @@ OAUTH = {
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = (
+	'http://assos.utc.fr',
+	'https://assos.utc.fr',
+	'assos.utc.fr',
+)
+# CSRF_COOKIE_SECURE = True
+# SESSION_COOKIE_SECURE = True
+# SECURE_BROWSER_XSS_FILTER = True
+# SECURE_SSL_REDIRECT = True
 
 # CORS headers config
 CORS_ORIGIN_ALLOW_ALL = True
@@ -188,6 +197,7 @@ AUTH_PASSWORD_VALIDATORS = [
 	{ 'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',			},
 ]
 
+STATIC_ROOT = '/var/woolly/woolly-api/static/'
 STATIC_URL = '/static/'
 ROOT_URLCONF = 'woolly_api.urls'
 WSGI_APPLICATION = 'woolly_api.wsgi.application'

@@ -79,6 +79,25 @@ Check deployment checklist : https://docs.djangoproject.com/en/1.11/howto/deploy
 
 Deploy server using : https://docs.djangoproject.com/en/1.11/howto/deployment/wsgi/
 
+In an Apache config file :
+```
+ServerName woolly.etu-utc.fr
+WSGIScriptAlias / /var/woolly/woolly-api/woolly_api/wsgi.py
+WSGIPythonHome /var/woolly/woolly-api/venv 
+WSGIPythonPath /var/woolly/woolly-api
+WSGIDaemonProcess woolly-api python-home=/var/woolly/woolly-api/venv python-path=/var/woolly/woolly-api 
+WSGIProcessGroup woolly-api
+WSGIPassAuthorization On
+
+<Directory /var/woolly/woolly-api>
+    <Files wsgi.py>
+        Require all granted
+    </Files>
+</Directory>
+```
+And restart apache : `sudo systemctl restart apache2`
+
+
 ## Built With
 
 * [Django](https://www.djangoproject.com) - The web framework used
