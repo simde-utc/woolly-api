@@ -59,7 +59,7 @@ OAUTH = {
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 ALLOWED_HOSTS = (
-	'woolly.etu-utc.fr'
+	'woolly.etu-utc.fr',
 	'assos.utc.fr',
 )
 # CSRF_COOKIE_SECURE = True
