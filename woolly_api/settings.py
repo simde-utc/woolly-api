@@ -44,8 +44,8 @@ OAUTH = {
 		'access_token_url': 'https://portail-assos.alwaysdata.net/oauth/token',
 		'login_url': 		'https://portail-assos.alwaysdata.net/login',
 		'logout_url': 		'https://portail-assos.alwaysdata.net/logout',
-		'redirect_uri': 	'http://localhost:8000/auth/callback',
-		# 'redirect_uri': 	'http://woolly.etu-utc.fr/auth/callback',
+		# 'redirect_uri': 	'http://localhost:8000/auth/callback',
+		'redirect_uri': 	'http://woolly.etu-utc.fr/auth/callback',
 		'scope': 			'user-get-info user-get-roles user-get-assos-joined-now'
 	}
 }

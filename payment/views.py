@@ -120,12 +120,11 @@ def verifyOrder(order, user):
 		errors.append("La vente n'a pas encore commencé.")
 	if now > order.sale.end_at:
 		errors.append("La vente est terminée.")
-		
 	# TODO
-	print("date")
-	print(now)
-	print(order.sale.begin_at)
-	print(order.sale.end_at)
+	# print("date")
+	# print(now)
+	# print(order.sale.begin_at)
+	# print(order.sale.end_at)
 
 	# Checkpoint
 	if len(errors) > 0:
@@ -147,8 +146,8 @@ def verifyOrder(order, user):
 	quantityByUserTotal = 0
 	for userOrder in userOrders:
 		for orderline in userOrder.orderlines.all():
-			print("orderline.item.group")
-			print(orderline.item.group)
+			# print("orderline.item.group")
+			# print(orderline.item.group)
 			if orderline.item.group is not None:
 				quantityByGroup[orderline.item.group.pk] = orderline.quantity + quantityByGroup.get(orderline.item.group.pk, 0)
 			quantityByUser[orderline.item.pk] = orderline.quantity + quantityByUser.get(orderline.item.pk, 0)
@@ -272,9 +271,7 @@ def createOrderLineItemsAndFields(order):
 				}
 			})
 			orderlineitem.is_valid(raise_exception=True)
-			print(orderlineitem.data)
 			orderlineitem.save()
-
 
 			# Create OrderLineFields
 			for field in orderline.item.fields.all():
