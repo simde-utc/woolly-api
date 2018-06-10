@@ -326,14 +326,14 @@ class OrderLineItemSerializer(serializers.ModelSerializer):
 
 class OrderLineFieldSerializer(serializers.ModelSerializer):
 	orderlineitem = ResourceRelatedField(
-		# queryset = OrderLineItem.objects,
+		queryset = OrderLineItem.objects,
 		many = False,
-		read_only = True
+		# read_only = True
 	)
 	field = ResourceRelatedField(
-		# queryset = Field.objects,
+		queryset = Field.objects,
 		many = False,
-		read_only = True
+		# read_only = True
 	)
 
 	name 	 = serializers.CharField(read_only=True, source='field.name')

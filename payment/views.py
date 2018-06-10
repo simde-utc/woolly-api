@@ -43,7 +43,7 @@ def pay(request, pk):
 		# TODO ajout de la limite de temps
 		order = Order.objects.filter(owner=request.user) \
 					.filter(status__in = OrderStatus.BUYABLE_STATUS_LIST.value) \
-					.prefetch_related('sale').prefetch_related('orderlines').prefetch_related('owner') \
+					.prefetch_related('sale', 'orderlines', 'owner') \
 					.get(pk=pk)
 	except Order.DoesNotExist as e:
 		return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -92,7 +92,7 @@ def pay(request, pk):
 def pay_callback(request, pk):
 	try:
 		order = Order.objects \
-					.prefetch_related('sale').prefetch_related('orderlines').prefetch_related('owner') \
+					.prefetch_related('sale', 'orderlines', 'owner') \
 					.get(pk=pk)
 	except Order.DoesNotExist as e:
 		return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -138,8 +138,7 @@ def verifyOrder(order, user):
 	userOrders = Order.objects \
 					.filter(owner__pk=user.pk, sale__pk=order.sale.pk, status__in=statusList) \
 					.exclude(pk=order.pk) \
-					.prefetch_related('orderlines').prefetch_related('orderline__item') \
-					.prefetch_related('orderline__item__group')
+					.prefetch_related('orderlines', 'orderlines__item', 'orderlines__item__group')
 	# Count quantity bought by user
 	quantityByGroup = dict()
 	quantityByUser = dict()
@@ -176,7 +175,7 @@ def verifyOrder(order, user):
 	saleOrders = Order.objects \
 					.filter(sale__pk=order.sale.pk, status__in=statusList) \
 					.exclude(pk=order.pk) \
-					.prefetch_related('orderlines').prefetch_related('orderlines__item')
+					.prefetch_related('orderlines', 'orderlines__item')
 	# Count quantity bought by sale
 	quantityBySale = dict()
 	quantityBySaleTotal = 0
