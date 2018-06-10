@@ -92,11 +92,10 @@ def pay(request, pk):
 def pay_callback(request, pk):
 	try:
 		order = Order.objects \
-					.exclude(status__in=OrderStatus.VALIDATED_LIST.value) \
 					.prefetch_related('sale', 'orderlines', 'owner') \
 					.get(pk=pk)
 	except Order.DoesNotExist as e:
-		return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+		return Response({'message': str(e)}, status=status.HTTP_404_NOT_FOUND)
 
 	payutc = Payutc({ 'app_key': PAYUTC_KEY })
 	transaction = payutc.getTransactionInfo({ 'tra_id': order.tra_id, 'fun_id': order.sale.association.fun_id })
@@ -170,7 +169,7 @@ def verifyOrder(order, user):
 
 	# Fetch all orders of the sale
 	saleOrders = Order.objects \
-					.filter(sale__pk=order.sale.pk, status__in=statusList) \
+					.filter(sale__pk=order.sale.pk, status__in=OrderStatus.NOT_CANCELLED_LIST.value) \
 					.exclude(pk=order.pk) \
 					.prefetch_related('orderlines', 'orderlines__item')
 	# Count quantity bought by sale
@@ -221,6 +220,7 @@ def verifyOrder(order, user):
 
 
 def updateOrderStatus(order, transaction):
+	# print("----- updateOrderStatus ---------")
 	if transaction['status'] == 'A':
 		order.status = OrderStatus.EXPIRED.value
 		order.save()
@@ -255,10 +255,11 @@ def getFieldDefaultValue(default, order):
 	}[default]
 
 def createOrderLineItemsAndFields(order):
+	# print("----- createOrderLineItemsAndFields ---------")
 	# Create OrderLineItems
-	orderlines = order.orderlines.filter(quantity__gt=0).prefetch_related('item').all()
+	orderlines = order.orderlines.filter(quantity__gt=0).prefetch_related('item', 'orderlineitems').all()
 	for orderline in orderlines:
-		qte = orderline.quantity
+		qte = orderline.quantity - len(orderline.orderlineitems.all())
 		while qte > 0:
 			orderlineitem = OrderLineItemSerializer(data = {
 				'orderline': {
