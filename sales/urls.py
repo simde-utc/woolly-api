@@ -270,15 +270,15 @@ urlpatterns = [
 		view = OrderLineFieldRelationshipView.as_view(), name = 'orderlinefield-relationships'),
 
 	# From Orderlineitems
-	url(r'^orderlineitems/(?P<orderlineitem_pk>[0-9]+)/orderlinefields$',
+	url(r'^orderlineitems/(?P<orderlineitem_pk>[0-9a-f-]+)/orderlinefields$',
 		view = orderlinefield_list, name = 'orderlinefield-list'),
-	url(r'^orderlineitems/(?P<orderlineitem_pk>[0-9]+)/orderlinefields/(?P<pk>[0-9]+)$',
+	url(r'^orderlineitems/(?P<orderlineitem_pk>[0-9a-f-]+)/orderlinefields/(?P<pk>[0-9]+)$',
 		view = orderlinefield_detail, name = 'orderlinefields-detail'),
 
 	# From Order > OrderLine > OrderLineItem
-	url(r'^order/(?P<order_pk>[0-9]+)/orderlines/(?P<orderline_pk>[0-9]+)/orderlineitems/(?P<orderlineitem_pk>[0-9]+)/orderlinefields$',
+	url(r'^order/(?P<order_pk>[0-9]+)/orderlines/(?P<orderline_pk>[0-9]+)/orderlineitems/(?P<orderlineitem_pk>[0-9a-f-]+)/orderlinefields$',
 		view = orderlinefield_list, name = 'orderlinefield-list'),
-	url(r'^order/(?P<order_pk>[0-9]+)/orderlines/(?P<orderline_pk>[0-9]+)/orderlineitems/(?P<orderlineitem_pk>[0-9]+)/orderlinefields/(?P<pk>[0-9]+)$',
+	url(r'^order/(?P<order_pk>[0-9]+)/orderlines/(?P<orderline_pk>[0-9]+)/orderlineitems/(?P<orderlineitem_pk>[0-9a-f-]+)/orderlinefields/(?P<pk>[0-9]+)$',
 		view = orderlinefield_detail, name = 'orderlinefields-detail'),
 
 

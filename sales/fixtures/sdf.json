@@ -42,7 +42,7 @@
 			"quantity": 115,
 			"usertype": 1,
 			"price": 12.0,
-			"nemopay_id": 12731,
+			"nemopay_id": 12932,
 			"max_per_user": 1
 		}
 	},
@@ -57,7 +57,7 @@
 			"quantity": 858,
 			"usertype": 1,
 			"price": 13.0,
-			"nemopay_id": 12731,
+			"nemopay_id": 12933,
 			"max_per_user": 1
 		}
 	},
@@ -72,7 +72,7 @@
 			"quantity": null,
 			"usertype": 1,
 			"price": 14.0,
-			"nemopay_id": 12731,
+			"nemopay_id": 12934,
 			"max_per_user": 1
 		}
 	},
@@ -87,7 +87,7 @@
 			"quantity": null,
 			"usertype": 2,
 			"price": 15.0,
-			"nemopay_id": 12733,
+			"nemopay_id": 12935,
 			"max_per_user": 1
 		}
 	},
@@ -102,7 +102,7 @@
 			"quantity": null,
 			"usertype": 4,
 			"price": 15.0,
-			"nemopay_id": 12732,
+			"nemopay_id": 12937,
 			"max_per_user": 10
 		}
 	},
