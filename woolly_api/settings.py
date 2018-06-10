@@ -61,6 +61,7 @@ DEBUG = True
 ALLOWED_HOSTS = (
 	'woolly.etu-utc.fr',
 	'assos.utc.fr',
+	# 'localhost',
 )
 # CSRF_COOKIE_SECURE = True
 # SESSION_COOKIE_SECURE = True
@@ -166,7 +167,12 @@ INSTALLED_APPS = [
 	'authentication',
 	'sales',
 	'payment',
+	'wkhtmltopdf',
 ]
+
+WKHTMLTOPDF_CMD_OPTIONS = {
+	'quiet': True,
+}
 
 MIDDLEWARE = [
 	'django.middleware.security.SecurityMiddleware',
@@ -204,7 +210,7 @@ WSGI_APPLICATION = 'woolly_api.wsgi.application'
 TEMPLATES = [
 	{
 		'BACKEND': 'django.template.backends.django.DjangoTemplates',
-		'DIRS': [],
+		'DIRS': ['templates'],
 		'APP_DIRS': True,
 		'OPTIONS': {
 			'context_processors': [

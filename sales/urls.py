@@ -275,4 +275,10 @@ urlpatterns = [
 	url(r'^orderlines/(?P<orderline_pk>[0-9]+)/orderlinefields/(?P<pk>[0-9]+)$',
 		view = orderline_detail, name = 'orderlinefields-detail'),
 
+
+	# ============================================
+	# 	Generation du PDF
+	# ============================================
+	url(r'^orders/(?P<order_pk>[0-9]+)/pdf/$', GeneratePdf.as_view()),
+
 ]

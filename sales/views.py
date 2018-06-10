@@ -1,13 +1,21 @@
+from datetime import datetime
+
+from django.views import View
+from django.views.generic import DetailView
 from rest_framework_json_api import views
 from rest_framework.response import Response
 from rest_framework import permissions, status
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+from django.shortcuts import get_object_or_404
+from django.template import engines
 from django.urls import reverse
+from wkhtmltopdf.views import PDFTemplateView, PDFTemplateResponse
 
 from core.permissions import *
 from .models import *
 from .serializers import *
 from .permissions import *
+from core.utils import render_to_pdf
 # TODO export core
 from core.helpers import errorResponse
 
@@ -412,3 +420,33 @@ class OrderLineFieldRelationshipView(views.RelationshipView):
 	"""
 	queryset = OrderLineField.objects
 
+
+class BilletPDF(PDFTemplateView):
+	template = 'template_billet.html'
+	context = {'title': 'Hello World!'}
+
+	def get(self, request, *args, **kwargs):
+
+		response = PDFTemplateResponse(request=request,
+										template=self.template,
+										filename="mon_billet.pdf",
+										context=self.context,
+										show_content_in_browser=False,
+										cmd_options={'margin-top': 50, }
+										)
+		return response
+	# def get_context_data(self, **kwargs):
+	# 	context = super(BilletPDF, self).get_context_data(**kwargs)
+	# 	context['nom'] = 'BARBOSA'
+	# 	return context
+
+
+class GeneratePdf(View):
+	def get(self, request, *args, **kwargs):
+		if 'order_pk' in self.kwargs:
+			order_pk = self.kwargs['order_pk']
+			order = Order.objects.all().filter(pk=order_pk)
+			orderlines = OrderLine.objects.all().filter(order_id=order_pk)
+			data = {'items': Item.objects.all(), 'order': order, 'orderlines': orderlines}
+		pdf = render_to_pdf('pdf/template_billet.html', data)
+		return HttpResponse(pdf, content_type='application/pdf')
