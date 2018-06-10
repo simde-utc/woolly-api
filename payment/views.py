@@ -92,6 +92,7 @@ def pay(request, pk):
 def pay_callback(request, pk):
 	try:
 		order = Order.objects \
+					.exclude(status__in=OrderStatus.VALIDATED_LIST.value)
 					.prefetch_related('sale', 'orderlines', 'owner') \
 					.get(pk=pk)
 	except Order.DoesNotExist as e:
@@ -130,13 +131,9 @@ def verifyOrder(order, user):
 	if len(errors) > 0:
 		return errors
 
-	# OrderStatus considered as not canceled
-	statusList = [OrderStatus.AWAITING_VALIDATION.value, OrderStatus.VALIDATED.value,
-					OrderStatus.NOT_PAID.value, OrderStatus.PAID.value]
-
 	# Fetch orders made by the user
 	userOrders = Order.objects \
-					.filter(owner__pk=user.pk, sale__pk=order.sale.pk, status__in=statusList) \
+					.filter(owner__pk=user.pk, sale__pk=order.sale.pk, status__in=OrderStatus.NOT_CANCELLED_LIST.value) \
 					.exclude(pk=order.pk) \
 					.prefetch_related('orderlines', 'orderlines__item', 'orderlines__item__group')
 	# Count quantity bought by user
@@ -151,7 +148,7 @@ def verifyOrder(order, user):
 				quantityByGroup[orderline.item.group.pk] = orderline.quantity + quantityByGroup.get(orderline.item.group.pk, 0)
 			quantityByUser[orderline.item.pk] = orderline.quantity + quantityByUser.get(orderline.item.pk, 0)
 			quantityByUserTotal += orderline.quantity
-			if userOrder.status in OrderStatus.BUYABLE_STATUS_LIST:
+			if userOrder.status in OrderStatus.BUYABLE_STATUS_LIST.value:
 				errors.append("Vous avez déjà une commande en cours pour cette vente.")
 
 	# print("quantityByGroup")
