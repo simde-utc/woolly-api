@@ -404,15 +404,15 @@ class OrderLineFieldViewSet(views.ModelViewSet):
 		serializer.save(
 			sale_id=self.kwargs['orderline_pk']
 		)
+	"""
 
 	def get_queryset(self):
 		queryset = self.queryset
-		if 'orderline_pk' in self.kwargs:
-			orderline_pk = self.kwargs['orderline_pk']
-			queryset = queryset.filter(orderlines__pk=orderline_pk)
+		if 'orderlineitem_pk' in self.kwargs:
+			orderlineitem_pk = self.kwargs['orderlineitem_pk']
+			queryset = queryset.filter(orderlineitem__pk=orderlineitem_pk)
 
 		return queryset
-	"""
 
 class OrderLineFieldRelationshipView(views.RelationshipView):
 	"""
@@ -420,6 +420,11 @@ class OrderLineFieldRelationshipView(views.RelationshipView):
 	"""
 	queryset = OrderLineField.objects
 
+
+
+# ============================================
+# 	Billet
+# ============================================
 
 class BilletPDF(PDFTemplateView):
 	template = 'template_billet.html'
@@ -439,7 +444,6 @@ class BilletPDF(PDFTemplateView):
 	# 	context = super(BilletPDF, self).get_context_data(**kwargs)
 	# 	context['nom'] = 'BARBOSA'
 	# 	return context
-
 
 class GeneratePdf(View):
 	def get(self, request, *args, **kwargs):
