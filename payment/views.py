@@ -92,7 +92,7 @@ def pay(request, pk):
 def pay_callback(request, pk):
 	try:
 		order = Order.objects \
-					.exclude(status__in=OrderStatus.VALIDATED_LIST.value)
+					.exclude(status__in=OrderStatus.VALIDATED_LIST.value) \
 					.prefetch_related('sale', 'orderlines', 'owner') \
 					.get(pk=pk)
 	except Order.DoesNotExist as e:
