@@ -1,14 +1,8 @@
 import os
+import qrcode
 from io import BytesIO
-from django.http import HttpResponse
-from django.template.loader import get_template
 
 from xhtml2pdf import pisa
-
-from reportlab.lib.units import mm
-from reportlab.graphics.barcode import createBarcodeDrawing
-from reportlab.graphics.shapes import Drawing, String
-from reportlab.graphics.charts.barcharts import HorizontalBarChart
 
 from woolly_api import settings
 from django.conf import settings
@@ -51,14 +45,13 @@ def fetch_resources(uri, rel):
 	return path
 
 
-class MyBarcodeDrawing(Drawing):
-	def __init__(self, text_value, *args, **kw):
-		barcode = createBarcodeDrawing('Code128', value=text_value, barHeight=10 * mm, humanReadable=True)
-		Drawing.__init__(self, barcode.width, barcode.height, *args, **kw)
-		self.add(barcode, name='barcode')
+def data_to_qrcode(data):
+	""" Return a qrcode image from data """
 
-
-if __name__ == '__main__':
-	# use the standard 'save' method to save barcode.gif, barcode.pdf etc
-	# for quick feedback while working.
-	MyBarcodeDrawing("HELLO WORLD").save(formats=['gif', 'pdf'], outDir='.', fnRoot='barcode')
+	qrc = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_Q,
+						box_size=8,
+						border=0)
+	qrc.add_data(data)
+	qrc.make(fit=True)
+	img = qrc.make_image()
+	return img
