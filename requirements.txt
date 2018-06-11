@@ -8,4 +8,4 @@ djangorestframework-jsonapi==2.4.0
 pymysql==0.8.0
 requests==2.18.4
 Authlib==0.6
-
+xhtml2pdf==0.2.2

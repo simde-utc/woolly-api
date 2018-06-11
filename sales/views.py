@@ -386,7 +386,11 @@ class OrderLineFieldViewSet(views.ModelViewSet):
 	serializer_class = OrderLineFieldSerializer
 	permission_classes = (permissions.IsAuthenticated,)
 
+	def create(self, request):
+		pass
+
 	def update(self, request, pk=None, partial=False):
+		print(request.data)
 		instance = self.queryset.get(pk=pk)
 		if instance.isEditable() == True:
 			serializer = OrderLineFieldSerializer(instance, data={'value': request.data['value']}, partial=True)
@@ -400,20 +404,13 @@ class OrderLineFieldViewSet(views.ModelViewSet):
 	def partial_update(self, request, pk=None):
 		return self.update(request, pk, True)
 
-	"""
-	def perform_create(self, serializer):
-		serializer.save(
-			sale_id=self.kwargs['orderline_pk']
-		)
-
 	def get_queryset(self):
 		queryset = self.queryset
-		if 'orderline_pk' in self.kwargs:
-			orderline_pk = self.kwargs['orderline_pk']
-			queryset = queryset.filter(orderlines__pk=orderline_pk)
+		if 'orderlineitem_pk' in self.kwargs:
+			orderlineitem_pk = self.kwargs['orderlineitem_pk']
+			queryset = queryset.filter(orderlineitem__pk=orderlineitem_pk)
 
 		return queryset
-	"""
 
 class OrderLineFieldRelationshipView(views.RelationshipView):
 	"""
@@ -422,25 +419,30 @@ class OrderLineFieldRelationshipView(views.RelationshipView):
 	queryset = OrderLineField.objects
 
 
+
+# ============================================
+# 	Billet
+# ============================================
+
 class BilletPDF(PDFTemplateView):
 	template = 'template_billet.html'
 	context = {'title': 'Hello World!'}
 
 	def get(self, request, *args, **kwargs):
 
-		response = PDFTemplateResponse(request=request,
-										template=self.template,
-										filename="mon_billet.pdf",
-										context=self.context,
-										show_content_in_browser=False,
-										cmd_options={'margin-top': 50, }
-										)
+		response = PDFTemplateResponse(
+			request = request,
+			template = self.template,
+			filename = "mon_billet.pdf",
+			context = self.context,
+			show_content_in_browser = False,
+			cmd_options = {'margin-top': 50, }
+		)
 		return response
 	# def get_context_data(self, **kwargs):
 	# 	context = super(BilletPDF, self).get_context_data(**kwargs)
 	# 	context['nom'] = 'BARBOSA'
 	# 	return context
-
 
 class GeneratePdf(View):
 	def get2(self, request, *args, **kwargs):

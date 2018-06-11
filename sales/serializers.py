@@ -322,7 +322,8 @@ class OrderLineItemSerializer(serializers.ModelSerializer):
 		fields = '__all__' 		# DEBUG
 
 	class JSONAPIMeta:
-		included_resources = ['orderlinefields']
+		# included_resources = ['orderlinefields']
+		pass
 
 class OrderLineFieldSerializer(serializers.ModelSerializer):
 	orderlineitem = ResourceRelatedField(
