@@ -1,4 +1,5 @@
-django-wkhtmltopdf==3.2.0
+reportlab
+xhtml2pdf==0.2.2
 django==2.0.3
 djangorestframework==3.8.2
 django-cas-client==1.4.0

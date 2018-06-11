@@ -1,4 +1,8 @@
 from django.conf.urls import url, include
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+from django.templatetags.static import static
+
+from woolly_api import settings
 from woolly_api.settings import VIEWSET
 from .views import *
 

@@ -1,18 +1,19 @@
-from datetime import datetime
+from io import BytesIO
 
+from django.core.files.storage import FileSystemStorage
+from django.template.loader import get_template, render_to_string
 from django.views import View
-from django.views.generic import DetailView
+from reportlab.lib.pagesizes import landscape, A4
+from reportlab.pdfgen import canvas
 from rest_framework_json_api import views
 from rest_framework.response import Response
 from rest_framework import permissions, status
 from django.http import JsonResponse, HttpResponse
-from django.shortcuts import get_object_or_404
-from django.template import engines
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from wkhtmltopdf.views import PDFTemplateView, PDFTemplateResponse
 
 from core.permissions import *
-from .models import *
 from .serializers import *
 from .permissions import *
 from core.utils import render_to_pdf
@@ -442,11 +443,69 @@ class BilletPDF(PDFTemplateView):
 
 
 class GeneratePdf(View):
+	def get2(self, request, *args, **kwargs):
+		# Create the HttpResponse object with the appropriate PDF headers.
+		response = HttpResponse(content_type='application/pdf')
+		response['Content-Disposition'] = 'attachment; filename="billet.pdf"'
+		buffer = BytesIO()
+
+		# Create the PDF object, using the BytesIO object as its "file."
+		p = canvas.Canvas(buffer, pagesize=landscape(A4))
+
+		# Draw things on the PDF. Here's where the PDF generation happens.
+		# See the ReportLab documentation for the full list of functionality.
+		p.drawString(10, 10, "Hello world.")
+		# billet = './billet.png'
+		p.drawImage(billet, 20, 20, width=None, height=None)
+		# Close the PDF object cleanly.
+		p.showPage()
+		p.save()
+
+		# Get the value of the BytesIO buffer and write it to the response.
+		pdf = buffer.getvalue()
+		buffer.close()
+		return response
+
 	def get(self, request, *args, **kwargs):
 		if 'order_pk' in self.kwargs:
 			order_pk = self.kwargs['order_pk']
 			order = Order.objects.all().filter(pk=order_pk)
 			orderlines = OrderLine.objects.all().filter(order_id=order_pk)
+			# d = MyBarcodeDrawing("HELLO WORLD")
+			# binaryStuff = d.asString('gif')
+			# image = os.path.join(os.getcwd(), 'templates/pdf', 'billet' + '.png')
+			# import base64
+			# image = open('templates/pdf/billet.png', 'rb') #open binary file in read mode
+			# image_read = image.read()
+			# image_64_encode = base64.encodebytes(image_read)
 			data = {'items': Item.objects.all(), 'order': order, 'orderlines': orderlines}
+			# return render(request, 'pdf/template_billet.html', data)
+		# html = get_template('pdf/template_billet.html').render(data)
+		# result = StringIO.StringIO()
+		# rendering = pisa.pisaDocument(StringIO.StringIO(html.encode("ISO-8859-1")), result)
+
 		pdf = render_to_pdf('pdf/template_billet.html', data)
 		return HttpResponse(pdf, content_type='application/pdf')
+
+		# if not rendering.err:
+		# 	return HttpResponse(result.getvalue(), mimetype='application/pdf')
+		# return HttpResponse('We had some errors<pre>%s</pre>' % escape(html))
+
+		# return render(pdf, 'pdf/template_billet.html')
+		# template_path = 'pdf/template_billet.html'
+		# # Create a Django response object, and specify content_type as pdf
+		# response = HttpResponse(content_type='application/pdf')
+		# # response['Content-Disposition'] = 'attachment; filename="billetSDF.pdf"'
+		# # find the template and render it.
+		# template = get_template(template_path)
+		# html = template.render(data)
+		#
+		# # create a pdf
+		# pisaStatus = pisa.CreatePDF(
+		# 	html, dest=response, link_callback=link_callback)
+		# # if error then show some funy view
+		# if pisaStatus.err:
+		# 	return HttpResponse('We had some errors <pre>' + html + '</pre>')
+		# return response
+
+
