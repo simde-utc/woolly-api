@@ -1,6 +1,7 @@
 from django.db import models
 from authentication.models import User, UserType
 from enum import Enum
+from functools import reduce
 import uuid
 
 # ============================================
@@ -86,6 +87,7 @@ class Item(models.Model):
 	group 		= models.ForeignKey(ItemGroup, null=True, default=None, on_delete=models.SET_NULL, related_name='items')
 	
 	# Specification
+	is_active 	= models.BooleanField(default=True)
 	quantity 	= models.IntegerField(null=True)		# Null quand pas de restrinction sur l'item
 	usertype 	= models.ForeignKey(UserType, on_delete=models.PROTECT)			# UserType ?
 	price 		= models.FloatField()
@@ -93,6 +95,16 @@ class Item(models.Model):
 	max_per_user = models.IntegerField(null=True)		# TODO V2 : moteur de contraintes
 
 	fields 	= models.ManyToManyField('Field', through='ItemField', through_fields=('item','field')) #, related_name='fields')
+
+	def quantity_left(self):
+		if self.quantity == None:
+			return None
+		allOrders = self.sale.orders.filter(orderlines__item__pk=self.pk, status__in=OrderStatus.NOT_CANCELLED_LIST.value) \
+						.prefetch_related('orderlines').all()
+		allItemsBought = reduce(lambda acc, order: acc + \
+				reduce(lambda acc2, orderline: acc2 + orderline.quantity, order.orderlines.all(), 0), \
+			allOrders, 0)
+		return self.quantity - allItemsBought
 
 	class JSONAPIMeta:
 		resource_name = "items"

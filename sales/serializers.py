@@ -47,6 +47,7 @@ class ItemSerializer(serializers.ModelSerializer):
 		queryset = Field.objects,
 		many = True
 	)
+	quantity_left = serializers.IntegerField(read_only=True)
 
 	included_serializers = {
 		'itemfields': 'sales.serializers.ItemFieldSerializer',

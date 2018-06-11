@@ -74,7 +74,7 @@ def pay(request, pk):
 	transaction = payutc.createTransaction(params)
 	if 'error' in transaction:
 		print(transaction)
-		return Response({'message': transaction['error']['message']}, status=status.HTTP_400_BAD_REQUEST)
+		return errorResponse(transaction['error']['message'])
 
 	# 6. Save Transaction info and redirect
 	order.status = OrderStatus.NOT_PAID.value
@@ -96,10 +96,14 @@ def pay_callback(request, pk):
 					.prefetch_related('sale', 'orderlines', 'owner') \
 					.get(pk=pk)
 	except Order.DoesNotExist as e:
-		return Response({'message': str(e)}, status=status.HTTP_404_NOT_FOUND)
+		return errorResponse(str(e), status=status.HTTP_404_NOT_FOUND)
 
 	payutc = Payutc({ 'app_key': PAYUTC_KEY })
 	transaction = payutc.getTransactionInfo({ 'tra_id': order.tra_id, 'fun_id': order.sale.association.fun_id })
+	if 'error' in transaction:
+		print(transaction)
+		return errorResponse(transaction['error']['message'])
+
 	return updateOrderStatus(order, transaction)
 
 
@@ -114,7 +118,7 @@ def verifyOrder(order, user):
 		errors.append("Votre commande n'est pas payable.")
 
 	# Check active & date
-	if order.sale.is_active == False:
+	if not order.sale.is_active:
 		errors.append("La vente n'est pas disponible.")
 	now = timezone.now()
 	if now < order.sale.begin_at:
@@ -156,6 +160,9 @@ def verifyOrder(order, user):
 
 	# Check group max per user
 	for orderline in order.orderlines.filter(quantity__gt=0).all():
+		if not orderline.item.is_active:
+				errors.append("L'item {} n'est pas disponible." \
+					.format(orderline.item.name))			
 		if orderline.item.group is not None:
 			quantityByGroup[orderline.item.group.pk] = quantityByGroup.get(orderline.item.group.pk, 0) + orderline.quantity
 			if orderline.item.group.max_per_user is not None and \
@@ -203,8 +210,7 @@ def verifyOrder(order, user):
 		# Verify quantity left // sale orders
 		if orderline.item.quantity != None:
 			if orderline.item.quantity < quantityBySale.get(orderline.item.pk, 0) + orderline.quantity:
-				errors.append("Vous avez déjà pris {} {} sur un total de {} par personne." \
-					.format(quantityBySale.get(orderline.item.pk, 0), orderline.item.name, orderline.item.max_per_user))
+				errors.append("Il reste moins de {} {}.".format(orderline.quantity, orderline.item.name))
 
 		# Verif cotisant
 		if orderline.item.usertype.name == UserType.COTISANT:
