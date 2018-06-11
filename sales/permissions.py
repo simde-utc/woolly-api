@@ -1,13 +1,21 @@
 from rest_framework import permissions
-from .models import Order
+from .models import Order, OrderLine, OrderLineItem, OrderLineField
 
 
 class IsOwner(permissions.BasePermission):
 	"""Custom permission class to allow only order owners to edit them."""
 	def has_object_permission(self, request, view, obj):
 		"""Return True if permission is granted to the order owner."""
+
 		if isinstance(obj, Order):
-			return obj.user == request.user
+			return obj.owner == request.user
+		if isinstance(obj, OrderLine):
+			return obj.order.owner == request.user
+		if isinstance(obj, OrderLineItem):
+			return obj.orderline.order.owner == request.user
+		if isinstance(obj, OrderLineField):
+			return obj.orderitem.orderline.order.owner == request.user
+
 		return obj.user == request.user
 
 
@@ -20,8 +28,16 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
 		if request.method in permissions.SAFE_METHODS:
 			return True
 
-		# Instance must have an attribute named `owner`.
-		return obj.owner == request.user
+		if isinstance(obj, Order):
+			return obj.owner == request.user
+		if isinstance(obj, OrderLine):
+			return obj.order.owner == request.user
+		if isinstance(obj, OrderLineItem):
+			return obj.orderline.order.owner == request.user
+		if isinstance(obj, OrderLineField):
+			return obj.orderitem.orderline.order.owner == request.user
+
+		return obj.user == request.user
 
 class IsManager(permissions.BasePermission):
 	"""Only assos' manager have the permission to modify"""

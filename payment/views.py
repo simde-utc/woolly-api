@@ -3,7 +3,8 @@ from functools import reduce
 
 # from rest_framework_json_api import views
 from rest_framework.response import Response
-from rest_framework import permissions, status
+from rest_framework import status
+from rest_framework.decorators import *
 from django.http import JsonResponse
 from django.urls import reverse
 from core.helpers import errorResponse
@@ -15,7 +16,6 @@ from sales.permissions import *
 
 from .services.payutc import Payutc
 from woolly_api.settings import PAYUTC_KEY, PAYUTC_TRANSACTION_BASE_URL
-from rest_framework.decorators import *
 from authentication.auth import JWTAuthentication
 
 
@@ -25,7 +25,7 @@ class PaymentView:
 
 @api_view(['GET'])
 @authentication_classes((JWTAuthentication,))
-@permission_classes((permissions.IsAuthenticated, IsOwner))
+# @permission_classes((IsOwner,))
 def pay(request, pk):
 	"""
 	Permet le paiement d'une order
@@ -42,7 +42,7 @@ def pay(request, pk):
 	try:
 		# TODO ajout de la limite de temps
 		order = Order.objects.filter(owner=request.user) \
-					.filter(status__in = OrderStatus.BUYABLE_STATUS_LIST.value) \
+					.filter(status__in=OrderStatus.BUYABLE_STATUS_LIST.value) \
 					.prefetch_related('sale', 'orderlines', 'owner') \
 					.get(pk=pk)
 	except Order.DoesNotExist as e:
@@ -73,6 +73,7 @@ def pay(request, pk):
 	# 5. Create Transaction
 	transaction = payutc.createTransaction(params)
 	if 'error' in transaction:
+		print(transaction)
 		return Response({'message': transaction['error']['message']}, status=status.HTTP_400_BAD_REQUEST)
 
 	# 6. Save Transaction info and redirect

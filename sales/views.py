@@ -7,11 +7,11 @@ from reportlab.lib.pagesizes import landscape, A4
 from reportlab.pdfgen import canvas
 from rest_framework_json_api import views
 from rest_framework.response import Response
-from rest_framework import permissions, status
+from rest_framework import  status
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
-from wkhtmltopdf.views import PDFTemplateView, PDFTemplateResponse
+# from wkhtmltopdf.views import PDFTemplateView, PDFTemplateResponse
 
 from core.permissions import *
 from .serializers import *
@@ -30,7 +30,7 @@ class AssociationViewSet(views.ModelViewSet):
 	"""
 	queryset = Association.objects.all()
 	serializer_class = AssociationSerializer
-	permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+	permission_classes = (IsManagerOrReadOnly,)
 
 	"""
 	def get_queryset(self):
@@ -97,7 +97,7 @@ class SaleViewSet(views.ModelViewSet):
 	Defines the behavior of the sale view
 	"""
 	serializer_class = SaleSerializer
-	permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+	permission_classes = (IsManagerOrReadOnly,)
 
 	def perform_create(self, serializer):
 		serializer.save(
@@ -142,7 +142,7 @@ class ItemGroupViewSet(views.ModelViewSet):
 	"""
 	queryset = ItemGroup.objects.all()
 	serializer_class = ItemGroupSerializer
-	permission_classes = (permissions.IsAuthenticated,)
+	permission_classes = (IsManagerOrReadOnly,)
 
 class ItemGroupRelationshipView(views.RelationshipView):
 	"""
@@ -157,7 +157,7 @@ class ItemViewSet(views.ModelViewSet):
 	"""
 	queryset = Item.objects.all()
 	serializer_class = ItemSerializer
-	# permission_classes = (permissions.IsAuthenticated,)
+	permission_classes = (IsManagerOrReadOnly,)
 
 	def perform_create(self, serializer):
 		if 'orderline_pk' in self.kwargs:
@@ -198,7 +198,7 @@ class OrderViewSet(views.ModelViewSet):
 	"""
 	queryset = Order.objects.all()
 	serializer_class = OrderSerializer
-	permission_classes = (permissions.IsAuthenticated,)
+	permission_classes = (IsOwner,)
 
 	def get_queryset(self):
 		# queryset = self.queryset.filter(owner=self.request.user)
@@ -261,7 +261,7 @@ class OrderLineViewSet(views.ModelViewSet):
 	"""
 	queryset = OrderLine.objects.all()
 	serializer_class = OrderLineSerializer
-	permission_classes = (permissions.IsAuthenticated,)
+	permission_classes = (IsOwner,)
 
 	def create(self, request):
 		try:
@@ -370,6 +370,7 @@ class ItemFieldRelationshipView(views.RelationshipView):
 class OrderLineItemViewSet(views.ModelViewSet):
 	queryset = OrderLineItem.objects.all()
 	serializer_class = OrderLineItemSerializer
+	permission_classes = (IsOwner,)
 
 class OrderLineItemRelationshipView(views.RelationshipView):
 	"""
@@ -384,7 +385,7 @@ class OrderLineFieldViewSet(views.ModelViewSet):
 	"""
 	queryset = OrderLineField.objects.all()
 	serializer_class = OrderLineFieldSerializer
-	permission_classes = (permissions.IsAuthenticated,)
+	permission_classes = (IsOwner,)
 
 	def create(self, request):
 		pass
@@ -424,6 +425,7 @@ class OrderLineFieldRelationshipView(views.RelationshipView):
 # 	Billet
 # ============================================
 
+"""
 class BilletPDF(PDFTemplateView):
 	template = 'template_billet.html'
 	context = {'title': 'Hello World!'}
@@ -443,8 +445,11 @@ class BilletPDF(PDFTemplateView):
 	# 	context = super(BilletPDF, self).get_context_data(**kwargs)
 	# 	context['nom'] = 'BARBOSA'
 	# 	return context
+"""
 
 class GeneratePdf(View):
+	permission_classes = (IsOwner,)
+
 	def get2(self, request, *args, **kwargs):
 		# Create the HttpResponse object with the appropriate PDF headers.
 		response = HttpResponse(content_type='application/pdf')

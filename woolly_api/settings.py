@@ -23,7 +23,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = confidentials.SECRET_KEY
 JWT_SECRET_KEY = confidentials.JWT_SECRET_KEY
-JWT_TTL = 3600 * 10
+JWT_TTL = 3600
 
 # Payutc & Ginger config
 PAYUTC_KEY = confidentials.PAYUTC_KEY
@@ -36,13 +36,12 @@ OAUTH = {
 	'portal': {
 		'client_id': confidentials.PORTAL['id'],
 		'client_secret': confidentials.PORTAL['key'],
+		'redirect_uri': confidentials.PORTAL['callback'],
 		'base_url': 'https://portail-assos.alwaysdata.net/api/v1/',
 		'authorize_url': 'https://portail-assos.alwaysdata.net/oauth/authorize',
 		'access_token_url': 'https://portail-assos.alwaysdata.net/oauth/token',
 		'login_url': 'https://portail-assos.alwaysdata.net/login',
 		'logout_url': 'https://portail-assos.alwaysdata.net/logout',
-		# 'redirect_uri': 	'http://localhost:8000/auth/callback',
-		'redirect_uri': 'http://woolly.etu-utc.fr/auth/callback',
 		'scope': 'user-get-info user-get-roles user-get-assos-joined-now'
 	}
 }
@@ -128,7 +127,7 @@ VIEWSET = {
 		'get': 'retrieve',
 		'put': 'update',
 		'patch': 'partial_update',
-		'delete': 'destroy'
+		# 'delete': 'destroy'
 	}
 }
 

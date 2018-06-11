@@ -23,7 +23,12 @@ item_list   = ItemViewSet.as_view(VIEWSET['list'])
 item_detail = ItemViewSet.as_view(VIEWSET['detail'])
 
 order_list   = OrderViewSet.as_view(VIEWSET['list'])
-order_detail = OrderViewSet.as_view(VIEWSET['detail'])
+order_detail = OrderViewSet.as_view({
+	'get': 'retrieve',
+	'put': 'update',
+	'patch': 'partial_update',
+	'delete': 'destroy'
+})
 
 orderline_list   = OrderLineViewSet.as_view(VIEWSET['list'])
 orderline_detail = OrderLineViewSet.as_view(VIEWSET['detail'])
