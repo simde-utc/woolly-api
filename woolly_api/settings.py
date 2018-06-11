@@ -120,6 +120,10 @@ REST_FRAMEWORK = {
 }
 VIEWSET = {
 	'list': {
+		# 'get': 'list',
+		'post': 'create'
+	},
+	'list_safe': {
 		'get': 'list',
 		'post': 'create'
 	},

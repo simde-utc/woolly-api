@@ -4,9 +4,10 @@ from rest_framework_json_api import views
 from authlib.specs.rfc7519 import JWTError
 
 from rest_framework.permissions import IsAuthenticated
+from .permissions import *
+
 from .serializers import UserSerializer, UserTypeSerializer
 from .models import UserType, User
-
 from .services import OAuthAPI, JWTClient, get_jwt_from_request
 # from sales.models import AssociationMember
 
@@ -18,11 +19,13 @@ class UserViewSet(views.ModelViewSet):
 	"""
 	queryset = User.objects.all()
 	serializer_class = UserSerializer
-	permission_classes = (IsAuthenticated,)
+	permission_classes = (IsUser,)
 
 	def create(self, request):
 		return redirect('auth.login')
 
+	# def list(self, request):
+		# pass
 	"""
 	def get_queryset(self):
 		queryset = self.queryset.filter(pk=self.request.user.pk)

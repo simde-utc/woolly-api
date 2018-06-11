@@ -13,7 +13,7 @@ association_detail = AssociationViewSet.as_view(VIEWSET['detail'])
 associationmember_list   = AssociationMemberViewSet.as_view(VIEWSET['list'])
 associationmember_detail = AssociationMemberViewSet.as_view(VIEWSET['detail'])
 
-sale_list   = SaleViewSet.as_view(VIEWSET['list'])
+sale_list   = SaleViewSet.as_view(VIEWSET['list_safe'])
 sale_detail = SaleViewSet.as_view(VIEWSET['detail'])
 
 itemgroup_list   = ItemGroupViewSet.as_view(VIEWSET['list'])

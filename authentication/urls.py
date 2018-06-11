@@ -8,7 +8,7 @@ from .views import UserViewSet, UserRelationshipView, UserTypeViewSet, AuthView,
 # import cas.views
 
 # Configure Viewsets
-user_list = UserViewSet.as_view(VIEWSET['list'])
+# user_list = UserViewSet.as_view(VIEWSET['list'])
 user_detail = UserViewSet.as_view(VIEWSET['detail'])
 user_type_list = UserTypeViewSet.as_view(VIEWSET['list'])
 user_type_detail = UserTypeViewSet.as_view(VIEWSET['detail'])
@@ -57,8 +57,8 @@ urlpatterns = {
 	# ============================================
 
 	# Users
-	url(r'^users$',
-		user_list, name = "user-list"),
+	# url(r'^users$',
+		# user_list, name = "user-list"),
 	url(r'^users/(?P<pk>[0-9]+)$',
 		user_detail, name = 'user-detail'),
 	url(r'^users/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
