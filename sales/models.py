@@ -1,128 +1,209 @@
 from django.db import models
-from django.conf import settings
+from authentication.models import User, UserType
+from enum import Enum
+import uuid
+
+# ============================================
+# 	Association & Member
+# ============================================
 
 
 class Association(models.Model):
-    """
-    Represents the association information
-    """
-    name = models.CharField(max_length=200)
-    bank_account = models.CharField(max_length=30)
-    # The foundation ID is used to  link the app to NemoPay
-    # No calculations are going to be made with it
-    # So it's a char field
-    foundation_id = models.CharField(max_length=30)
+	"""
+	Represents the association information
+	"""
+	name 	= models.CharField(max_length=200)
+	members = models.ManyToManyField(User, through='AssociationMember')
+	fun_id 	= models.PositiveSmallIntegerField()			# TODO V2 : abstraire payment
+	# bank_account = models.CharField(max_length=30)		# Why ?
 
-    class JSONAPIMeta:
-        resource_name = "associations"
-
-
-class PaymentMethod(models.Model):
-    """Define the payment options"""
-    name = models.CharField(max_length=200)
-    api_url = models.CharField(max_length=500, blank=True)
-
-    class JSONAPIMeta:
-        resource_name = "paymentmethods"
-
-
-class Sale(models.Model):
-    """
-        Defines the Sale object
-    """
-    name = models.CharField(max_length=200)
-    description = models.CharField(max_length=1000)
-    creation_date = models.DateTimeField(auto_now_add=True)
-    begin_date = models.DateTimeField()
-    end_date = models.DateTimeField()
-    max_payment_date = models.DateTimeField()
-    max_item_quantity = models.IntegerField()
-
-    paymentmethods = models.ForeignKey(
-        PaymentMethod,
-        on_delete=None,
-        related_name='sales',
-        blank=True)
-
-    association = models.ForeignKey(
-        Association, on_delete=None, related_name='sales', blank=True)
-
-    class JSONAPIMeta:
-        resource_name = "sales"
-
-
-class Item(models.Model):
-    """
-        Defines the Item object
-    """
-    name = models.CharField(max_length=200)
-    description = models.CharField(max_length=1000)
-    remaining_quantity = models.IntegerField()
-    initial_quantity = models.IntegerField()
-    sale = models.ForeignKey(
-        Sale, on_delete=models.CASCADE, related_name='items')
-
-    class JSONAPIMeta:
-        resource_name = "items"
-
-
-class ItemSpecifications(models.Model):
-    """
-        Defines the link between the Item class and the WoollyUserType one
-    """
-    woolly_user_type = models.ForeignKey(
-        'authentication.WoollyUserType', on_delete=models.CASCADE, related_name='itemspecifications')
-    item = models.ForeignKey(
-        Item, on_delete=models.CASCADE, related_name='itemspecifications')
-    quantity = models.IntegerField()
-    price = models.FloatField()
-    nemopay_id = models.CharField(max_length=30)
-    fun_id = models.CharField(max_length=30)
-    class JSONAPIMeta:
-        resource_name = "itemspecifications"
-
+	class JSONAPIMeta:
+		resource_name = "associations"
 
 class AssociationMember(models.Model):
-    """
-        Defines the link between Association and WoollyUser
-    """
-    woollyUser = models.ForeignKey(
-        'authentication.WoollyUser', on_delete=models.CASCADE, related_name='associationmembers')
-    association = models.ForeignKey(
-        Association, on_delete=models.CASCADE, related_name='associationmembers')
-    role = models.CharField(max_length=50)
-    rights = models.CharField(max_length=50)
+	"""
+	Defines the link between Association and User
+	"""
+	user 		= models.ForeignKey(User, on_delete=models.CASCADE, related_name='associationmembers')
+	association = models.ForeignKey(Association, on_delete=models.CASCADE, related_name='associationmembers')
+	role 		= models.CharField(max_length=50)
+	rights 		= models.CharField(max_length=50)
 
-    class JSONAPIMeta:
-        resource_name = "associationmembers"
+	class JSONAPIMeta:
+		resource_name = "associationmembers"
 
+
+# ============================================
+# 	Sale
+# ============================================
+		
+class Sale(models.Model):
+	"""
+	Defines the Sale object
+	"""
+	# Description
+	name 		= models.CharField(max_length = 200)
+	description = models.CharField(max_length = 1000)
+	association = models.ForeignKey(Association, on_delete=None, related_name='sales', editable=False)
+	
+	# Timestamps & Controls
+	is_active 	= models.BooleanField(default=True)
+	created_at 	= models.DateTimeField(auto_now_add=True, editable=False)
+	begin_at 	= models.DateTimeField()
+	end_at 		= models.DateTimeField()
+
+	max_item_quantity = models.IntegerField(null = True)
+	max_payment_date  = models.DateTimeField()
+
+	# TODO v2
+	# paymentmethods = models.ManyToManyField(PaymentMethod)
+	# payment_delay = models.DateTimeField()
+
+	class JSONAPIMeta:
+		resource_name = "sales"
+
+
+# ============================================
+# 	Item
+# ============================================
+
+class ItemGroup(models.Model):
+	name 	 = models.CharField(max_length = 200)
+	quantity = models.IntegerField(null=True)
+	max_per_user = models.IntegerField(null=True)		# TODO V2 : moteur de contraintes
+
+	class JSONAPIMeta:
+		resource_name = "itemgroups"
+
+class Item(models.Model):
+	"""
+	Defines the Item object
+	"""
+	# Description
+	name 		= models.CharField(max_length=200)
+	description = models.CharField(max_length=1000)
+	sale 		= models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
+	group 		= models.ForeignKey(ItemGroup, null=True, default=None, on_delete=models.SET_NULL, related_name='items')
+	
+	# Specification
+	quantity 	= models.IntegerField(null=True)		# Null quand pas de restrinction sur l'item
+	usertype 	= models.ForeignKey(UserType, on_delete=models.PROTECT)			# UserType ?
+	price 		= models.FloatField()
+	nemopay_id 	= models.CharField(max_length=30, null=True)		# TODO V2 : abstraire payment
+	max_per_user = models.IntegerField(null=True)		# TODO V2 : moteur de contraintes
+
+	fields 	= models.ManyToManyField('Field', through='ItemField', through_fields=('item','field')) #, related_name='fields')
+
+	class JSONAPIMeta:
+		resource_name = "items"
+
+# ============================================
+# 	Order
+# ============================================
+
+class OrderStatus(Enum):
+	ONGOING = 0
+	AWAITING_VALIDATION = 1
+	VALIDATED = 2
+	NOT_PAID = 3
+	PAID = 4
+	EXPIRED = 5
+	CANCELLED = 6
+
+	CANCELLABLE_LIST = (NOT_PAID, AWAITING_VALIDATION)
+	NOT_CANCELLED_LIST = (AWAITING_VALIDATION, VALIDATED, NOT_PAID, PAID) 
+	BUYABLE_STATUS_LIST = (ONGOING, AWAITING_VALIDATION, NOT_PAID) 
+	VALIDATED_LIST = (VALIDATED, PAID)
+
+	@classmethod
+	def choices(cls):
+		return tuple((i.name, i.value) for i in cls)
 
 class Order(models.Model):
-    """
-        Defines the Order object
-    """
-    owner = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        related_name='orders',
-        on_delete=models.CASCADE)
+	"""
+	Defines the Order object
+	"""
+	owner 	= models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders', editable=False)
+	sale 	= models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='orders', editable=False)
 
-    status = models.CharField(max_length=50)
-    date = models.DateTimeField()
-    price = models.FloatField()
-    hash_key = models.CharField(max_length=50)
-    class JSONAPIMeta:
-        resource_name = "orders"
+	created_at = models.DateTimeField(auto_now_add = True, editable=False)
+	updated_at = models.DateTimeField(auto_now_add = True)
+
+	# status = models.OrderStatus()
+	status = models.PositiveSmallIntegerField(
+		choices = OrderStatus.choices(),  # Choices is a list of Tuple
+		default = OrderStatus.ONGOING.value
+	)
+	tra_id = models.IntegerField(null = True, default = None)
+
+	class JSONAPIMeta:
+		resource_name = "orders"
 
 
 class OrderLine(models.Model):
-    """
-        Defines the link between an Order and an Item
-    """
-    item = models.ForeignKey(
-        Item, on_delete=models.CASCADE, related_name='orderlines')
-    order = models.ForeignKey(
-        Order, on_delete=models.CASCADE, related_name='orderlines')
-    quantity = models.IntegerField()
+	"""
+	Defines the link between an Order and an Item
+	"""
+	item 	 = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='orderlines', editable=False)
+	order 	 = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='orderlines', editable=False)
+	quantity = models.IntegerField()
 
-    class JSONAPIMeta:
-        resource_name = "orderlines"
+	class JSONAPIMeta:
+		resource_name = "orderlines"
+
+
+# ============================================
+# 	Field
+# ============================================
+
+
+class Field(models.Model):
+	"""
+	Defines the Field object
+	"""
+	name 	= models.CharField(max_length=200)
+	type 	= models.CharField(max_length=200)
+	default = models.CharField(max_length=200, null=True)
+	items 	= models.ManyToManyField(Item, through='ItemField', through_fields=('field','item'))
+
+	class JSONAPIMeta:
+		resource_name = "fields"
+
+class ItemField(models.Model):
+	"""
+	Defines the ItemField object
+	"""
+	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='itemfields', editable=False)
+	item  = models.ForeignKey(Item,  on_delete=models.CASCADE, related_name='itemfields', editable=False)
+	editable = models.BooleanField(default=True)
+
+	# sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
+	# itemgroup = models.ForeignKey(ItemGroup, on_delete = None, related_name = 'itemgroups')
+	# usertype = models.ManyToManyField('authentication.UserType')
+
+	class JSONAPIMeta:
+		resource_name = "itemfields"
+
+
+class OrderLineItem(models.Model):
+	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+	orderline = models.ForeignKey(OrderLine, on_delete=models.CASCADE, related_name="orderlineitems", editable=False)
+
+	class JSONAPIMeta:
+		resource_name = "orderlineitems"
+
+class OrderLineField(models.Model):
+	"""
+	Defines the OrderLineField object
+	"""
+	orderlineitem = models.ForeignKey(OrderLineItem, on_delete=models.CASCADE, related_name='orderlinefields', editable=False)
+	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='orderlinefields', editable=False)
+	value = models.CharField(max_length=1000, null = True, editable='isEditable') # TODO ??
+
+	def isEditable(self):
+		itemfield = ItemField.objects.get(field__pk=self.field.pk, item__pk=self.orderlineitem.orderline.item.pk)
+		return itemfield.editable
+
+	class JSONAPIMeta:
+		resource_name = "orderlinefields"
+

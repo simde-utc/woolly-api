@@ -7,9 +7,27 @@ from authlib.client import OAuth2Session, OAuthException
 import time
 
 from woolly_api.settings import JWT_SECRET_KEY, JWT_TTL, OAUTH as OAuthConfig
-from .models import WoollyUser, WoollyUserType
-from .serializers import WoollyUserSerializer
+from .models import User, UserType
+from .serializers import UserSerializer
 
+
+
+# ========================================================
+# 		Helpers
+# ========================================================
+
+def get_jwt_from_request(request):
+	"""
+	Helper to get JWT from request
+	Return None if no JWT
+	"""
+	try:
+		jwt = request.META['HTTP_AUTHORIZATION']	# Traité automatiquement par Django
+	except KeyError:
+		return None
+	if not jwt or jwt == '':
+		return None
+	return jwt[7:]		# substring : Bearer ...
 
 def find_or_create_user(user_infos):
 	"""
@@ -17,11 +35,11 @@ def find_or_create_user(user_infos):
 	"""
 	try:
 		# Try to find user
-		user = WoollyUser.objects.get(email = user_infos['email'])		# TODO replace
-	except WoollyUser.DoesNotExist:
+		user = User.objects.get(email = user_infos['email'])		# TODO replace
+	except User.DoesNotExist:
 		# Create user
 		# TODO : birthdate, login
-		serializer = WoollyUserSerializer(data = {
+		serializer = UserSerializer(data = {
 			'email': user_infos['email'],
 			'first_name': user_infos['firstname'],
 			'last_name': user_infos['lastname'],
@@ -42,16 +60,19 @@ def find_or_create_user(user_infos):
 	# Process new informations
 	madeChanges = False
 
-	# Process WoollyUserType relation
-	userType = WoollyUserType.EXTERIEUR
+	# Process UserType relation
+	userType = UserType.EXTERIEUR
 	if user_infos['is_cas'] == True:
-		userType = WoollyUserType.NON_COTISANT			
+		userType = UserType.NON_COTISANT			
 	if user_infos['is_contributorBde'] == True:
-		userType = WoollyUserType.COTISANT			
+		userType = UserType.COTISANT			
 
 	# Mise à jour si besoin
-	if user.woollyusertype.name != userType:
-		user.woollyusertype = WoollyUserType.objects.get(name=userType)
+	if user.usertype.name != userType:
+		try:
+			user.usertype = UserType.objects.get(name=userType)
+		except UserType.DoesNotExist:
+			raise UserType.DoesNotExist("Met à jour les users_types avec UserType.init_values() !!!")
 		madeChanges = True
 	if user.is_admin != user_infos['is_admin']:
 		user.is_admin = user_infos['is_admin']
@@ -62,6 +83,9 @@ def find_or_create_user(user_infos):
 	return user
 
 
+# ========================================================
+# 		Services
+# ========================================================
 
 class JWTClient(JWT):
 	"""
@@ -100,7 +124,7 @@ class JWTClient(JWT):
 		except JWTError as error:
 			return {
 				'error': 'JWTError',
-				'message': str(JWTError)
+				'message': str(error)
 			}
 
 	def validate(self, jwt):
@@ -142,12 +166,15 @@ class JWTClient(JWT):
 		# Retrieve session_key from random code
 		session_key = cache.get(code)
 		cache.delete(code)
-		# TODO gestion erreur
+
 		if session_key == None:
-			return {}
+			return {
+				'error': 'InvalidSession',
+				'message': 'Session cannot be found. You may have taken too much time login, try again.'
+			}
 
 		# Retrieve session and create JWT from its infos
-		session = SessionStore(session_key=session_key)
+		session = SessionStore(session_key = session_key)
 		return self.create_jwt(session['user_id'], session_key)
 	
 	def refresh_jwt(self, jwt):
@@ -159,14 +186,14 @@ class JWTClient(JWT):
 		except JWTError as error:
 			return {
 				'error': 'JWTError',
-				'message': str(JWTError)
+				'message': str(error)
 			}
 		self.revoke_jwt(jwt)
 		return self.create_jwt(self.claims['user_id'], self.claims['session_key'])
 
 	def revoke_jwt(self, jwt):
 		# TODO
-		return None
+		pass
 	
 
 class OAuthAPI:
@@ -195,17 +222,19 @@ class OAuthAPI:
 		"""
 		# Get url and state from OAuth server
 		url, state = self.oauthClient.authorization_url(OAuthConfig[self.provider]['authorize_url'])
-
 		# Cache front url with state for 5mins
 		cache.set(state, redirect, 300)
-
 		return url
 
-	def callback_and_create_session(self, code, state):
+	def callback_and_create_session(self, request):
 		"""
 		Get token, user informations, store these and return a JWT 
 		"""
 		try:
+			# Get code and state from request
+			code = request.GET.get('code', '')
+			state = request.GET.get('state', '')
+
 			# Get token from code
 			oauthToken = self.oauthClient.fetch_access_token(OAuthConfig[self.provider]['access_token_url'], code=code)
 
@@ -214,7 +243,8 @@ class OAuthAPI:
 
 			# Find or create User
 			user = find_or_create_user(auth_user_infos)
-			# TODO Exceptions
+
+			# TODO : gestion exceptions
 
 			# Store portal token linked to user id
 			# TODO : check expiration and optimize
@@ -227,15 +257,16 @@ class OAuthAPI:
 			redirection = cache.get(state)
 			cache.delete(state)
 
-			# TODO gérer ce cas
+			# TODO Connexion par l'API Django
 			if redirection == None:
-				return 'auth.login'
+				# login(request, user)
+				return 'root'
 
 			# Cache session_key to retrieve it for the jwt
-			cache_key = get_random_string(length=32)
-			cache.set(cache_key, session.session_key, 300)
+			code = get_random_string(length=32)
+			cache.set(code, session.session_key, 300)
 
-			return redirection + '?code=' +  cache_key
+			return redirection + '?code=' +  code
 
 		except OAuthException as error:
 			return {

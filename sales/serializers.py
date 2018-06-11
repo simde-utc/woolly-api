@@ -1,240 +1,355 @@
-from .models import Sale, Item, ItemSpecifications, Association, Order
-from .models import OrderLine, PaymentMethod, AssociationMember
 from rest_framework_json_api import serializers
 from rest_framework_json_api.relations import ResourceRelatedField
-from authentication.models import WoollyUserType
-from authentication.serializers import WoollyUserTypeSerializer
+
+from authentication.models import User, UserType
+from authentication.serializers import UserSerializer, UserTypeSerializer
+from .models import *
 
 
-class ItemSpecificationsSerializer(serializers.ModelSerializer):
-    """
-        Defines how the ItemSpecifications fields are serialized
-    """
-    # Serializes a ForeignKey following JSON API convention
-    woolly_user_type = ResourceRelatedField(
-        queryset=WoollyUserType.objects,
-        related_link_view_name='usertype-list',
-        related_link_url_kwarg='itemspec_pk',
-        self_link_view_name='itemSpecification-relationships'
-    )
+# ============================================
+# 	Items & Sales
+# ============================================
 
-    # Required by JSON API
-    included_serializers = {
-        'woolly_user_type': WoollyUserTypeSerializer,
-    }
+class ItemGroupSerializer(serializers.ModelSerializer):
+	# sale = ResourceRelatedField(
+	# 	queryset = Sale.objects,
+	# 	many = False
+	# )
+	items = ResourceRelatedField(
+		queryset = Item.objects,
+		many = True,
+		related_link_view_name = 'item-list',
+		related_link_url_kwarg = 'itemgroup_pk',
+		self_link_view_name = 'itemgroup-relationships'
+	)
 
-    class Meta:
-        """
-            Precises which model and which fields to serialize
-        """
-        model = ItemSpecifications
-        fields = ('id', 'woolly_user_type', 'price', 'quantity', 'nemopay_id','fun_id')
-
-    class JSONAPIMeta:
-        """
-            Required by JSON API if you want to include the ForeignKey fields into the JSON
-        """
-        included_resources = ['woolly_user_type']
-
+	class Meta:
+		model = ItemGroup
+		fields = '__all__' 		# DEBUG
 
 class ItemSerializer(serializers.ModelSerializer):
-    """
-        Defines how the Item fields are serialized
-    """
-    
-    itemspecifications = ResourceRelatedField(
-        queryset=ItemSpecifications.objects,
-        many=True,
-        related_link_view_name='itemSpecification-list',
-        related_link_url_kwarg='item_pk',
-        self_link_view_name='item-relationships'
-    )
+	"""
+	Defines how the Item fields are serialized
+	"""
+	sale = ResourceRelatedField(
+		queryset = Sale.objects,
+		many = False
+	)
+	group = ResourceRelatedField(
+		queryset = ItemGroup.objects,
+		many = False
+	)
+	usertype = ResourceRelatedField(
+		queryset = UserType.objects,
+		many = False
+	)
+	itemfields = ResourceRelatedField(
+		queryset = Field.objects,
+		many = True
+	)
 
-    included_serializers = {
-        'itemspecifications': ItemSpecificationsSerializer,
-    }
+	included_serializers = {
+		'itemfields': 'sales.serializers.ItemFieldSerializer',
+		'sale': 'sales.serializers.SaleSerializer',
+		'itemgroup': ItemGroupSerializer,
+		'usertype': UserTypeSerializer,
+	}
 
-    class Meta:
-        model = Item
-        fields = ('id', 'name', 'description', 'remaining_quantity',
-                  'initial_quantity','sale_id', 'itemspecifications')
+	class Meta:
+		model = Item
+		fields = '__all__'		# DEBUG
+		# fields = ('id', 'name', 'description', 'remaining_quantity',
+				  # 'initial_quantity','sale_id', 'itemspecifications')
 
-    class JSONAPIMeta:
-        included_resources = ['itemspecifications']
-
-
-class OrderLineSerializer(serializers.ModelSerializer):
-    """
-        Defines how the OrderLine fields are serialized
-    """
-    order = serializers.ReadOnlyField(source='order.id')
-    print('******************************')
-    
-    item = ResourceRelatedField(
-        queryset=Item.objects,
-        related_link_view_name='orderlineitem-list',
-        related_link_url_kwarg='orderline_pk',
-        self_link_view_name='orderline-relationships'
-    )
-
-    included_serializers = {
-        'item': ItemSerializer,
-    }
-
-    class Meta:
-        model = OrderLine
-        fields = ('id', 'order', 'item', 'quantity')
-
-    class JSONAPIMeta:
-        included_resources = ['item']
+	class JSONAPIMeta:
+		# included_resources = ['itemgroup', 'sale', 'usertype']
+		pass
 
 
-class OrderSerializer(serializers.ModelSerializer):
-    """
-        Defines how the Order fields are serialized
-    """
-    orderlines = ResourceRelatedField(
-        queryset=OrderLine.objects,
-        many=True,
-        related_link_view_name='orderline-list',
-        related_link_url_kwarg='order_pk',
-        self_link_view_name='order-relationships'
-    )
-    # sale = serializers.ReadOnlyField(source='orderlines.item.sale')
-    included_serializers = {
-        'orderlines': OrderLineSerializer,
-    }
+class SaleSerializer(serializers.HyperlinkedModelSerializer):
+	"""
+	Defines how the Sale fields are serialized, without the payment methods
+	"""
+	# association = serializers.ReadOnlyField(source='association.name')
+	association = ResourceRelatedField(
+		queryset = Association.objects,
+		many = False
+	)
+	items = ResourceRelatedField(
+		queryset = Item.objects,
+		many = True,
+		related_link_view_name = 'item-list',
+		related_link_url_kwarg = 'sale_pk',
+		self_link_view_name = 'sale-relationships'
+	)
+	# orders = ResourceRelatedField(
+	# 	queryset = Order.objects,
+	# 	many = True
+	# )
 
-    class Meta:
-        model = Order
-        fields = ('id', 'date','price','hash_key', 'orderlines')
+	included_serializers = {
+		'association': 'sales.serializers.AssociationSerializer',
+		'orders': 'sales.serializers.OrderSerializer',
+		'items': ItemSerializer
+	}
 
-    class JSONAPIMeta:
-        included_resources = ['orderlines']
+	class Meta:
+		model = Sale
+		fields = '__all__' 		# DEBUG
+		# fields = ('id', 'name', 'description', 'created_at', 'begin_at', 'end_at', 'max_payment_date', 'max_item_quantity', 'association', 'orders', 'items')
 
-
-class SaleSerializer(serializers.ModelSerializer):
-    """
-        Defines how the Sale fields are serialized, without the payment methods
-    """
-    association = serializers.ReadOnlyField(source='association.name')
-    items = ResourceRelatedField(
-        queryset=Item.objects,
-        many=True,
-        related_link_view_name='item-list',
-        related_link_url_kwarg='sale_pk',
-        self_link_view_name='sale-relationships'
-    )
-
-    included_serializers = {
-        'items': ItemSerializer
-    }
-
-    class Meta:
-        model = Sale
-        fields = ('id', 'name', 'description', 'creation_date', 'begin_date',
-                  'end_date', 'max_payment_date', 'max_item_quantity', 'association',
-                  'items')
-
-    class JSONAPIMeta:
-        included_resources = ['items']
+	class JSONAPIMeta:
+		# included_resources = ['items', 'association', 'orders']		# TODO Inutiles par défault ??
+		pass
 
 
-class PaymentMethodSerializer(serializers.ModelSerializer):
-    """
-        Defines how the PaymentMethod fields are serialized
-    """
-
-    sales = ResourceRelatedField(
-        queryset=Sale.objects,
-        many=True,
-        related_link_view_name='sale-payment-list',
-        related_link_url_kwarg='payment_pk',
-        self_link_view_name='paymentmethod-relationships'
-    )
-
-    included_serializers = {
-        'sales': SaleSerializer
-    }
-
-    class Meta:
-        model = PaymentMethod
-        fields = ('id', 'name', 'api_url', 'sales')
-
-    class JSONAPIMeta:
-        included_resources = ['sales']
-
-
-class SaleSerializer(serializers.ModelSerializer):
-    """
-        Defines how the Sale fields are serialized
-    """
-    association = serializers.ReadOnlyField(source='association.name')
-    items = ResourceRelatedField(
-        queryset=Item.objects,
-        many=True,
-        related_link_view_name='item-list',
-        related_link_url_kwarg='sale_pk',
-        self_link_view_name='sale-relationships'
-    )
-
-    included_serializers = {
-        'items': ItemSerializer,
-        'paymentmethods': PaymentMethodSerializer
-    }
-
-    class Meta:
-        model = Sale
-        fields = ('id', 'name', 'description', 'creation_date', 'begin_date',
-                  'end_date', 'max_payment_date', 'max_item_quantity', 'association',
-                  'items', 'paymentmethods')
-
-    class JSONAPIMeta:
-        included_resources = ['items', 'paymentmethods']
-
+# ============================================
+# 	Associations
+# ============================================
 
 class AssociationSerializer(serializers.ModelSerializer):
-    """
-        Defines how the Association fields are serialized
-    """
-    sales = ResourceRelatedField(
-        queryset=Sale.objects,
-        many=True,
-        related_link_view_name='sale-list',
-        related_link_url_kwarg='association_pk',
-        self_link_view_name='association-relationships'
-    )
+	"""
+	Defines how the Association fields are serialized
+	"""
+	sales = ResourceRelatedField(
+		queryset = Sale.objects,
+		many = True,
+		related_link_view_name = 'sale-list',
+		related_link_url_kwarg = 'association_pk',
+		self_link_view_name = 'association-relationships'
+	)
 
-    included_serializers = {
-        'sales': SaleSerializer
-    }
+	included_serializers = {
+		'sales': SaleSerializer
+	}
 
-    class Meta:
-        model = Association
-        fields = ('id', 'name', 'bank_account', 'sales', 'foundation_id')
+	class Meta:
+		model = Association
+		fields = '__all__' 		# DEBUG
+		# fields = ('id', 'name', 'bank_account', 'sales', 'foundation_id')
 
-    class JSONAPIMeta:
-        included_resources = ['sales']
-
+	class JSONAPIMeta:
+		included_resources = ['sales']
 
 class AssociationMemberSerializer(serializers.ModelSerializer):
-    """
-        Defines how the AssociationMember fields are serialized
-    """
-    association = ResourceRelatedField(
-        queryset=Association.objects,
-        related_link_view_name='association-list',
-        related_link_url_kwarg='associationmember_pk',
-        self_link_view_name='associationmember-relationships'
-    )
+	"""
+	Defines how the AssociationMember fields are serialized
+	"""
+	association = ResourceRelatedField(
+		queryset = Association.objects,
+		related_link_view_name = 'association-list',
+		related_link_url_kwarg = 'associationmember_pk',
+		self_link_view_name = 'associationmember-relationships'
+	)
+	user = ResourceRelatedField(
+		queryset = User.objects,
+		related_link_view_name = 'association-list',
+		related_link_url_kwarg = 'associationmember_pk',
+		self_link_view_name = 'associationmember-relationships'
+	)
 
-    included_serializers = {
-        'association': AssociationSerializer,
-    }
+	included_serializers = {
+		'association': AssociationSerializer,
+		'user': UserSerializer,
+	}
 
-    class Meta:
-        model = AssociationMember
-        fields = ('id', 'association', 'role', 'rights')
+	class Meta:
+		model = AssociationMember
+		fields = '__all__' 		# DEBUG
+		# fields = ('id', 'association', 'role', 'rights')
 
-    class JSONAPIMeta:
-        included_resources = ['association']
+	class JSONAPIMeta:
+		included_resources = ['association', 'user']
+
+
+# ============================================
+# 	Orders
+# ============================================
+
+class OrderSerializer(serializers.ModelSerializer):
+	"""
+	Defines how the Order fields are serialized
+	"""
+	owner = ResourceRelatedField(
+		queryset = User.objects,
+		# read_only = True,
+		required = False,
+		# allow_null = True
+		# related_link_view_name = 'order-owner-detail',
+		# related_link_url_kwarg = 'order_pk',
+		# self_link_view_name = 'order-relationships',
+	)
+	sale = ResourceRelatedField(
+		queryset = Sale.objects,
+		many = False
+	)
+	orderlines = ResourceRelatedField(
+		queryset = OrderLine.objects,
+		many = True,
+		# related_link_view_name = 'order-list',
+		# related_link_url_kwarg = 'order_pk',
+		# self_link_view_name = 'order-relationships',
+		required = False,
+		allow_null = True
+	)
+
+	included_serializers = {
+		'owner': UserSerializer,
+		'sale': SaleSerializer,
+		'orderlines': 'sales.serializers.OrderLineSerializer',
+	}
+
+	class Meta:
+		model = Order
+		fields = '__all__' 		# DEBUG
+		# fields = ('id', 'date','price', 'orderlines')
+
+	class JSONAPIMeta:
+		# included_resources = ['orderlines', 'owner', 'sale']
+		pass
+
+class OrderLineSerializer(serializers.ModelSerializer):
+	"""
+	Defines how the OrderLine fields are serialized
+	"""
+	# order = serializers.ReadOnlyField(source='order.id')
+	order = ResourceRelatedField(
+		queryset = Order.objects,
+		many = False
+	)	
+	item = ResourceRelatedField(
+		queryset = Item.objects,
+		many = False,
+		related_link_view_name='orderline-item-list',
+		related_link_url_kwarg='orderline_pk',
+		self_link_view_name='orderline-relationships'
+	)
+	orderlineitems = ResourceRelatedField(
+		queryset = OrderLineItem.objects,
+		many = True,
+		required = False,
+		allow_null = True,
+		# related_link_view_name='orderline-orderlineitem-list',
+		# related_link_url_kwarg='orderline_pk',
+		# self_link_view_name='orderline-relationships'
+	)
+
+	included_serializers = {
+		'item': ItemSerializer,
+		'order': OrderSerializer,
+		'orderlineitems': 'sales.serializers.OrderLineItemSerializer'
+	}
+
+	class Meta:
+		model = OrderLine
+		fields = '__all__' 		# DEBUG
+		# fields = ('id', 'order', 'item', 'quantity')
+
+	class JSONAPIMeta:
+		# included_resources = ['item', 'order', 'fields']
+		pass
+
+
+# ============================================
+# 	Fields
+# ============================================
+
+class FieldSerializer(serializers.ModelSerializer):
+	itemfields = ResourceRelatedField(
+		queryset = 'ItemField.objects',
+		many = True
+	)
+
+	included_serializers = {
+		'itemfields': 'sales.serializers.ItemFieldSerializer',
+	}
+
+	class Meta:
+		model = Field
+		fields = '__all__' 		# DEBUG
+
+	class JSONAPIMeta:
+		included_resources = []
+
+class ItemFieldSerializer(serializers.ModelSerializer):
+	item = ResourceRelatedField(
+		queryset = Item.objects,
+		many = False
+	)
+	field = ResourceRelatedField(
+		queryset = Field.objects,
+		many = False
+	)
+
+	included_serializers = {
+		'item': ItemSerializer,
+		'field': FieldSerializer,
+	}
+
+	class Meta:
+		model = ItemField
+		fields = '__all__' 		# DEBUG
+
+	class JSONAPIMeta:
+		included_resources = ['field', 'item']
+
+
+class OrderLineItemSerializer(serializers.ModelSerializer):
+	orderline = ResourceRelatedField(
+		queryset = OrderLine.objects,
+		many = False,
+		# related_link_url_kwarg='orderlineitem_pk',
+		# related_link_view_name='orderlineitem-list',
+		# self_link_view_name='orderlineitem-relationships'
+	)
+	orderlinefields = ResourceRelatedField(
+		queryset = OrderLineField.objects,
+		many = True,
+		# related_link_url_kwarg='orderlineitem_pk',
+		# related_link_view_name='orderlineitem-list',
+		# self_link_view_name='orderlineitem-relationships',
+		required = False,
+		allow_null = True
+	)
+
+	included_serializers = {
+		'orderline': OrderLineSerializer,
+		'orderlinefields': 'sales.serializers.OrderLineFieldSerializer'
+	}
+
+	class Meta:
+		model = OrderLineItem
+		fields = '__all__' 		# DEBUG
+
+	class JSONAPIMeta:
+		# included_resources = ['orderlinefields']
+		pass
+
+class OrderLineFieldSerializer(serializers.ModelSerializer):
+	orderlineitem = ResourceRelatedField(
+		queryset = OrderLineItem.objects,
+		many = False,
+		# read_only = True
+	)
+	field = ResourceRelatedField(
+		queryset = Field.objects,
+		many = False,
+		# read_only = True
+	)
+
+	name 	 = serializers.CharField(read_only=True, source='field.name')
+	type 	 = serializers.CharField(read_only=True, source='field.type')
+	editable = serializers.BooleanField(read_only=True, source='isEditable')
+
+	included_serializers = {
+		'orderlineitem': OrderLineItemSerializer,
+		'field': FieldSerializer,
+	}
+
+	class Meta:
+		model = OrderLineField
+		fields = '__all__' 		# DEBUG
+
+	class JSONAPIMeta:
+		included_resources = ['orderlineitem', 'field']
+

@@ -17,9 +17,10 @@ class Payutc:
 			'logged_usr': None,
 			'loginMethod': 'payuser',
 			'date': date.today(),
-			'debug': False,
+			'debug': False,	# DEBUG
 			# 'callback_url': params.get('callback_url', None)
 		}
+		self.config['url'] = "https://api.nemopay.be/" if self.config['debug'] else "https://api.nemopay.net/"
 
 	def filterParams(self, params, keys):
 		"""
@@ -33,7 +34,7 @@ class Payutc:
 
 	def genericApiCall(self, service, method, data):
 		response = ""
-		url = "https://api.nemopay.net/services/" + service + "/" + method \
+		url = self.config['url'] + "services/" + service + "/" + method \
 				+ "?system_id=" + self.config["systemID"] + "&app_key=" + self.config["app_key"]
 		if self.config["sessionID"] != None:
 				url += "&sessionid=" + self.config["sessionID"]

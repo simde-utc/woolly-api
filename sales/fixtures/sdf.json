@@ -1,0 +1,217 @@
+[
+	{
+		"model": "sales.association",
+		"pk": 1,
+		"fields": {
+			"name": "SDF",
+			"fun_id": 10
+		}
+	},
+	{
+		"model": "sales.sale",
+		"pk": 1,
+		"fields": {
+			"name": "Soirée des Finaux",
+			"description": "Viens c'est trop cool !!!",
+			"association": 1,
+			"is_active": true,
+			"created_at": "2018-05-27T17:00:00Z",
+			"begin_at": "2018-05-27T17:00:00Z",
+			"end_at": "2018-06-27T17:00:00Z",
+			"max_item_quantity": 2200,
+			"max_payment_date": "2018-06-27T17:00:00Z"
+		}
+	},
+	{
+		"model": "sales.itemgroup",
+		"pk": 1,
+		"fields": {
+			"name": "Tarif Réduit",
+			"quantity": null,
+			"max_per_user": 1
+		}
+	},
+	{
+		"model": "sales.item",
+		"pk": 1,
+		"fields": {
+			"name": "Place Early Early Bird Cotisant",
+			"description": "Place Cotisant pour les plus chauds bouillants",
+			"sale": 1,
+			"group": 1,
+			"quantity": 115,
+			"usertype": 1,
+			"price": 12.0,
+			"nemopay_id": 12932,
+			"max_per_user": 1
+		}
+	},
+	{
+		"model": "sales.item",
+		"pk": 2,
+		"fields": {
+			"name": "Place Early Bird Cotisant",
+			"description": "Place Cotisant pour les plus chauds mais pas trop quand même, le réchauffement climatique toussa toussa",
+			"sale": 1,
+			"group": 1,
+			"quantity": 858,
+			"usertype": 1,
+			"price": 13.0,
+			"nemopay_id": 12933,
+			"max_per_user": 1
+		}
+	},
+	{
+		"model": "sales.item",
+		"pk": 3,
+		"fields": {
+			"name": "Place Cotisant",
+			"description": "Place Cotisant pour les plus moins chauds mais c'est quand même cool de venir",
+			"sale": 1,
+			"group": 1,
+			"quantity": null,
+			"usertype": 1,
+			"price": 14.0,
+			"nemopay_id": 12934,
+			"max_per_user": 1
+		}
+	},
+	{
+		"model": "sales.item",
+		"pk": 4,
+		"fields": {
+			"name": "Place Non Cotisant",
+			"description": "Place Non Cotisant",
+			"sale": 1,
+			"group": 1,
+			"quantity": null,
+			"usertype": 2,
+			"price": 15.0,
+			"nemopay_id": 12935,
+			"max_per_user": 1
+		}
+	},
+	{
+		"model": "sales.item",
+		"pk": 5,
+		"fields": {
+			"name": "Place Extérieur",
+			"description": "Place Extérieur",
+			"sale": 1,
+			"group": null,
+			"quantity": null,
+			"usertype": 4,
+			"price": 15.0,
+			"nemopay_id": 12937,
+			"max_per_user": 10
+		}
+	},
+	{
+		"model": "sales.field",
+		"pk": 1,
+		"fields": {
+			"name": "Nom",
+			"type": "string",
+			"default": "owner.last_name"
+		}
+	},
+	{
+		"model": "sales.field",
+		"pk": 2,
+		"fields": {
+			"name": "Prénom",
+			"type": "string",
+			"default": "owner.first_name"
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 1,
+		"fields": {
+			"field": 1,
+			"item": 1,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 2,
+		"fields": {
+			"field": 1,
+			"item": 2,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 3,
+		"fields": {
+			"field": 1,
+			"item": 3,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 4,
+		"fields": {
+			"field": 1,
+			"item": 4,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 5,
+		"fields": {
+			"field": 1,
+			"item": 5,
+			"editable": true
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 6,
+		"fields": {
+			"field": 2,
+			"item": 1,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 7,
+		"fields": {
+			"field": 2,
+			"item": 2,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 8,
+		"fields": {
+			"field": 2,
+			"item": 3,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 9,
+		"fields": {
+			"field": 2,
+			"item": 4,
+			"editable": false
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 10,
+		"fields": {
+			"field": 2,
+			"item": 5,
+			"editable": true
+		}
+	}
+]

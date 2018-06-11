@@ -1,39 +1,43 @@
 from django.http import JsonResponse
 from django.shortcuts import redirect
-from rest_framework import viewsets
-from rest_framework_json_api.views import RelationshipView
+from rest_framework_json_api import views
+from authlib.specs.rfc7519 import JWTError
 
 from rest_framework.permissions import IsAuthenticated
-from .serializers import WoollyUserSerializer, WoollyUserTypeSerializer
-from .models import WoollyUserType, WoollyUser
+from .permissions import *
 
-from .services import OAuthAPI, JWTClient
+from .serializers import UserSerializer, UserTypeSerializer
+from .models import UserType, User
+from .services import OAuthAPI, JWTClient, get_jwt_from_request
 # from sales.models import AssociationMember
 
 
-class WoollyUserViewSet(viewsets.ModelViewSet):
+class UserViewSet(views.ModelViewSet):
 	"""
 	API endpoint that allows Users to be viewed or edited.
-	support Post request to create a new WoollyUser
+	support Post request to create a new User
 	"""
-	queryset = WoollyUser.objects.all()
-	serializer_class = WoollyUserSerializer
-	# permission_classes = (IsAuthenticated,)
+	queryset = User.objects.all()
+	serializer_class = UserSerializer
+	permission_classes = (IsUser,)
 
-	# def perform_create(self, serializer):
-		# serializer.save(type_id = self.kwargs['woollyusertype_pk'])
-		# serializer.save()
+	def create(self, request):
+		return redirect('auth.login')
 
-		# def get_queryset(self):
-	# 	queryset = self.queryset.filter(login=self.request.user.login)
-	# 	if 'woollyuser_pk' in self.kwargs:
-	# 		association_pk = self.kwargs['woollyuser_pk']
-	# 		queryset = queryset.filter(user__pk=association_pk)
-	# 	return queryset
+	# def list(self, request):
+		# pass
+	"""
+	def get_queryset(self):
+		queryset = self.queryset.filter(pk=self.request.user.pk)
+		if 'user_pk' in self.kwargs:
+			association_pk = self.kwargs['user_pk']
+			queryset = queryset.filter(user__pk=association_pk)
+		return queryset
+	"""
 
-class WoollyUserTypeViewSet(viewsets.ModelViewSet):
-	queryset = WoollyUserType.objects.all()
-	serializer_class = WoollyUserTypeSerializer
+class UserTypeViewSet(views.ModelViewSet):
+	queryset = UserType.objects.all()
+	serializer_class = UserTypeSerializer
 	permission_classes = (IsAuthenticated,)
 
 	# TODO : Normal que cela ne retourne que l'usertype loggué ?
@@ -42,36 +46,22 @@ class WoollyUserTypeViewSet(viewsets.ModelViewSet):
 
 	# 	if 'itemspec_pk' in self.kwargs:
 	# 		itemspec_pk = self.kwargs['itemspec_pk']
-	# 		queryset = WoollyUserType.objects.all().filter(itemspecifications__pk=itemspec_pk)
+	# 		queryset = UserType.objects.all().filter(itemspecifications__pk=itemspec_pk)
 
 	# 	if 'user_pk' in self.kwargs:
 	# 		user_pk = self.kwargs['user_pk']
-	# 		queryset = WoollyUserType.objects.all().filter(users__pk=user_pk)
+	# 		queryset = UserType.objects.all().filter(users__pk=user_pk)
 
 	# 	return queryset
 
 
-class WoollyUserRelationshipView(RelationshipView):
-	queryset = WoollyUser.objects
+class UserRelationshipView(views.RelationshipView):
+	queryset = User.objects
 
 
 # ========================================================
 # 		Auth & JWT Management
 # ========================================================
-
-def get_jwt_from_request(request):
-	"""
-	Helper to get JWT from request
-	Return None if no JWT
-	"""
-	try:
-		jwt = request.META['HTTP_AUTHORIZATION']	# Traité automatiquement par Django
-	except KeyError:
-		return None
-	if not jwt or jwt == '':
-		return None
-	return jwt[7:]		# substring : Bearer ...
-
 
 class AuthView:
 	oauth = OAuthAPI()
@@ -82,22 +72,23 @@ class AuthView:
 		"""
 		Redirect to OAuth api authorization url with an added front callback
 		"""
-		redirection = request.GET.get('redirect', '')
+		redirection = request.GET.get('redirect', None)
 		url = cls.oauth.get_auth_url(redirection)
-		# print(url)
-		# return JsonResponse({ 'url': url}) 			# DEBUG
 		return redirect(url)
 
 	@classmethod
 	def login_callback(cls, request):
 		"""
-		# Get user from API, find or create it in Woolly, store the OAuth token, create and return a user JWT or an error
-		Get user from API, find or create it in Woolly, store the OAuth token, create and redirect to the front with a code to get a JWT
+		# Get user from API, find or create it in Woolly, store the OAuth token, 
+		create and return a user JWT or an error
+		Get user from API, find or create it in Woolly, store the OAuth token, 
+		create and redirect to the front with a code to get a JWT
 		"""
-		after = request.GET.get('after', '')
-		resp = cls.oauth.callback_and_create_session(request.GET.get('code', ''), request.GET.get('state', ''));
+		resp = cls.oauth.callback_and_create_session(request);
+		print(resp)
 		# !! Can return dict errors
-		# return JsonResponse({ 'redirect': resp })		# DEBUG
+		if 'error' in resp:
+			return JsonResponse(resp)
 		return redirect(resp)
 
 	@classmethod
@@ -105,7 +96,7 @@ class AuthView:
 		me = request.user
 		return JsonResponse({
 			'authenticated': me.is_authenticated,
-			'user': None if me.is_anonymous else WoollyUserSerializer(me).data
+			'user': None if me.is_anonymous else UserSerializer(me).data
 		})
 
 	@classmethod

@@ -1,55 +1,53 @@
-from authentication.models import WoollyUser, WoollyUserType
-# from sales.models import AssociationMember
-# from sales.serializers import AssociationMemberSerializer
 from rest_framework_json_api import serializers
 from rest_framework_json_api.relations import ResourceRelatedField
-from django.db import IntegrityError
 
+from authentication.models import User, UserType
+from sales.models import Order
 
-class WoollyUserTypeSerializer(serializers.ModelSerializer):
+class UserTypeSerializer(serializers.ModelSerializer):
 	class Meta:
-		model = WoollyUserType
+		model = UserType
 		fields = ('id', 'name')
 
 
-class WoollyUserSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.HyperlinkedModelSerializer):
 
-	# password = serializers.CharField(required = True, write_only = True)
-	woollyusertype = ResourceRelatedField(
-		queryset = WoollyUserType.objects,
-		related_link_view_name = 'user-type-list',
+	usertype = ResourceRelatedField(
+		read_only = True,
+		# queryset = UserType.objects,
+		related_link_view_name = 'usertype-list',
 		related_link_url_kwarg = 'user_pk',
 		self_link_view_name = 'user-relationships',
 		required = False
 	)
 	"""
-	associationmembers = ResourceRelatedField(
+	associations = ResourceRelatedField(
 		queryset=AssociationMember.objects,
 		related_link_view_name='associationmember-list',
 		related_link_url_kwarg='user_pk',
 		self_link_view_name='user-relationships'
 	)
 	"""
+	orders = ResourceRelatedField(
+		queryset = Order.objects,
+		many = True,
+		# related_link_view_name = 'orders-list',
+		# related_link_url_kwarg = 'user_pk',
+		# self_link_view_name = 'user-relationships',
+		required = False
+	)
 
 	class Meta:
-		model = WoollyUser
+		model = User
 		exclude = ('password',)
 
-	def create(self, validated_data):
-		"""
-		Overload : set login to None if not a CAS user
-		"""
-		if 'login' not in validated_data or not validated_data['login']:
-			validated_data['login'] = None
-		return WoollyUser.objects.create(**validated_data) 
-
-
 	included_serializers = {
-		'woollyusertype': WoollyUserTypeSerializer,
+		'usertype': UserTypeSerializer,
+		'orders': 'sales.serializers.OrderSerializer'
 		# 'associationmembers': AssociationMemberSerializer
 	}
 
-
 	class JSONAPIMeta:
-		# included_resources = ['woollyusertype', 'associationmembers']
-		included_resources = ['woollyusertype']
+		# included_resources = ['usertype', 'associationmembers']
+		# included_resources = ['usertype']
+		pass

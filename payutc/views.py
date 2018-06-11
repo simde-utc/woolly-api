@@ -1,35 +1,59 @@
 from django.http import HttpResponse, JsonResponse
 from django.core import serializers
 import json
+
+from sales.models import OrderStatus
 from .payutc import Payutc
-from django.contrib.sessions.backends.db import SessionStore
-from woolly_api import settings
+from woolly_api import settings_confidential as confidentials
 
 
 def createTransaction(request):
-	#for key, value in request.session.items(): 
-	#	print('{} => {}'.format(key, value))
-	params = { "apikey": PAYUTC_KEY }
+	params = {"apikey": confidentials.PAYUTC_KEY}
 	mail = request.GET["mail"]
 	funId = request.GET["funId"]
 	orderlineId = request.GET['orderlineId']
+	order = request.GET["order"]
 	articles = request.body.decode('utf-8')
 	p = Payutc(params)
-	data  =  {
+	data = {
 		"itemsArray": articles,
-		"funId": funId,
-		"mail" :mail,
+		"mail": mail,
 		"returnUrl": "https://payutc.nemopay.net/",
-		# TODO : sale...
-		"callbackUrl" : "http://localhost:8000/payutc/returnTransaction?&funId="+funId+"orderlineId="+orderlineId,
-		"apikey":"d0ba09483a9ed6262d3924d7e7567d37"
+		"funId": funId,
+		# event_id pas d'event id
+		"callbackUrl": "http://localhost:8000/payutc/returnTransaction?&funId="+funId+"orderlineId="+orderlineId,
+		# "apikey":"d0ba09483a9ed6262d3924d7e7567d37"
+		"apikey": confidentials.PAYUTC_KEY
 	}
-	response =  json.loads(p.createTransaction(data))
+	response = json.loads(p.createTransaction(data))
+	order.status = OrderStatus.VALIDATED
 	#response = serializers.serialize('json',response)
 	return JsonResponse(response)
 
+
+def getTransactionInfo(request):
+	params = {"apikey": confidentials.PAYUTC_KEY}
+	funId = request.GET["funId"]
+	order = request.GET["order"]
+	data = {
+		"traId": order.getTra_id(),
+		"funId": funId
+	}
+	p = Payutc(params)
+	state = p.getTransactionInfo(data)
+	if state == 'V':
+		order.status = OrderStatus.PAYED
+	elif state == 'A':
+		order.status = OrderStatus.CANCELLED
+	elif state == 'W':
+		order.status = OrderStatus.NOT_PAYED
+	else:
+		order.status = OrderStatus.NOT_PAYED
+	return JsonResponse(state)
+
+
 def setProduct(request):
-	params = { "apikey": PAYUTC_KEY }
+	params = {"apikey": confidentials.PAYUTC_KEY}
 	name = request.GET['name']
 	category = request.GET["category"]
 	price = request.GET['price']
@@ -56,7 +80,7 @@ def setProduct(request):
 	return HttpResponse(response)
 
 def getFundations(request):
-	params = { "apikey": PAYUTC_KEY }
+	params = {"apikey": confidentials.PAYUTC_KEY}
 	service = request.GET['service']
 	ticket = request.GET['ticket']
 	p = Payutc(params)
@@ -66,7 +90,7 @@ def getFundations(request):
 	return HttpResponse(response)
 
 def returnTransaction(request):
-	params = { "apikey": PAYUTC_KEY }
+	params = {"apikey": confidentials.PAYUTC_KEY}
 	funId = request.GET['funId']
 	oderlineId = request.GET['orderlineId']
 	transactionId = request.query

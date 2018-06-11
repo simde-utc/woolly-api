@@ -1,67 +1,70 @@
-from rest_framework import viewsets
-from rest_framework import permissions
-from django.http import HttpResponse, JsonResponse
-from django.db.models import F
+from io import BytesIO
 
-import requests
-import json
-from rest_framework.decorators import api_view
+from django.core.files.storage import FileSystemStorage
+from django.template.loader import get_template, render_to_string
+from django.views import View
+from reportlab.lib.pagesizes import landscape, A4
+from reportlab.pdfgen import canvas
+from rest_framework_json_api import views
 from rest_framework.response import Response
-from rest_framework.reverse import reverse
-from rest_framework.decorators import detail_route, list_route
-from rest_framework import permissions
-from .permissions import IsOwner
+from rest_framework import  status
+from django.http import JsonResponse, HttpResponse
+from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
+# from wkhtmltopdf.views import PDFTemplateView, PDFTemplateResponse
 
-from rest_framework_json_api.views import RelationshipView
+from core.permissions import *
+from .serializers import *
+from .permissions import *
+from core.utils import render_to_pdf
+# TODO export core
+from core.helpers import errorResponse
 
-from .models import (
-	Item, ItemSpecifications, Association, Sale, Order, OrderLine,
-	PaymentMethod, AssociationMember
-)
-from .serializers import (
-	ItemSerializer, ItemSpecificationsSerializer, AssociationSerializer,
-	OrderSerializer, OrderLineSerializer, SaleSerializer,
-	PaymentMethodSerializer, AssociationMemberSerializer
-)
-from payutc import payutc
+# ============================================
+# 	Association
+# ============================================
 
-
-class AssociationViewSet(viewsets.ModelViewSet):
+class AssociationViewSet(views.ModelViewSet):
 	"""
-		Defines the behavior of the association view
+	Defines the behavior of the association view
 	"""
 	queryset = Association.objects.all()
 	serializer_class = AssociationSerializer
-	permission_classes = (permissions.IsAuthenticated,)
+	permission_classes = (IsManagerOrReadOnly,)
 
+	"""
 	def get_queryset(self):
-		queryset = self.queryset.filter(associationmembers__woollyUser=self.request.user_pk)
-
-		# if 	
-
+		# print(self.request.user)
+		# queryset = self.queryset.filter(associationmembers__user=self.request.user_pk)
 		if 'associationmember_pk' in self.kwargs:
 			associationmember_pk = self.kwargs['associationmember_pk']
 			queryset = Association.objects.all().filter(associationmembers__pk=associationmember_pk)
 
 		if 'user_pk' in self.kwargs:
 			user_pk = self.kwargs['user_pk']
-			queryset = Association.objects.all().filter(associationmembers__woollyUser=user_pk)
-
+			queryset = Association.objects.all().filter(associationmembers__user=user_pk)
 		return queryset
-
-
-class AssociationMemberViewSet(viewsets.ModelViewSet):
 	"""
-		Defines the behavior link to the association member view
+
+class AssociationRelationshipView(views.RelationshipView):
+	"""
+	Required by JSON API to display the associations related links
+	"""
+	queryset = Association.objects
+
+class AssociationMemberViewSet(views.ModelViewSet):
+	"""
+	Defines the behavior link to the association member view
 	"""
 	queryset = AssociationMember.objects.all()
 	serializer_class = AssociationMemberSerializer
-	permission_classes = (permissions.IsAuthenticated,)
+	permission_classes = (IsAdmin,)	# TODO V2 : bloquer pour l'instant
 
+	"""
 	def perform_create(self, serializer):
 		serializer.save(
-			woollyUser_id=self.request.user.id,
-			association_id=self.kwargs['association_pk'],
+			user_id = self.request.user.id,
+			association_id = self.kwargs['association_pk'],
 		)
 
 	def get_queryset(self):
@@ -69,93 +72,232 @@ class AssociationMemberViewSet(viewsets.ModelViewSet):
 
 		if 'user_pk' in self.kwargs:
 			user_pk = self.kwargs['user_pk']
-			queryset = queryset.filter(woollyUser__pk=user_pk)
+			queryset = queryset.filter(user__pk=user_pk)
 
 		if 'association_pk' in self.kwargs:
 			association_pk = self.kwargs['association_pk']
 			queryset = queryset.filter(association__pk=association_pk)
 
 		return queryset
+	"""
+
+class AssociationMemberRelationshipView(views.RelationshipView):
+	"""
+	Required by JSON API to display the association members related links
+	"""
+	queryset = AssociationMember.objects
 
 
-class PaymentMethodViewSet(viewsets.ModelViewSet):
+# ============================================
+# 	Sale
+# ============================================
+
+class SaleViewSet(views.ModelViewSet):
 	"""
-		Defines the behavior of the payment method view
+	Defines the behavior of the sale view
 	"""
-	queryset = PaymentMethod.objects.all()
-	serializer_class = PaymentMethodSerializer
-	permission_classes = (permissions.IsAuthenticated,)
+	serializer_class = SaleSerializer
+	permission_classes = (IsManagerOrReadOnly,)
+
+	def perform_create(self, serializer):
+		serializer.save(
+			association_id=self.kwargs['association_pk'],
+			# paymentmethod_id=self.kwargs['paymentmethod_pk']
+		)
 
 	def get_queryset(self):
-		queryset = self.queryset
-		if 'sale_pk' in self.kwargs:
-			sale_pk = self.kwargs['sale_pk']
-			queryset = queryset.filter(sales__pk=sale_pk)
+		queryset = Sale.objects.all()
+					# .filter(items__itemspecifications__user_type__name=self.request.user.usertype.name)
+					# TODO filtrer par date ?
+
+		queryset = queryset.filter(is_active=True)
+		# TODO V2 : filtering
+		# filters = ('active', )
+		# filterQuery = self.request.query_params.get('filterQuery', None)
+		# if filterQuery is not None:
+			# queryset = queryset.filter()
+			# pass
+
+		# Association detail route
+		if 'association_pk' in self.kwargs:
+			association_pk = self.kwargs['association_pk']
+			queryset = queryset.filter(association__pk=association_pk)
 
 		return queryset
 
-
-class OrderViewSet(viewsets.ModelViewSet):
+class SaleRelationshipView(views.RelationshipView):
 	"""
-		Defines the behavior of the order CRUD
+	Required by JSON API to display the sales related links
+	"""
+	queryset = Sale.objects
+
+
+# ============================================
+# 	Item
+# ============================================
+
+class ItemGroupViewSet(views.ModelViewSet):
+	"""
+	Defines the behavior of the itemGroup interactions
+	"""
+	queryset = ItemGroup.objects.all()
+	serializer_class = ItemGroupSerializer
+	permission_classes = (IsManagerOrReadOnly,)
+
+class ItemGroupRelationshipView(views.RelationshipView):
+	"""
+	Required by JSON API to display the itemGroups related links
+	"""
+	queryset = ItemGroup.objects
+
+
+class ItemViewSet(views.ModelViewSet):
+	"""
+	Defines the behavior of the item interactions
+	"""
+	queryset = Item.objects.all()
+	serializer_class = ItemSerializer
+	permission_classes = (IsManagerOrReadOnly,)
+
+	def perform_create(self, serializer):
+		if 'orderline_pk' in self.kwargs:
+			serializer.save(
+				sale_id=self.kwargs['sale_pk']
+			),
+			serializer.save(
+				sale_id=self.kwargs['orderline_pk']
+			)
+
+	def get_queryset(self):
+		queryset = self.queryset.filter()
+
+		if 'sale_pk' in self.kwargs:
+			sale_pk = self.kwargs['sale_pk']
+			queryset = queryset.filter(sale__pk=sale_pk)
+
+		if 'orderline_pk' in self.kwargs:
+			orderline_pk = self.kwargs['orderline_pk']
+			queryset = queryset.filter(orderlines__pk=orderline_pk)
+
+		return queryset
+
+class ItemRelationshipView(views.RelationshipView):
+	"""
+	Required by JSON API to display the items related links
+	"""
+	queryset = Item.objects
+
+
+# ============================================
+# 	Order & OrderLine
+# ============================================
+
+class OrderViewSet(views.ModelViewSet):
+	"""
+	Defines the behavior of the order CRUD
 	"""
 	queryset = Order.objects.all()
 	serializer_class = OrderSerializer
-	permission_classes = (permissions.IsAuthenticated, IsOwner,)
-
-	def perform_create(self, serializer):
-		# Get the customized Orderlines through JSON
-		# import pdb; pdb.set_trace()
-		validate_items = []
-		if 'lines' in self.request.data:
-			if len(self.request.data['lines']) > 0:
-				for line in self.request.data['lines']:
-					# Check the quantity of each item
-					# TO DO : Call the check quantity function
-
-					# If there is enough stock, add the article
-					# to the validate items list
-					validate_items.append(line)
-		print(self.request.session)
-		print(self.request.user)
-		# Create the order
-		serializer.save(
-			
-			owner=self.request.user
-		)
-
-		if len(validate_items):
-			# Get the new order ID
-			order_id = serializer.data['id']
-
-			# Then create the orderlines and link them to the order
-			for line in validate_items:
-				q = OrderLine()
-				q.item = Item.objects.all().get(pk=line['item'])
-				q.order = Order.objects.all().get(pk=order_id)
-				q.quantity = line['quantity']
-
-				q.save()
-
+	permission_classes = (IsOwner,)
 
 	def get_queryset(self):
-		queryset = self.queryset.filter(owner=self.request.user)
+		# queryset = self.queryset.filter(owner=self.request.user)
+		queryset = self.queryset
 
-		if 'woollyuser_pk' in self.kwargs:
-			woollyuser_pk = self.kwargs['woollyuser_pk']
-			queryset = queryset.filter(owner__pk=woollyuser_pk)
+		if 'user_pk' in self.kwargs:
+			user_pk = self.kwargs['user_pk']
+			queryset = queryset.filter(owner__pk=user_pk)
 
 		return queryset
 
+	def create(self, request):
+		"""Find if user has a Buyable Order or create"""
+		try:
+			# TODO ajout de la limite de temps
+			order = Order.objects \
+				.filter(status__in=OrderStatus.BUYABLE_STATUS_LIST.value) \
+				.get(sale=request.data['sale']['id'], owner=request.user.id)
 
-class OrderLineViewSet(viewsets.ModelViewSet):
+			serializer = OrderSerializer(order)
+			httpStatus = status.HTTP_200_OK
+		except Order.DoesNotExist as err:
+			# Configure new Order
+			serializer = OrderSerializer(data = {
+				'sale': request.data['sale'],
+				'owner': {
+					'id': request.user.id,
+					'type': 'users'
+				},
+				'orderlines': [],
+				'status': OrderStatus.ONGOING.value
+			})
+			serializer.is_valid(raise_exception=True)
+			self.perform_create(serializer)
+			httpStatus = status.HTTP_201_CREATED
+
+		headers = self.get_success_headers(serializer.data)
+		return Response(serializer.data, status=httpStatus, headers=headers)
+
+	def destroy(self, request, pk=None):
+		try:
+			# TODO Add time
+			order = Order.objects \
+				.filter(owner=request.user.id, status__in=OrderStatus.CANCELLABLE_LIST.value, pk=pk) \
+				.update(status=OrderStatus.CANCELLED.value)
+			return Response(None, status=status.HTTP_200_OK)
+		except Order.DoesNotExist as err:
+			return Response(None, status=status.HTTP_404_NOT_FOUND)
+
+class OrderRelationshipView(views.RelationshipView):
 	"""
-		Defines the behavior of the Orderline view
+	Required by JSON API to display the orders related links
+	"""
+	queryset = Order.objects
+
+
+class OrderLineViewSet(views.ModelViewSet):
+	"""
+	Defines the behavior of the Orderline view
 	"""
 	queryset = OrderLine.objects.all()
 	serializer_class = OrderLineSerializer
-	permission_classes = (permissions.IsAuthenticated,)
+	permission_classes = (IsOwner,)
 
+	def create(self, request):
+		try:
+			order = Order.objects.get(pk=request.data['order']['id'])
+		except Order.DoesNotExist as err:
+			msg = "Impossible de trouver la commande."
+			return errorResponse(msg, [msg], status.HTTP_404_NOT_FOUND)
+		if order.status != OrderStatus.ONGOING.value:
+			msg = "La commande n'accepte plus de changement."
+			return errorResponse(msg, [msg], status.HTTP_400_BAD_REQUEST)
+
+		try:
+			orderline = OrderLine.objects.get(order=request.data['order']['id'], item=request.data['item']['id'])
+			# TODO ajout de la vérification de la limite de temps
+			serializer = OrderLineSerializer(orderline, data={'quantity': request.data['quantity']}, partial=True)
+			# On delete les orderlines vides
+			if request.data['quantity'] <= 0:
+				orderline.delete()
+				return Response(serializer.initial_data, status=status.HTTP_205_RESET_CONTENT)
+		except OrderLine.DoesNotExist as err:
+			if request.data['quantity'] > 0:
+				# Configure Order
+				serializer = self.get_serializer(data={
+					'order': request.data['order'],
+					'item': request.data['item'],
+					'quantity': request.data['quantity']
+				})
+			else:
+				return Response(request.data, status=status.HTTP_204_NO_CONTENT)
+		serializer.is_valid(raise_exception=True)
+		self.perform_create(serializer)
+
+		headers = self.get_success_headers(serializer.data)
+		return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+	"""
 	def perform_create(self, serializer):
 		serializer.save(order_id=self.kwargs['order_pk'])
 		queryset2 = OrderLine.objects.all().filter(order__pk=self.kwargs['order_pk'])
@@ -179,192 +321,198 @@ class OrderLineViewSet(viewsets.ModelViewSet):
 			queryset = OrderLine.objects.all().filter(order__pk=order_pk)
 
 		return queryset
-
-
-class SaleViewSet(viewsets.ModelViewSet):
 	"""
-		Defines the behavior of the sale view
+
+class OrderLineRelationshipView(views.RelationshipView):
 	"""
-	serializer_class = SaleSerializer
-	permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-
-	def perform_create(self, serializer):
-		serializer.save(
-			association_id=self.kwargs['association_pk'],
-			paymentmethod_id=self.kwargs['paymentmethod_pk']
-		)
-
-	def get_queryset(self):
-		queryset = Sale.objects.all()
-					# .filter(items__itemspecifications__woolly_user_type__name=self.request.user.woollyusertype.name)
-					# TODO filtrer par date ?
-
-		# if this viewset is accessed via the 'association-detail' route,
-		# it wll have been passed the `association_pk` kwarg and the queryset
-		# needs to be filtered accordingly
-		if 'association_pk' in self.kwargs:
-			association_pk = self.kwargs['association_pk']
-			queryset = Sale.objects.all().filter(association__pk=association_pk)
-
-		# TO DO : Remove this in order not to display all the sales link
-		# to a payment method on every Sale JSON
-		if 'payment_pk' in self.kwargs:
-			payment_pk = self.kwargs['payment_pk']
-			queryset = Sale.objects.all().filter(paymentmethods__pk=payment_pk)
-
-		return queryset
-
-
-class ItemSpecificationsViewSet(viewsets.ModelViewSet):
-	"""
-		Defines the behavior of the item specifications view
-	"""
-	queryset = ItemSpecifications.objects.all()
-	serializer_class = ItemSpecificationsSerializer
-	permission_classes = (permissions.IsAuthenticated,)
-
-	def perform_create(self, serializer):
-		serializer.save(
-			item_id=self.kwargs['item_pk']
-		)
-
-	def get_queryset(self):
-		queryset = self.queryset
-		if 'item_pk' in self.kwargs:
-			item_pk = self.kwargs['item_pk']
-			queryset = queryset.filter(item__pk=item_pk)
-
-		return queryset
-
-
-class ItemViewSet(viewsets.ModelViewSet):
-	"""
-		Defines the behavior of the item interactions
-	"""
-	queryset = Item.objects.all()
-	serializer_class = ItemSerializer
-	permission_classes = (permissions.IsAuthenticated,)
-
-	def perform_create(self, serializer):
-		if 'orderline_pk' in self.kwargs:
-			serializer.save(
-				sale_id=self.kwargs['sale_pk']
-			)
-
-		if 'orderline_pk' in self.kwargs:
-			serializer.save(
-				sale_id=self.kwargs['orderline_pk']
-			)
-
-	def get_queryset(self):
-		queryset = self.queryset.filter(
-			itemspecifications__woolly_user_type__name=self.request.user.woollyusertype.name)
-
-		if 'sale_pk' in self.kwargs:
-			sale_pk = self.kwargs['sale_pk']
-			queryset = queryset.filter(sale__pk=sale_pk)
-
-		if 'orderline_pk' in self.kwargs:
-			orderline_pk = self.kwargs['orderline_pk']
-			queryset = queryset.filter(orderlines__pk=orderline_pk)
-
-		return queryset
-
-
-class OrderLineItemViewSet(viewsets.ModelViewSet):
-	"""
-		Defines the view which display the items of an orderline
-	"""
-	queryset = Item.objects.all()
-	serializer_class = ItemSerializer
-	permission_classes = (permissions.IsAuthenticated,)
-
-	def perform_create(self, serializer):
-		serializer.save(
-			sale_id=self.kwargs['orderline_pk']
-		)
-
-	def get_queryset(self):
-		queryset = self.queryset
-		if 'orderline_pk' in self.kwargs:
-			orderline_pk = self.kwargs['orderline_pk']
-			queryset = queryset.filter(orderlines__pk=orderline_pk)
-
-		return queryset
-
-
-class OrderRelationshipView(RelationshipView):
-	"""
-		Required by JSON API to display the orders related links
-	"""
-	queryset = Order.objects
-
-
-class OrderLineRelationshipView(RelationshipView):
-	"""
-		Required by JSON API to display the orderlines related links
+	Required by JSON API to display the orderlines related links
 	"""
 	queryset = OrderLine.objects
 
 
-class ItemRelationshipView(RelationshipView):
+# ============================================
+# 	Field & ItemField
+# ============================================
+
+class FieldViewSet(views.ModelViewSet):
 	"""
-		Required by JSON API to display the items related links
+	Defines the view which display the items of an orderline
 	"""
-	queryset = Item.objects
+	queryset = Field.objects.all()
+	serializer_class = FieldSerializer
+	permission_classes = (IsAdminOrReadOnly,)
+
+class FieldRelationshipView(views.RelationshipView):
+	"""
+	Required by JSON API to display the orderlines related links
+	"""
+	queryset = Field.objects
 
 
-class SaleRelationshipView(RelationshipView):
+class ItemFieldViewSet(views.ModelViewSet):
 	"""
-		Required by JSON API to display the sales related links
+	Defines the view which display the items of an orderline
 	"""
-	queryset = Sale.objects
+	queryset = ItemField.objects.all()
+	serializer_class = ItemFieldSerializer
+	permission_classes = (IsAdminOrReadOnly,)
+
+class ItemFieldRelationshipView(views.RelationshipView):
+	"""
+	Required by JSON API to display the orderlines related links
+	"""
+	queryset = ItemField.objects
+
+# ============================================
+# 	OrderLineItem & OrderLineField
+# ============================================
+
+class OrderLineItemViewSet(views.ModelViewSet):
+	queryset = OrderLineItem.objects.all()
+	serializer_class = OrderLineItemSerializer
+	permission_classes = (IsOwner,)
+
+class OrderLineItemRelationshipView(views.RelationshipView):
+	"""
+	Required by JSON API to display the orderlines related links
+	"""
+	queryset = OrderLineItem.objects
 
 
-class AssociationMemberRelationshipView(RelationshipView):
+class OrderLineFieldViewSet(views.ModelViewSet):
 	"""
-		Required by JSON API to display the association members related links
+	Defines the view which display the items of an orderline
 	"""
-	queryset = AssociationMember.objects
+	queryset = OrderLineField.objects.all()
+	serializer_class = OrderLineFieldSerializer
+	permission_classes = (IsOwner,)
+
+	def create(self, request):
+		pass
+
+	def update(self, request, pk=None, partial=False):
+		print(request.data)
+		instance = self.queryset.get(pk=pk)
+		if instance.isEditable() == True:
+			serializer = OrderLineFieldSerializer(instance, data={'value': request.data['value']}, partial=True)
+			serializer.is_valid(raise_exception=True)
+			serializer.save()
+		else:
+			serializer = OrderLineFieldSerializer(instance)
+		return Response(serializer.data)
 
 
-class ItemSpecificationsRelationshipView(RelationshipView):
-	"""
-		Required by JSON API to display the item specifications related links
-	"""
-	queryset = ItemSpecifications.objects
-
-
-class AssociationRelationshipView(RelationshipView):
-	"""
-		Required by JSON API to display the associations related links
-	"""
-	queryset = Association.objects
-
-
-class PaymentMethodRelationshipView(RelationshipView):
-	"""
-		Required by JSON API to display the payment methods related links
-	"""
-	queryset = PaymentMethod.objects
-
-class WoollyUserViewSet(viewsets.ModelViewSet):
-	"""
-		Defines the behavior of the association view
-	"""
-	queryset = Association.objects.all()
-	serializer_class = AssociationSerializer
-	permission_classes = (permissions.IsAuthenticated,)
+	def partial_update(self, request, pk=None):
+		return self.update(request, pk, True)
 
 	def get_queryset(self):
-		queryset = self.queryset.filter(associationmembers__woollyUser=self.request.user)
-
-		if 'associationmember_pk' in self.kwargs:
-			associationmember_pk = self.kwargs['associationmember_pk']
-			queryset = Association.objects.all().filter(associationmembers__pk=associationmember_pk)
-
-		if 'user_pk' in self.kwargs:
-			user_pk = self.kwargs['user_pk']
-			queryset = Association.objects.all().filter(associationmembers__woollyUser=user_pk)
+		queryset = self.queryset
+		if 'orderlineitem_pk' in self.kwargs:
+			orderlineitem_pk = self.kwargs['orderlineitem_pk']
+			queryset = queryset.filter(orderlineitem__pk=orderlineitem_pk)
 
 		return queryset
+
+class OrderLineFieldRelationshipView(views.RelationshipView):
+	"""
+	Required by JSON API to display the orderlines related links
+	"""
+	queryset = OrderLineField.objects
+
+
+
+# ============================================
+# 	Billet
+# ============================================
+
+"""
+class BilletPDF(PDFTemplateView):
+	template = 'template_billet.html'
+	context = {'title': 'Hello World!'}
+
+	def get(self, request, *args, **kwargs):
+
+		response = PDFTemplateResponse(
+			request = request,
+			template = self.template,
+			filename = "mon_billet.pdf",
+			context = self.context,
+			show_content_in_browser = False,
+			cmd_options = {'margin-top': 50, }
+		)
+		return response
+	# def get_context_data(self, **kwargs):
+	# 	context = super(BilletPDF, self).get_context_data(**kwargs)
+	# 	context['nom'] = 'BARBOSA'
+	# 	return context
+"""
+
+class GeneratePdf(View):
+	permission_classes = (IsOwner,)
+
+	def get2(self, request, *args, **kwargs):
+		# Create the HttpResponse object with the appropriate PDF headers.
+		response = HttpResponse(content_type='application/pdf')
+		response['Content-Disposition'] = 'attachment; filename="billet.pdf"'
+		buffer = BytesIO()
+
+		# Create the PDF object, using the BytesIO object as its "file."
+		p = canvas.Canvas(buffer, pagesize=landscape(A4))
+
+		# Draw things on the PDF. Here's where the PDF generation happens.
+		# See the ReportLab documentation for the full list of functionality.
+		p.drawString(10, 10, "Hello world.")
+		# billet = './billet.png'
+		p.drawImage(billet, 20, 20, width=None, height=None)
+		# Close the PDF object cleanly.
+		p.showPage()
+		p.save()
+
+		# Get the value of the BytesIO buffer and write it to the response.
+		pdf = buffer.getvalue()
+		buffer.close()
+		return response
+
+	def get(self, request, *args, **kwargs):
+		if 'order_pk' in self.kwargs:
+			order_pk = self.kwargs['order_pk']
+			order = Order.objects.all().filter(pk=order_pk)
+			orderlines = OrderLine.objects.all().filter(order_id=order_pk)
+			# d = MyBarcodeDrawing("HELLO WORLD")
+			# binaryStuff = d.asString('gif')
+			# image = os.path.join(os.getcwd(), 'templates/pdf', 'billet' + '.png')
+			# import base64
+			# image = open('templates/pdf/billet.png', 'rb') #open binary file in read mode
+			# image_read = image.read()
+			# image_64_encode = base64.encodebytes(image_read)
+			data = {'items': Item.objects.all(), 'order': order, 'orderlines': orderlines}
+			# return render(request, 'pdf/template_billet.html', data)
+		# html = get_template('pdf/template_billet.html').render(data)
+		# result = StringIO.StringIO()
+		# rendering = pisa.pisaDocument(StringIO.StringIO(html.encode("ISO-8859-1")), result)
+
+		pdf = render_to_pdf('pdf/template_billet.html', data)
+		return HttpResponse(pdf, content_type='application/pdf')
+
+		# if not rendering.err:
+		# 	return HttpResponse(result.getvalue(), mimetype='application/pdf')
+		# return HttpResponse('We had some errors<pre>%s</pre>' % escape(html))
+
+		# return render(pdf, 'pdf/template_billet.html')
+		# template_path = 'pdf/template_billet.html'
+		# # Create a Django response object, and specify content_type as pdf
+		# response = HttpResponse(content_type='application/pdf')
+		# # response['Content-Disposition'] = 'attachment; filename="billetSDF.pdf"'
+		# # find the template and render it.
+		# template = get_template(template_path)
+		# html = template.render(data)
+		#
+		# # create a pdf
+		# pisaStatus = pisa.CreatePDF(
+		# 	html, dest=response, link_callback=link_callback)
+		# # if error then show some funy view
+		# if pisaStatus.err:
+		# 	return HttpResponse('We had some errors <pre>' + html + '</pre>')
+		# return response
+
+

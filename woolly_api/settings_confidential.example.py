@@ -3,7 +3,10 @@ JWT_SECRET_KEY = ""
 SECRET_KEY = ""
 GINGER_KEY = ""
 PAYUTC_KEY = ""
-PORTAL_KEY = ""
+PORTAL = {
+	'id': 	1,
+	'key': 	'Y0sUCdZ8oGpxdBZwVgV2aAQghUMtrcDAHiOAm5qN'
+}
 
 # MAIN DATABASE
 DATABASE = {

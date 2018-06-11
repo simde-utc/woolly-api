@@ -43,8 +43,8 @@ Now you will need to initialise the database, like this :
 
 ```
 python manage.py shell
->>> from authentication.models import WoollyUserType
->>> WoollyUserType.init_values()
+>>> from authentication.models import UserType
+>>> UserType.init_values()
 >>> exit()
 ```
 
@@ -78,6 +78,25 @@ Choose a database system in general settings.py DATABASES (see https://docs.djan
 Check deployment checklist : https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
 Deploy server using : https://docs.djangoproject.com/en/1.11/howto/deployment/wsgi/
+
+In an Apache config file :
+```
+ServerName woolly.etu-utc.fr
+WSGIScriptAlias / /var/woolly/woolly-api/woolly_api/wsgi.py
+WSGIPythonHome /var/woolly/woolly-api/venv 
+WSGIPythonPath /var/woolly/woolly-api
+WSGIDaemonProcess woolly-api python-home=/var/woolly/woolly-api/venv python-path=/var/woolly/woolly-api 
+WSGIProcessGroup woolly-api
+WSGIPassAuthorization On
+
+<Directory /var/woolly/woolly-api>
+    <Files wsgi.py>
+        Require all granted
+    </Files>
+</Directory>
+```
+And restart apache : `sudo systemctl restart apache2`
+
 
 ## Built With
 

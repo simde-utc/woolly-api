@@ -6,7 +6,7 @@ from django.db import models
 import datetime
 
 """
-class WoollyUserType(models.Model):
+class UserType(models.Model):
     COTISANT = 'cotisant'
     NON_COTISANT = 'non-cotisant'
     TREMPLIN = 'tremplin'

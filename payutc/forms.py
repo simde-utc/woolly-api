@@ -1,18 +1,18 @@
 from django import forms
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 
-from authentication.models import WoollyUser
+from authentication.models import User
 
-class WoollyUserCreationForm(forms.ModelForm):
+class UserCreationForm(forms.ModelForm):
     """A form for creating new users. Includes all the required
     fields, plus a repeated password."""
     password1 = forms.CharField(label='Password', widget=forms.PasswordInput)
     password2 = forms.CharField(label='Password confirmation', widget=forms.PasswordInput)
-  #  woollyusertype = forms.ChoiceField(choices=WoollyUserType.objects.all())
+  #  usertype = forms.ChoiceField(choices=UserType.objects.all())
 
     class Meta:
-        model = WoollyUser
-        fields = ('login','woollyusertype',)
+        model = User
+        fields = ('login','usertype',)
 
     def clean_password2(self):
         # Check that the two password entries match
@@ -23,14 +23,14 @@ class WoollyUserCreationForm(forms.ModelForm):
         return password2
 
     def save(self, commit=True):
-        user = super(WoollyUserCreationForm, self).save(commit=False)
+        user = super(UserCreationForm, self).save(commit=False)
         user.set_password(self.cleaned_data["password1"])
         if commit:
             user.save()
         return user
 
 
-class WoollyUserChangeForm(forms.ModelForm):
+class UserChangeForm(forms.ModelForm):
     """A form for updating users. Includes all the fields on
     the user, but replaces the password field with admin's
     password hash display field.
@@ -38,8 +38,8 @@ class WoollyUserChangeForm(forms.ModelForm):
     password = ReadOnlyPasswordHashField()
 
     class Meta:
-        model = WoollyUser
-        fields = ('login', 'password', 'woollyusertype', 'is_active', 'is_admin')
+        model = User
+        fields = ('login', 'password', 'usertype', 'is_active', 'is_admin')
 
     def clean_password(self):
         # Regardless of what the user provides, return the initial value.

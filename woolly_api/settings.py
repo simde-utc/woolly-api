@@ -13,10 +13,8 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 import os
 from woolly_api import settings_confidential as confidentials
 
-
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 
 # --------------------------------------------------------------------------
 # 		Services Configuration
@@ -29,26 +27,24 @@ JWT_TTL = 3600
 
 # Payutc & Ginger config
 PAYUTC_KEY = confidentials.PAYUTC_KEY
+PAYUTC_TRANSACTION_BASE_URL = 'https://payutc.nemopay.net/validation?tra_id='
 GINGER_KEY = confidentials.GINGER_KEY
 GINGER_SERVER_URL = 'https://assos.utc.fr/ginger/v1/'
-
 
 # Portail des Assos config
 OAUTH = {
 	'portal': {
-		'client_id': 		confidentials.PORTAL['id'],
-		'client_secret': 	confidentials.PORTAL['key'],
-		'base_url': 		'https://portail-assos.alwaysdata.net/api/v1/',
-		'authorize_url': 	'https://portail-assos.alwaysdata.net/oauth/authorize',
+		'client_id': confidentials.PORTAL['id'],
+		'client_secret': confidentials.PORTAL['key'],
+		'redirect_uri': confidentials.PORTAL['callback'],
+		'base_url': 'https://portail-assos.alwaysdata.net/api/v1/',
+		'authorize_url': 'https://portail-assos.alwaysdata.net/oauth/authorize',
 		'access_token_url': 'https://portail-assos.alwaysdata.net/oauth/token',
-		'login_url': 		'https://portail-assos.alwaysdata.net/login',
-		'logout_url': 		'https://portail-assos.alwaysdata.net/logout',
-		'redirect_uri': 	'http://localhost:8000/auth/callback',
-		'scope': 			'user-get-info user-get-roles user-get-assos-joined-now'
+		'login_url': 'https://portail-assos.alwaysdata.net/login',
+		'logout_url': 'https://portail-assos.alwaysdata.net/logout',
+		'scope': 'user-get-info user-get-roles user-get-assos-joined-now'
 	}
 }
-
-
 
 # --------------------------------------------------------------------------
 # 		Cors & Debug
@@ -56,7 +52,15 @@ OAUTH = {
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = (
+	'woolly.etu-utc.fr',
+	'assos.utc.fr',
+	'localhost',
+)
+# CSRF_COOKIE_SECURE = True
+# SESSION_COOKIE_SECURE = True
+# SECURE_BROWSER_XSS_FILTER = True
+# SECURE_SSL_REDIRECT = True
 
 # CORS headers config
 CORS_ORIGIN_ALLOW_ALL = True
@@ -71,17 +75,17 @@ CORS_ALLOW_METHODS = (
 
 # necessary in addition to the whitelist for protected requests
 CORS_ALLOW_CREDENTIALS = True
-CSRF_COOKIE_HTTPONLY = True # Useful ??
-CSRF_USE_SESSIONS = False	# Useful ??
+CSRF_COOKIE_HTTPONLY = True  # Useful ??
+CSRF_USE_SESSIONS = False  # Useful ??
 CSRF_TRUSTED_ORIGINS = (
 	"localhost"
 )
-
 
 # --------------------------------------------------------------------------
 # 		CAS Configuration => A virer ?
 # --------------------------------------------------------------------------
 
+"""
 CAS_SERVER_URL = 'https://cas.utc.fr/cas/'
 CAS_LOGOUT_COMPLETELY = True
 CAS_PROVIDE_URL_TO_LOGOUT = True
@@ -89,7 +93,7 @@ CAS_AUTO_CREATE_USER = True
 CAS_RESPONSE_CALLBACKS = (
 	'authentication.backends.loggedCas',
 )
-
+"""
 
 # --------------------------------------------------------------------------
 # 		Django REST Configuration
@@ -98,8 +102,9 @@ CAS_RESPONSE_CALLBACKS = (
 REST_FRAMEWORK = {
 	'DEFAULT_AUTHENTICATION_CLASSES': (
 		'rest_framework.authentication.SessionAuthentication',
+		'authentication.auth.JWTAuthentication'
 	),
-	'DEFAULT_PAGINATION_CLASS':	'rest_framework_json_api.pagination.PageNumberPagination',
+	'DEFAULT_PAGINATION_CLASS': 'rest_framework_json_api.pagination.PageNumberPagination',
 	'PAGE_SIZE': 10,
 	'DEFAULT_PARSER_CLASSES': (
 		'rest_framework_json_api.parsers.JSONParser',
@@ -113,8 +118,22 @@ REST_FRAMEWORK = {
 	'DEFAULT_METADATA_CLASS': 'rest_framework_json_api.metadata.JSONAPIMetadata',
 	'EXCEPTION_HANDLER': 'rest_framework_json_api.exceptions.exception_handler',
 }
-
-
+VIEWSET = {
+	'list': {
+		# 'get': 'list',
+		'post': 'create'
+	},
+	'list_safe': {
+		'get': 'list',
+		'post': 'create'
+	},
+	'detail': {
+		'get': 'retrieve',
+		'put': 'update',
+		'patch': 'partial_update',
+		# 'delete': 'destroy'
+	}
+}
 
 # --------------------------------------------------------------------------
 # 		Django Configuration
@@ -137,11 +156,12 @@ INSTALLED_APPS = [
 	'django.contrib.messages',
 	'django.contrib.staticfiles',
 	'rest_framework',
-	'cas',
 	'corsheaders',
+	# 'cas',
 	'core',
 	'authentication',
 	'sales',
+	'payment',
 ]
 
 MIDDLEWARE = [
@@ -152,36 +172,45 @@ MIDDLEWARE = [
 	'django.contrib.auth.middleware.AuthenticationMiddleware',
 	'django.contrib.messages.middleware.MessageMiddleware',
 	'django.middleware.clickjacking.XFrameOptionsMiddleware',
-	'cas.middleware.CASMiddleware',
+	# 'cas.middleware.CASMiddleware',
 	'django.middleware.csrf.CsrfViewMiddleware',
-	'authentication.middlewares.JWTMiddleware',
 ]
 
 # Useful ?
 AUTHENTICATION_BACKENDS = (
 	# 'django.contrib.auth.backends.ModelBackend',
 	# 'authentication.backends.UpdatedCASBackend',
-	'authentication.backends.JWTBackend',
 )
 
-AUTH_USER_MODEL = 'authentication.WoollyUser'
+AUTH_USER_MODEL = 'authentication.User'
 
 # Password validation : https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
 AUTH_PASSWORD_VALIDATORS = [
-	{ 'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',	},
-	{ 'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',				},
-	{ 'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',			},
-	{ 'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',			},
+	{'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
+	{'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', },
+	{'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator', },
+	{'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
 ]
 
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+
+def ABS_DIR(rel):
+	return os.path.join(BASE_DIR, rel.replace('/', os.path.sep))
+
+
 STATIC_URL = '/static/'
+STATIC_ROOT = ''
+STATICFILES_DIRS = (
+	os.path.join('static'),
+)
 ROOT_URLCONF = 'woolly_api.urls'
 WSGI_APPLICATION = 'woolly_api.wsgi.application'
 
 TEMPLATES = [
 	{
 		'BACKEND': 'django.template.backends.django.DjangoTemplates',
-		'DIRS': [],
+		'DIRS': ['templates'],
 		'APP_DIRS': True,
 		'OPTIONS': {
 			'context_processors': [
@@ -194,15 +223,10 @@ TEMPLATES = [
 	},
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
-
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
-
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
-
-
+LANGUAGE_CODE = 'fr'
+TIME_ZONE = 'Europe/Paris'
