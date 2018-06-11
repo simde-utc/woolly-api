@@ -8,42 +8,31 @@
      </head>
      <body>
         {% for o in order %}
-        <table style="position: absolute; top: 0; bottom: 0; left: 0; right: 0;">
+        {% for ol in orderlines %}
+        <table class="billet">
             <tr>
-                <td width="70%">
-                    <img class="billet col-sm-8" src="{% static 'sales/images/billet.png' %}" />
-                </td>
-                <td width="30%">
-                    <div class='details col-sm-4'>
-                     {{ o.owner.first_name }} {{ o.owner.last_name }}<br/>
-                     Faite le : {{ o.created_at }}
-                     <table>
-                         {% for ol in orderlines %}
-                            <tr>
-                                <td>
-                                    {{ ol.item.name }}
-                                </td>
-                            </tr>
-                         {% endfor %}
-                     </table>
-                    </div>
-                </td>
+                <td></td>
+                <td class="titre details" width="70%" align="right">{{ ol.item.name }}</td>
+            </tr>
+            <tr>
             </tr>
             <tr>
                 <td></td>
-                <td>
-                    CODEBARRE
+            </tr>
+            <tr>
+                <td></td>
+                <td class="details" width="70%" align="right">Prix : {{ ol.item.price }}€</td>
+            </tr>
+            <tr>
+            </tr>
+            <tr>
+                <td class="code">{{ ol.nom }} {{ ol.prenom }}</td>
+                <td width="60%" class="details"  align="right">
+                    <img src="data:image/png;base64, {{ ol.code }}"/>
                 </td>
             </tr>
         </table>
-        <br/>
-        <br/>
-        <br/>
-        <br/>
-        <br/>
-        <br/>
-        <br/>
-        <br/>
+        {% endfor %}
         {% endfor %}
      </body>
  </html>
