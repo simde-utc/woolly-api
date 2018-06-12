@@ -438,5 +438,7 @@ class GeneratePdf(View):
 				ol.prenom = OrderLineField.objects.get(orderlineitem_id=ol.uuid, field_id=2).value
 			data = {'items': Item.objects.all(), 'order': order, 'orderlines': orderlines}
 		pdf = render_to_pdf('pdf/template_billet.html', data)
-		return HttpResponse(pdf, content_type='application/pdf')
+		response = HttpResponse(pdf, content_type='application/pdf')
+		response['Content-Disposition'] = 'attachment; filename="billet_SDFP18.pdf"'
+		return response
 
