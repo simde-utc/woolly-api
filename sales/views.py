@@ -421,24 +421,52 @@ class OrderLineFieldRelationshipView(views.RelationshipView):
 class GeneratePdf(View):
 
 	def get(self, request, *args, **kwargs):
+		# if request.user.is_anonymous:
+			# return HttpResponse()
 		if 'order_pk' in self.kwargs:
 			order_pk = self.kwargs['order_pk']
-			order = Order.objects.all().filter(pk=order_pk)
-			orderlines = OrderLine.objects.all().filter(order_id=order_pk)
-			noms = []
-			prenoms = []
-			uuids = []
-			for ol in orderlines:
-				ol.uuid = OrderLineItem.objects.get(orderline_id=ol.id).id
-				qrcode = data_to_qrcode(ol.uuid)
-				buffered = BytesIO()
-				qrcode.save(buffered, format="PNG")
-				ol.code = base64.b64encode(buffered.getvalue()).decode("utf-8")
-				ol.nom = OrderLineField.objects.get(orderlineitem_id=ol.uuid, field_id=1).value
-				ol.prenom = OrderLineField.objects.get(orderlineitem_id=ol.uuid, field_id=2).value
-			data = {'items': Item.objects.all(), 'order': order, 'orderlines': orderlines}
-		pdf = render_to_pdf('pdf/template_billet.html', data)
-		response = HttpResponse(pdf, content_type='application/pdf')
-		response['Content-Disposition'] = 'attachment; filename="billet_SDFP18.pdf"'
-		return response
+			try:
+							# .filter(owner__pk=request.user.pk) \
+				order = Order.objects.all() \
+							.filter(status__in=OrderStatus.VALIDATED_LIST.value) \
+							.prefetch_related('orderlines', 'orderlines__orderlineitems', 'orderlines__item',
+								'orderlines__orderlineitems__orderlinefields', 'orderlines__orderlineitems__orderlinefields__field') \
+							.get(pk=order_pk)
+			except Order.DoesNotExist as e:
+				return errorResponse(str(e), [], httpStatus = status.HTTP_404_NOT_FOUND)
+
+			tickets = list()
+			print(len(order.orderlines.all()))
+			for orderline in order.orderlines.all():
+				print(len(orderline.orderlineitems.all()))
+				for orderlineitem in orderline.orderlineitems.all():
+					# Process QRCode
+					qr_buffer = BytesIO()
+					code = data_to_qrcode(orderlineitem.id)
+					code.save(qr_buffer)
+					qr_code = base64.b64encode(qr_buffer.getvalue()).decode("utf-8")
+
+					# Add Nom et Prénom to orderline
+					for orderlinefield in orderlineitem.orderlinefields.all():
+						if orderlinefield.field.name == 'Nom':
+							first_name = orderlinefield.value
+							continue
+						if orderlinefield.field.name == 'Prénom':
+							last_name = orderlinefield.value
+					
+					# Add a ticket with this data
+					tickets.append({
+						'nom': first_name,
+						'prenom': last_name,
+						'qr_code': qr_code,
+						'item': orderline.item
+					})
+			print(tickets)
+			data = {
+				'tickets': tickets,
+				'order': order
+			}
+			pdf = render_to_pdf('pdf/template_billet.html', data)
+			return HttpResponse(pdf, content_type='application/pdf')
+		return errorResponse()
 

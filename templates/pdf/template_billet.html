@@ -3,16 +3,15 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
  <html>
      <head>
-         <title>Title</title>
+         <title>Woolly - Place SDF</title>
          <link rel="stylesheet" href="{% static 'css/style.css' %}">
      </head>
      <body>
-        {% for o in order %}
-        {% for ol in orderlines %}
+        {% for ticket in tickets %}
         <table class="billet">
             <tr>
                 <td></td>
-                <td class="titre details" width="70%" align="right">{{ ol.item.name }}</td>
+                <td class="titre details" width="70%" align="right">{{ ticket.item.name }}</td>
             </tr>
             <tr>
             </tr>
@@ -21,18 +20,17 @@
             </tr>
             <tr>
                 <td></td>
-                <td class="details" width="70%" align="right">Prix : {{ ol.item.price }}€</td>
+                <td class="details" width="70%" align="right">Prix : {{ ticket.item.price }}€</td>
             </tr>
             <tr>
             </tr>
             <tr>
-                <td class="code">{{ ol.nom }} {{ ol.prenom }}</td>
+                <td class="code">{{ ticket.nom }} {{ ticket.prenom }}</td>
                 <td width="60%" class="details"  align="right">
-                    <img src="data:image/png;base64, {{ ol.code }}"/>
+                    <img src="data:image/png;base64, {{ ticket.qr_code }}"/>
                 </td>
             </tr>
         </table>
-        {% endfor %}
         {% endfor %}
      </body>
  </html>
