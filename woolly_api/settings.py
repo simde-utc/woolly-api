@@ -200,7 +200,7 @@ def ABS_DIR(rel):
 
 
 STATIC_URL = '/static/'
-STATIC_ROOT = ''
+STATIC_ROOT = BASE_DIR + '/static/'
 STATICFILES_DIRS = (
 	os.path.join('static'),
 )
@@ -210,7 +210,9 @@ WSGI_APPLICATION = 'woolly_api.wsgi.application'
 TEMPLATES = [
 	{
 		'BACKEND': 'django.template.backends.django.DjangoTemplates',
-		'DIRS': ['templates'],
+		'DIRS': [
+			BASE_DIR + '/templates/'
+		],
 		'APP_DIRS': True,
 		'OPTIONS': {
 			'context_processors': [

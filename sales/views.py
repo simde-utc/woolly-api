@@ -29,7 +29,6 @@ class AssociationViewSet(views.ModelViewSet):
 
 	"""
 	def get_queryset(self):
-		# print(self.request.user)
 		# queryset = self.queryset.filter(associationmembers__user=self.request.user_pk)
 		if 'associationmember_pk' in self.kwargs:
 			associationmember_pk = self.kwargs['associationmember_pk']
@@ -443,9 +442,7 @@ class GeneratePdf(View):
 				return errorResponse(str(e), [], httpStatus = status.HTTP_404_NOT_FOUND)
 
 			tickets = list()
-			print(len(order.orderlines.all()))
 			for orderline in order.orderlines.all():
-				print(len(orderline.orderlineitems.all()))
 				for orderlineitem in orderline.orderlineitems.all():
 					# Process QRCode
 					qr_buffer = BytesIO()
@@ -468,7 +465,6 @@ class GeneratePdf(View):
 						'qr_code': qr_code,
 						'item': orderline.item
 					})
-			print(tickets)
 			data = {
 				'tickets': tickets,
 				'order': order
