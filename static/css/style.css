@@ -1,0 +1,27 @@
+@page {
+	background-image: url("/static/sales/images/billet.png");
+	size: a4 landscape;
+}
+* {
+	color: white;
+}
+.titre {
+	font-size: 55px;
+	padding-top: 10px;
+	padding-left: 30px;
+	font-weight: 900;
+	height: 250px;
+}
+.code {
+	padding: 150px 20px 0px 20px;
+	font-size: 40px;
+	font-weight: 600;
+}
+.details {
+	padding: 10px 25px 0px 50px;
+	font-size: 40px;
+	font-weight: 600;
+}
+.bilet {
+	align: right;
+}

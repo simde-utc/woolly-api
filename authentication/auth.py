@@ -19,10 +19,10 @@ class JWTAuthentication(authentication.BaseAuthentication):
 
 		# Get user id
 		jwtClient = JWTClient()
-		claims = jwtClient.get_claims(jwt)
 		try:
+			claims = jwtClient.get_claims(jwt)
 			user_id = claims['data']['user_id']
-		except KeyError:
+		except:
 			return None
 		if user_id == None:
 			return None

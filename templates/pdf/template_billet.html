@@ -3,47 +3,34 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
  <html>
      <head>
-         <title>Title</title>
+         <title>Woolly - Place SDF</title>
          <link rel="stylesheet" href="{% static 'css/style.css' %}">
      </head>
      <body>
-        {% for o in order %}
-        <table style="position: absolute; top: 0; bottom: 0; left: 0; right: 0;">
+        {% for ticket in tickets %}
+        <table class="billet">
             <tr>
-                <td width="70%">
-                    <img class="billet col-sm-8" src="{% static 'sales/images/billet.png' %}" />
-                </td>
-                <td width="30%">
-                    <div class='details col-sm-4'>
-                     {{ o.owner.first_name }} {{ o.owner.last_name }}<br/>
-                     Faite le : {{ o.created_at }}
-                     <table>
-                         {% for ol in orderlines %}
-                            <tr>
-                                <td>
-                                    {{ ol.item.name }}
-                                </td>
-                            </tr>
-                         {% endfor %}
-                     </table>
-                    </div>
-                </td>
+                <td></td>
+                <td class="titre details" width="70%" align="right">{{ ticket.item.name }}</td>
+            </tr>
+            <tr>
             </tr>
             <tr>
                 <td></td>
-                <td>
-                    CODEBARRE
+            </tr>
+            <tr>
+                <td></td>
+                <td class="details" width="70%" align="right">Prix : {{ ticket.item.price }}€</td>
+            </tr>
+            <tr>
+            </tr>
+            <tr>
+                <td class="code">{{ ticket.nom }} {{ ticket.prenom }}</td>
+                <td width="60%" class="details"  align="right">
+                    <img src="data:image/png;base64, {{ ticket.qr_code }}"/>
                 </td>
             </tr>
         </table>
-        <br/>
-        <br/>
-        <br/>
-        <br/>
-        <br/>
-        <br/>
-        <br/>
-        <br/>
         {% endfor %}
      </body>
  </html>
