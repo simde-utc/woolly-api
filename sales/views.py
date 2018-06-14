@@ -13,6 +13,7 @@ from .permissions import *
 from core.utils import render_to_pdf, data_to_qrcode
 # TODO export core
 from core.helpers import errorResponse
+from authentication.auth import JWTAuthentication
 
 # ============================================
 # 	Association
@@ -421,14 +422,20 @@ class OrderLineFieldRelationshipView(views.RelationshipView):
 class GeneratePdf(View):
 
 	def get(self, request, *args, **kwargs):
-		# if request.user.is_anonymous:
-			# return HttpResponse()
+		# Force JWT from ?code=...
+		request.META['HTTP_AUTHORIZATION'] = "Bearer " + request.GET.get('code', '')
+		jwtAuth = JWTAuthentication()
+		authUser = jwtAuth.authenticate(request)
+
+		if authUser is None:
+			return errorResponse("Valid Code Required", [], httpStatus = status.HTTP_401_UNAUTHORIZED)
+		request.user = authUser[0]
+
 		if 'order_pk' in self.kwargs:
 			order_pk = self.kwargs['order_pk']
 			try:
-							# .filter(owner__pk=request.user.pk) \
 				order = Order.objects.all() \
-							.filter(status__in=OrderStatus.VALIDATED_LIST.value) \
+							.filter(owner__pk=request.user.pk, status__in=OrderStatus.VALIDATED_LIST.value) \
 							.prefetch_related('orderlines', 'orderlines__orderlineitems', 'orderlines__item',
 								'orderlines__orderlineitems__orderlinefields', 'orderlines__orderlineitems__orderlinefields__field') \
 							.get(pk=order_pk)
@@ -468,5 +475,5 @@ class GeneratePdf(View):
 			}
 			pdf = render_to_pdf('pdf/template_billet.html', data)
 			return HttpResponse(pdf, content_type='application/pdf')
-		return errorResponse()
+		return errorResponse("Valid Order Required", [], httpStatus = status.HTTP_404_NOT_FOUND)
 

@@ -21,10 +21,7 @@ def get_jwt_from_request(request):
 	Helper to get JWT from request
 	Return None if no JWT
 	"""
-	try:
-		jwt = request.META['HTTP_AUTHORIZATION']	# Traité automatiquement par Django
-	except KeyError:
-		return None
+	jwt = request.META.get('HTTP_AUTHORIZATION', None)	# Traité automatiquement par Django
 	if not jwt or jwt == '':
 		return None
 	return jwt[7:]		# substring : Bearer ...
