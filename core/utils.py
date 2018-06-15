@@ -51,7 +51,7 @@ def data_to_qrcode(data):
 	qrc = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_Q,
 						box_size=8,
 						border=0)
-	qrc.add_data(data)
+	qrc.add_data(str(data).replace("-",""))
 	qrc.make(fit=True)
 	img = qrc.make_image()
 	return img
