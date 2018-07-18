@@ -1,3 +1,11 @@
+DEBUG = False
+ALLOWED_HOSTS = (
+	'woolly.etu-utc.fr',
+	'assos.utc.fr',
+	'localhost',
+)
+
+
 # SECRET KEYS
 JWT_SECRET_KEY = ""
 SECRET_KEY = ""

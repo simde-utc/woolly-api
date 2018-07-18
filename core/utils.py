@@ -47,11 +47,12 @@ def fetch_resources(uri, rel):
 
 def data_to_qrcode(data):
 	""" Return a qrcode image from data """
-
+	# Add border to improve readability
 	qrc = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_Q,
 						box_size=8,
 						border=2)
-	qrc.add_data(str(data).replace("-",""))
+
+	# Remove all - in uuid to comply to Weezevent
+	qrc.add_data(str(data).replace("-", ""))
 	qrc.make(fit=True)
-	img = qrc.make_image()
-	return img
+	return qrc.make_image()

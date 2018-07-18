@@ -385,7 +385,6 @@ class OrderLineFieldViewSet(views.ModelViewSet):
 		pass
 
 	def update(self, request, pk=None, partial=False):
-		print(request.data)
 		instance = self.queryset.get(pk=pk)
 		if instance.isEditable() == True:
 			serializer = OrderLineFieldSerializer(instance, data={'value': request.data['value']}, partial=True)
@@ -470,6 +469,9 @@ class GeneratePdf(View):
 				'order': order
 			}
 			pdf = render_to_pdf('pdf/template_billet.html', data)
-			return HttpResponse(pdf, content_type='application/pdf')
+			# return HttpResponse(pdf, content_type='application/pdf')
+			response = HttpResponse(pdf, content_type='application/pdf')
+			response['Content-Disposition'] = 'attachment;filename="billet_' + order.sale.association.name + '_' + order_pk + '.pdf"'
+			return response
 		return errorResponse("Valid Order Required", [], httpStatus = status.HTTP_404_NOT_FOUND)
 

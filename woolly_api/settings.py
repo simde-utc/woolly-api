@@ -34,15 +34,15 @@ GINGER_SERVER_URL = 'https://assos.utc.fr/ginger/v1/'
 # Portail des Assos config
 OAUTH = {
 	'portal': {
-		'client_id': confidentials.PORTAL['id'],
-		'client_secret': confidentials.PORTAL['key'],
-		'redirect_uri': confidentials.PORTAL['callback'],
-		'base_url': 'https://portail-assos.alwaysdata.net/api/v1/',
-		'authorize_url': 'https://portail-assos.alwaysdata.net/oauth/authorize',
+		'client_id': 		confidentials.PORTAL['id'],
+		'client_secret': 	confidentials.PORTAL['key'],
+		'redirect_uri': 	confidentials.PORTAL['callback'],
+		'base_url': 		'https://portail-assos.alwaysdata.net/api/v1/',
+		'authorize_url': 	'https://portail-assos.alwaysdata.net/oauth/authorize',
 		'access_token_url': 'https://portail-assos.alwaysdata.net/oauth/token',
-		'login_url': 'https://portail-assos.alwaysdata.net/login',
-		'logout_url': 'https://portail-assos.alwaysdata.net/logout',
-		'scope': 'user-get-info user-get-roles user-get-assos-joined-now'
+		'login_url': 		'https://portail-assos.alwaysdata.net/login',
+		'logout_url': 		'https://portail-assos.alwaysdata.net/logout',
+		'scope': 			'user-get-info user-get-roles user-get-assos-joined-now'
 	}
 }
 
@@ -51,12 +51,9 @@ OAUTH = {
 # --------------------------------------------------------------------------
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-ALLOWED_HOSTS = (
-	'woolly.etu-utc.fr',
-	'assos.utc.fr',
-	'localhost',
-)
+DEBUG = confidentials.DEBUG
+ALLOWED_HOSTS = confidentials.DEBUG
+
 # CSRF_COOKIE_SECURE = True
 # SESSION_COOKIE_SECURE = True
 # SECURE_BROWSER_XSS_FILTER = True
@@ -202,7 +199,7 @@ def ABS_DIR(rel):
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR + '/static/'
 STATICFILES_DIRS = (
-	os.path.join('static'),
+	BASE_DIR + '/assets/',
 )
 ROOT_URLCONF = 'woolly_api.urls'
 WSGI_APPLICATION = 'woolly_api.wsgi.application'
