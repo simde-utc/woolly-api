@@ -1,7 +1,7 @@
 # Authentification
 
 L'API utilise [Json Web Token (JWT)](https://jwt.io/) pour authentifier ses clients.
-L'authentication utilisateur se fait via le Portail des Assos.
+L'authentication utilisateur se fait via le [Portail des Assos avec OAuth](https://github.com/simde-utc/portail/blob/develop/documentation/api/oauth2.md).
 
 ## Routes
 
