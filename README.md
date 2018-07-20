@@ -1,104 +1,101 @@
-# Woolly-api
+# Woolly - API
 
-The brand new online ticket office for UTC student organizations
+Woolly is the online shop of all the [associations of the Université de Technologie de Compiègne](https://assos.utc.fr).
 
-## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+## Installation
 
 ### Prerequisites
 
-First of all, you need to set up the environement. Put yourself in the directory of your choice and follow the following instructions : 
+First of all, you need to set up the environment.
+You will need [Python version 3](https://www.python.org/downloads/) and [pip (a Python packages manager)](https://pypi.org/project/pip/).
 
-If you don't have it yet, install python3
-```
-pip install pip3
-```
-Then the virtual environement :
-```
+
+Then we will set up the virtual environment with `virtualenv`.
+```sh
+# Install package
 pip install virtualenv
 ```
-Create a virtualenv :
+
+Create the `venv` folder :
+On Linux :
+```sh
+virtualenv -p python3 "venv"        # python3 is the name of python executable
 ```
-virtualenv -p python3 "name"
+On Windows :
+```sh
+virtualenv "venv"
+```
+
+To activate the virtual environment use :
+```sh
+# On Linux :
 source venv/bin/activate
-```
-Installing Django and the useful librairies
-```
-pip install django==1.11.1
-pip install djangorestframework==3.6.3
-pip install django-cas-client==1.3.0
-pip install django-cors-headers==2.1.0
-pip install djangorestframework-jsonapi==2.2.0
+# On Windows :
+venv\Scripts\activate
 ```
 
-### Installing
 
-Once you have your virtual environment up and running, you can clone this repo
+### Installation
 
-```
-git clone https://github.com/simde-utc/woolly-api.git
-```
-
-Then you will need to go into the woolly_api app
-
-```
-cd woolly-api
-cd woolly_api
+With the virtual environment activated, install all the required librairies :
+```sh
+pip install -r requirements.txt
 ```
 
-Now you will need to initialise the database, like this :
 
-```
-python manage.py shell
->>> from authentication.models import WoollyUserType
->>> WoollyUserType.init_values()
->>> exit()
-```
+Now ask a responsible person for the `settings_confidential.py` file containing the foreign APIs identification keys. The file is to be placed next to the `settings.py` file. There is a placeholder file called `settings_confidential.example.py`, you can copy and fill it. 
 
-Now ask a responsible person for the settings_confidential.py file containing the foreign APIs indentification keys. The
-file is to be placed next to the settings.py file.
 
-Finally you can migrate the database and launch the server
-
-```
-python manage.py makemigrations
+Create your database named `woolly`
+Then you need to migrate, and initialize the database :
+```sh
 python manage.py migrate
+python manage.py loaddata usertypes
+```
+
+
+Finally, you can launch the server.
+```sh
 python manage.py runserver
 ```
 
-You can now play with the server on [localhost:8000](http://localhost:8000)
+You can now play with the server on http://localhost:8000
 
-## Routes
-
-You can have the routes list in the sales app, under sales/url.py.
-To connect through the CAS, please use [localhost:8000/login](http://localhost:8000/login) and [localhost:8000/logout](http://localhost:8000/logout) to logout.
-
-By default, your user has default rights, you will need to modify the WoollyUser table in the db.sqlite3 file in order to set yourself as an admin and use the [admin pannel](http://localhost:8000/admin).
+You can find (the documentation of the API here)[./documentation/api.md].
 
 
 ## Deployment
 
-Choose a database system in general settings.py DATABASES (see https://docs.djangoproject.com/en/1.11/ref/settings/#std:setting-DATABASES)
-
-Check deployment checklist : https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
+Check this deployment checklist : https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
 Deploy server using : https://docs.djangoproject.com/en/1.11/howto/deployment/wsgi/
 
-## Built With
 
-* [Django](https://www.djangoproject.com) - The web framework used
-* [Django Rest Framework](http://www.django-rest-framework.org) - Toolkit for building Web APIs using Django
-* [Django CAS Client](https://pypi.python.org/pypi/django-cas-client/) - Used to call the UTC CAS
-* [Django Rest Framework JSON API](https://github.com/django-json-api/django-rest-framework-json-api) - Used to forma the JSON files according to the JSON API
+Actually, on deployment with use Apache to run the server.
+In an Apache config file (like `/etc/apache2/apache2.conf.`), replace `BASE_FOLDER` with the path to where you installed Woolly :
+```
+ServerName YOUR_SERVER_NAME
+WSGIScriptAlias / BASE_FOLDER/woolly_api/wsgi.py
+WSGIPythonHome BASE_FOLDER/venv 
+WSGIPythonPath BASE_FOLDER
+WSGIDaemonProcess woolly-api python-home=BASE_FOLDER/venv python-path=BASE_FOLDER 
+WSGIProcessGroup woolly-api
+WSGIPassAuthorization On
 
+<Directory BASE_FOLDER>
+    <Files wsgi.py>
+        Require all granted
+    </Files>
+</Directory>
+```
+And restart Apache : `sudo systemctl restart apache2`.
 
-## Authors
+You have to restart Apache each time you modify your application for the changes to be applied.
 
-* **[Thomas Barizien](https://github.com/tbarizien)** - *Initial work*
-* **[Florian Cartier](https://github.com/FCartier)** - *Initial work*
+## Need help ?
 
-See also the list of [contributors](https://github.com/simde-utc/woolly-api/graphs/contributors) who participated in this project.
+Don't forget to check the `./documentation/` folder for more documentation on Woolly.
 
 ## License
 

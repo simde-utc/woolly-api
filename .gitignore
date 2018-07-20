@@ -93,3 +93,6 @@ ENV/
 
 #Confidential identification informations for foreign APIs
 settings_confidential.py
+db.*
+
+/static
