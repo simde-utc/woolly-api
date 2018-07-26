@@ -2,10 +2,8 @@ from django.contrib import admin
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from authentication.models import User
 from authentication.forms import UserCreationForm, UserChangeForm
-
-from authentication.models import UserType
+from authentication.models import User,UserType
 
 
 class UserAdmin(BaseUserAdmin):
@@ -29,6 +27,8 @@ class UserAdmin(BaseUserAdmin):
 	ordering = ('last_name',)
 	filter_horizontal = ()
 
+
+# Register Models
 admin.site.register(User, UserAdmin)
 admin.site.register(UserType)
 

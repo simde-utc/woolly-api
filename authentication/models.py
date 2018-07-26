@@ -1,5 +1,4 @@
-from django.contrib.auth.models import AbstractBaseUser
-from django.contrib.auth.models import BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
 import datetime
 
@@ -37,9 +36,10 @@ class UserManager(BaseUserManager):
 		user.save(using=self._db)
 		return user
 
-	def create_superuser(self, email, password, **other_fields):
-		if not password:
-			raise ValueError('The given password must be set')
+	def create_superuser(self, email, **other_fields):
+		# TODO Create a hash password and set it by email
+		password = "hash"
+
 		user = self.create_user(email, password=password, **other_fields)
 		user.is_admin = True
 		user.save(using=self._db)
