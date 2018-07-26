@@ -78,19 +78,6 @@ CSRF_TRUSTED_ORIGINS = (
 	"localhost"
 )
 
-# --------------------------------------------------------------------------
-# 		CAS Configuration => A virer ?
-# --------------------------------------------------------------------------
-
-"""
-CAS_SERVER_URL = 'https://cas.utc.fr/cas/'
-CAS_LOGOUT_COMPLETELY = True
-CAS_PROVIDE_URL_TO_LOGOUT = True
-CAS_AUTO_CREATE_USER = True
-CAS_RESPONSE_CALLBACKS = (
-	'authentication.backends.loggedCas',
-)
-"""
 
 # --------------------------------------------------------------------------
 # 		Django REST Configuration
@@ -154,7 +141,6 @@ INSTALLED_APPS = [
 	'django.contrib.staticfiles',
 	'rest_framework',
 	'corsheaders',
-	# 'cas',
 	'core',
 	'authentication',
 	'sales',
@@ -169,14 +155,12 @@ MIDDLEWARE = [
 	'django.contrib.auth.middleware.AuthenticationMiddleware',
 	'django.contrib.messages.middleware.MessageMiddleware',
 	'django.middleware.clickjacking.XFrameOptionsMiddleware',
-	# 'cas.middleware.CASMiddleware',
 	'django.middleware.csrf.CsrfViewMiddleware',
 ]
 
 # Useful ?
 AUTHENTICATION_BACKENDS = (
 	# 'django.contrib.auth.backends.ModelBackend',
-	# 'authentication.backends.UpdatedCASBackend',
 )
 
 AUTH_USER_MODEL = 'authentication.User'

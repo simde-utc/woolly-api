@@ -5,7 +5,6 @@ from django.conf.urls import url, include
 from woolly_api.settings import VIEWSET
 from .views import UserViewSet, UserRelationshipView, UserTypeViewSet, AuthView, JWTView
 
-# import cas.views
 
 # Configure Viewsets
 user_list = UserViewSet.as_view(VIEWSET['list'])
@@ -38,14 +37,6 @@ urlpatterns = {
 	# Validate JWT : TODO
 	url(r'^auth/validate', JWTView.validate_jwt, name = 'auth.validate'),
 
-
-
-
-
-	# ==== TODO A virer...
-	# CAS login/logout
-	# url(r'^auth/cas/login$', cas.views.login, name = 'cas.login'),
-	# url(r'^auth/cas/logout$', cas.views.logout, name = 'cas.logout'),
 
 	# Basic login/logout
 	# url(r'^auth/basic/', include('rest_framework.urls', namespace = 'rest_framework') ),
