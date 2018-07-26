@@ -7,82 +7,10 @@ from authlib.client import OAuth2Session, OAuthException
 import time
 
 from woolly_api.settings import JWT_SECRET_KEY, JWT_TTL, OAUTH as OAuthConfig
+from .helpers import get_jwt_from_request, find_or_create_user
 from .models import User, UserType
 from .serializers import UserSerializer
 
-
-
-# ========================================================
-# 		Helpers
-# ========================================================
-
-def get_jwt_from_request(request):
-	"""
-	Helper to get JWT from request
-	Return None if no JWT
-	"""
-	jwt = request.META.get('HTTP_AUTHORIZATION', None)	# Traité automatiquement par Django
-	if not jwt or jwt == '':
-		return None
-	return jwt[7:]		# substring : Bearer ...
-
-def find_or_create_user(user_infos):
-	"""
-	Helper to fetch or create user in Woolly database from user_infos (email)
-	"""
-	try:
-		# Try to find user
-		user = User.objects.get(email = user_infos['email'])		# TODO replace
-	except User.DoesNotExist:
-		# Create user
-		# TODO : birthdate, login
-		serializer = UserSerializer(data = {
-			'email': user_infos['email'],
-			'first_name': user_infos['firstname'],
-			'last_name': user_infos['lastname'],
-			# 'login': user_infos['login'],
-			# 'associations': '',
-			# 'birthdate': ''
-		})
-		if not serializer.is_valid():
-			# TODO : Exceptions
-			print("ERROORRRRS")
-			print(serializer.errors)
-			return {
-				'error': 'Invalid serialization',
-				'errors': serializer.errors
-			}
-		user = serializer.save()
-
-	# Process new informations
-	madeChanges = False
-
-	# Process UserType relation
-	userType = UserType.EXTERIEUR
-	if user_infos['is_cas'] == True:
-		userType = UserType.NON_COTISANT			
-	if user_infos['is_contributorBde'] == True:
-		userType = UserType.COTISANT			
-
-	# Mise à jour si besoin
-	if user.usertype.name != userType:
-		try:
-			user.usertype = UserType.objects.get(name=userType)
-		except UserType.DoesNotExist:
-			raise UserType.DoesNotExist("Met à jour les users_types avec UserType.init_values() !!!")
-		madeChanges = True
-	if user.is_admin != user_infos['is_admin']:
-		user.is_admin = user_infos['is_admin']
-		madeChanges = True
-	if madeChanges:
-		user.save()
-
-	return user
-
-
-# ========================================================
-# 		Services
-# ========================================================
 
 class JWTClient(JWT):
 	"""

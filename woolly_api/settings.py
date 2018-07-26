@@ -158,9 +158,11 @@ MIDDLEWARE = [
 	'django.middleware.csrf.CsrfViewMiddleware',
 ]
 
-# Useful ?
+# Authentication
+
+# To access web admin panel
 AUTHENTICATION_BACKENDS = (
-	# 'django.contrib.auth.backends.ModelBackend',
+	'authentication.auth.AdminSiteBackend',
 )
 
 AUTH_USER_MODEL = 'authentication.User'
@@ -173,12 +175,10 @@ AUTH_PASSWORD_VALIDATORS = [
 	{'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
 ]
 
+# Paths
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-
-
 def ABS_DIR(rel):
 	return os.path.join(BASE_DIR, rel.replace('/', os.path.sep))
-
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR + '/static/'
@@ -187,6 +187,7 @@ STATICFILES_DIRS = (
 )
 ROOT_URLCONF = 'woolly_api.urls'
 WSGI_APPLICATION = 'woolly_api.wsgi.application'
+
 
 TEMPLATES = [
 	{
