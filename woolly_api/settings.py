@@ -52,7 +52,7 @@ OAUTH = {
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = confidentials.DEBUG
-ALLOWED_HOSTS = confidentials.DEBUG
+ALLOWED_HOSTS = confidentials.ALLOWED_HOSTS
 
 # CSRF_COOKIE_SECURE = True
 # SESSION_COOKIE_SECURE = True
