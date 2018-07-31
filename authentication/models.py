@@ -16,12 +16,16 @@ class UserType(models.Model):
 
 	@staticmethod
 	def init_values():
-		"""
-		initialize the different default UserTypes in DB
-		"""
+		"""Initialize the different default UserTypes in DB"""
 		types = (UserType.COTISANT, UserType.NON_COTISANT, UserType.TREMPLIN, UserType.EXTERIEUR)
 		for value in types:
 			UserType(name=value).save()
+
+	def __str__(self):
+		return self.name
+
+	class Meta:
+		verbose_name = "User Type"
 
 	class JSONAPIMeta:
 		resource_name = "usertypes"
