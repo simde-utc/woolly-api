@@ -58,8 +58,8 @@ ALLOWED_HOSTS = confidentials.ALLOWED_HOSTS
 # SECURE_BROWSER_XSS_FILTER = True
 # SECURE_SSL_REDIRECT = True
 
-SESSION_COOKIE_SECURE = False
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_COOKIE_SECURE = confidentials.HTTPS_ENABLED
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
 # CORS headers config
 CORS_ORIGIN_ALLOW_ALL = True

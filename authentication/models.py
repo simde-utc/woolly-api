@@ -28,10 +28,15 @@ class UserType(models.Model):
 
 
 class UserManager(BaseUserManager):
-	def create_user(self, email=None, password=None, **other_fields):
+	def create_user(self, email, password=None, **other_fields):
 		if not email:
-			raise ValueError('The given email must be set')
-		user = self.model(email=email, **other_fields)
+			raise ValueError('Users must have an email address')
+
+		# Create and Save User
+		user = self.model(
+			email = self.normalize_email(email),
+			**other_fields
+		)
 		user.set_password(password)
 		user.save(using=self._db)
 		return user
@@ -66,6 +71,7 @@ class User(AbstractBaseUser):
 	def is_staff(self):
 		return self.is_admin
 
+	# Django utils
 	objects = UserManager()
 
 	USERNAME_FIELD = 'email'
@@ -73,7 +79,8 @@ class User(AbstractBaseUser):
 
 	# Display
 	def __str__(self):
-		return '%s %s %s' % (self.email, self.first_name, self.usertype.name)
+		return self.email
+		# return '%s %s %s' % (self.email, self.first_name, self.usertype.name)
 
 	def get_full_name(self):
 		return self.first_name + ' ' + self.last_name
@@ -96,10 +103,6 @@ class User(AbstractBaseUser):
 			# self.set_password(self.password)
 		super(User, self).save(*args, **kwargs)
 	"""
-
-	class Meta:
-		default_manager_name = UserManager
-		pass
 
 	class JSONAPIMeta:
 		resource_name = "users"

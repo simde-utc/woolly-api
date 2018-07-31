@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model
-from django import forms
+from django.contrib.auth.backends import ModelBackend
+from django.utils.translation import gettext as _
+from django.forms import ValidationError
 from rest_framework import authentication
 from rest_framework import exceptions
 from .services import JWTClient
@@ -38,7 +40,7 @@ class JWTAuthentication(authentication.BaseAuthentication):
 		return (user, None)
 
 
-class AdminSiteBackend:
+class AdminSiteBackend(ModelBackend):
 	def authenticate(self, request, username = None, password = None):
 		UserModel = get_user_model()
 		# Try to fetch user
@@ -47,13 +49,16 @@ class AdminSiteBackend:
 		except UserModel.DoesNotExist:
 			return None
 
-		# TODO Check if admin
-		# if not user.is_admin:
-		# 	return None
-
-		# TODO Check password
-		if password != "azd":
+		# Check password
+		if not user.check_password(password):
 			return None
+
+		# Check if admin
+		if not user.is_admin:
+			raise ValidationError(
+				_("This account is not allowed."),
+				code='not_allowed',
+			)
 
 		return user
 
