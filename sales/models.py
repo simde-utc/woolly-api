@@ -43,17 +43,20 @@ class Sale(models.Model):
 	Defines the Sale object
 	"""
 	# Description
-	name 		= models.CharField(max_length = 200)
-	description = models.CharField(max_length = 1000)
+	name 		= models.CharField(max_length=200)
+	description = models.CharField(max_length=1000)
 	association = models.ForeignKey(Association, on_delete=None, related_name='sales', editable=False)
 	
-	# Timestamps & Controls
+	# Visibility
 	is_active 	= models.BooleanField(default=True)
+	public 		= models.BooleanField(default=True)
+
+	# Timestamps
 	created_at 	= models.DateTimeField(auto_now_add=True, editable=False)
 	begin_at 	= models.DateTimeField()
 	end_at 		= models.DateTimeField()
 
-	max_item_quantity = models.IntegerField(null = True)
+	max_item_quantity = models.IntegerField(null=True)
 	max_payment_date  = models.DateTimeField()
 
 	# TODO v2
