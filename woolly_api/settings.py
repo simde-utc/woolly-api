@@ -167,7 +167,8 @@ AUTH_USER_MODEL = 'authentication.User'
 
 # To access web admin panel
 AUTHENTICATION_BACKENDS = (
-	'authentication.auth.AdminSiteBackend',
+	'django.contrib.auth.backends.ModelBackend',
+	# 'authentication.auth.AdminSiteBackend',
 )
 
 # Password validation : https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
