@@ -40,8 +40,6 @@ class JWTAuthentication(authentication.BaseAuthentication):
 
 class AdminSiteBackend:
 	def authenticate(self, request, username = None, password = None):
-		print(request)
-
 		UserModel = get_user_model()
 		# Try to fetch user
 		try:
@@ -49,8 +47,11 @@ class AdminSiteBackend:
 		except UserModel.DoesNotExist:
 			return None
 
+		# TODO Check if admin
+		# if not user.is_admin:
+		# 	return None
 
-		# Check password
+		# TODO Check password
 		if password != "azd":
 			return None
 
@@ -59,6 +60,6 @@ class AdminSiteBackend:
 	def get_user(self, user_id):
 		UserModel = get_user_model()
 		try:
-			user = UserModel.objects.get(id=user_id)
+			return UserModel.objects.get(id=user_id)
 		except UserModel.DoesNotExist:
 			return None

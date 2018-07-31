@@ -55,9 +55,11 @@ DEBUG = confidentials.DEBUG
 ALLOWED_HOSTS = confidentials.ALLOWED_HOSTS
 
 # CSRF_COOKIE_SECURE = True
-# SESSION_COOKIE_SECURE = True
 # SECURE_BROWSER_XSS_FILTER = True
 # SECURE_SSL_REDIRECT = True
+
+SESSION_COOKIE_SECURE = False
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 
 # CORS headers config
 CORS_ORIGIN_ALLOW_ALL = True
@@ -74,9 +76,7 @@ CORS_ALLOW_METHODS = (
 CORS_ALLOW_CREDENTIALS = True
 CSRF_COOKIE_HTTPONLY = True  # Useful ??
 CSRF_USE_SESSIONS = False  # Useful ??
-CSRF_TRUSTED_ORIGINS = (
-	"localhost"
-)
+CSRF_TRUSTED_ORIGINS = confidentials.ALLOWED_HOSTS
 
 
 # --------------------------------------------------------------------------
@@ -134,14 +134,17 @@ DATABASES = {
 }
 
 INSTALLED_APPS = [
+	# Django
+	'django.contrib.sessions',
+	'django.contrib.staticfiles',
 	'django.contrib.admin',
 	'django.contrib.auth',
 	'django.contrib.contenttypes',
-	'django.contrib.sessions',
 	'django.contrib.messages',
-	'django.contrib.staticfiles',
+	# Django REST
 	'rest_framework',
 	'corsheaders',
+	# Woolly
 	'core',
 	'authentication',
 	'sales',
@@ -149,24 +152,23 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-	'django.middleware.security.SecurityMiddleware',
 	'django.contrib.sessions.middleware.SessionMiddleware',
+	'django.middleware.security.SecurityMiddleware',
 	'corsheaders.middleware.CorsMiddleware',
 	'django.middleware.common.CommonMiddleware',
-	'django.contrib.auth.middleware.AuthenticationMiddleware',
-	'django.contrib.messages.middleware.MessageMiddleware',
 	'django.middleware.clickjacking.XFrameOptionsMiddleware',
 	'django.middleware.csrf.CsrfViewMiddleware',
+	'django.contrib.auth.middleware.AuthenticationMiddleware',
+	'django.contrib.messages.middleware.MessageMiddleware',
 ]
 
 # Authentication
+AUTH_USER_MODEL = 'authentication.User'
 
 # To access web admin panel
 AUTHENTICATION_BACKENDS = (
 	'authentication.auth.AdminSiteBackend',
 )
-
-AUTH_USER_MODEL = 'authentication.User'
 
 # Password validation : https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
 AUTH_PASSWORD_VALIDATORS = [
@@ -199,10 +201,10 @@ TEMPLATES = [
 		'APP_DIRS': True,
 		'OPTIONS': {
 			'context_processors': [
-				'django.template.context_processors.debug',
-				'django.template.context_processors.request',
 				'django.contrib.auth.context_processors.auth',
 				'django.contrib.messages.context_processors.messages',
+				'django.template.context_processors.debug',
+				'django.template.context_processors.request',
 			],
 		},
 	},

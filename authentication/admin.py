@@ -3,7 +3,7 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 from authentication.forms import UserCreationForm, UserChangeForm
-from authentication.models import User,UserType
+from authentication.models import User, UserType
 
 
 class UserAdmin(BaseUserAdmin):

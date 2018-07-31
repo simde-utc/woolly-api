@@ -38,7 +38,7 @@ urlpatterns = {
 	url(r'^auth/validate$', JWTView.validate_jwt, name = 'auth.validate'),
 
 
-	# Basic login/logout
+	# Basic login/logout for Browsable API
 	url(r'^auth/basic/', include('rest_framework.urls', namespace = 'rest_framework') ),
 
 

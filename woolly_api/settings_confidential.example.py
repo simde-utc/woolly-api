@@ -4,6 +4,7 @@ ALLOWED_HOSTS = (
 	'assos.utc.fr',
 	'localhost',
 )
+HTTPS_ENABLED = True
 
 # Secret Keys
 JWT_SECRET_KEY = ''

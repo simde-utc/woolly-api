@@ -75,15 +75,12 @@ class User(AbstractBaseUser):
 	def __str__(self):
 		return '%s %s %s' % (self.email, self.first_name, self.usertype.name)
 
-	
-
 	def get_full_name(self):
 		return self.first_name + ' ' + self.last_name
 
 	def get_short_name(self):
 		return self.first_name
 
-	"""
 	# required by Django.admin
 	def has_perm(self, perm, obj=None):
 		return True		# ???
@@ -91,7 +88,7 @@ class User(AbstractBaseUser):
 	def has_module_perms(self, app_label):
 		return True		# ???
 
-
+	"""
 	def save(self, *args, **kwargs):
 		if not self.login:
 			self.login = None
@@ -101,7 +98,7 @@ class User(AbstractBaseUser):
 	"""
 
 	class Meta:
-		# default_manager_name = UserManager
+		default_manager_name = UserManager
 		pass
 
 	class JSONAPIMeta:
