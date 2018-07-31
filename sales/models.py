@@ -4,10 +4,10 @@ from enum import Enum
 from functools import reduce
 import uuid
 
+
 # ============================================
 # 	Association & Member
 # ============================================
-
 
 class Association(models.Model):
 	"""
@@ -17,6 +17,9 @@ class Association(models.Model):
 	members = models.ManyToManyField(User, through='AssociationMember')
 	fun_id 	= models.PositiveSmallIntegerField()			# TODO V2 : abstraire payment
 	# bank_account = models.CharField(max_length=30)		# Why ?
+
+	def __str__(self):
+		return self.name
 
 	class JSONAPIMeta:
 		resource_name = "associations"
@@ -29,6 +32,12 @@ class AssociationMember(models.Model):
 	association = models.ForeignKey(Association, on_delete=models.CASCADE, related_name='associationmembers')
 	role 		= models.CharField(max_length=50)
 	rights 		= models.CharField(max_length=50)
+
+	def __str__(self):
+		return "%s, %s @ %s" % (self.user, self.role, self.association)
+
+	class Meta:
+		verbose_name = "Association Member"			
 
 	class JSONAPIMeta:
 		resource_name = "associationmembers"
@@ -62,6 +71,9 @@ class Sale(models.Model):
 	# TODO v2
 	# paymentmethods = models.ManyToManyField(PaymentMethod)
 	# payment_delay = models.DateTimeField()
+
+	def __str__(self):
+		return "%s par %s" % (self.name, self.association)
 
 	class JSONAPIMeta:
 		resource_name = "sales"
