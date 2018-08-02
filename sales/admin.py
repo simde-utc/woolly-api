@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import *
 
+
 # ============================================
 # 	Association & Sale
 # ============================================
@@ -32,11 +33,37 @@ class SaleAdmin(admin.ModelAdmin):
 	ordering = ('begin_at', 'end_at')
 
 
+# ============================================
+# 	Item & Order
+# ============================================
+
+class ItemAdmin(admin.ModelAdmin):
+	list_display = ('name', 'sale', 'group', 'is_active', 'quantity', 'usertype', 'price', 'max_per_user')
+	list_filter = ('is_active', 'sale', 'group', 'usertype')
+	list_editable = tuple()
+
+	fieldsets = (
+		(None, 				{ 'fields': ('name', 'description', 'group') }),
+		('Accessibility', 	{ 'fields': ('is_active', 'quantity', 'max_per_user', 'usertype') }),
+		('Payment', 		{ 'fields': ('nemopay_id',) }),
+	)
+	add_fieldsets = (
+		(None, 				{ 'fields': ('name', 'description', 'sale', 'group') }),
+		('Accessibility', 	{ 'fields': ('is_active', 'quantity', 'max_per_user', 'usertype') }),
+		('Payment', 		{ 'fields': ('nemopay_id',) }),
+	)
+
+	search_fields = ('name', 'sale', 'group')
+	ordering = ('sale', 'name', 'usertype')
+
+
+
+
 admin.site.register(Association, AssociationAdmin)
 # admin.site.register(AssociationMember)
 admin.site.register(Sale, SaleAdmin)
 
-admin.site.register(Item)
+admin.site.register(Item, ItemAdmin)
 admin.site.register(ItemGroup)
 admin.site.register(Order)
 admin.site.register(OrderLine)

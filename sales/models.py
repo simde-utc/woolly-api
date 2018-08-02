@@ -65,7 +65,7 @@ class Sale(models.Model):
 	begin_at 	= models.DateTimeField()
 	end_at 		= models.DateTimeField()
 
-	max_item_quantity = models.IntegerField(null=True)
+	max_item_quantity = models.IntegerField(blank=True, null=True)
 	max_payment_date  = models.DateTimeField()
 
 	# TODO v2
@@ -85,8 +85,15 @@ class Sale(models.Model):
 
 class ItemGroup(models.Model):
 	name 	 = models.CharField(max_length = 200)
-	quantity = models.IntegerField(null=True)
-	max_per_user = models.IntegerField(null=True)		# TODO V2 : moteur de contraintes
+	quantity = models.IntegerField(blank=True, null=True)
+	max_per_user = models.IntegerField(blank=True, null=True)		# TODO V2 : moteur de contraintes
+	# sale 		 = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
+
+	def __str__(self):
+		return self.name
+
+	class Meta:
+		verbose_name = "Item Group"
 
 	class JSONAPIMeta:
 		resource_name = "itemgroups"
@@ -99,15 +106,15 @@ class Item(models.Model):
 	name 		= models.CharField(max_length=200)
 	description = models.CharField(max_length=1000)
 	sale 		= models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
-	group 		= models.ForeignKey(ItemGroup, null=True, default=None, on_delete=models.SET_NULL, related_name='items')
+	group 		= models.ForeignKey(ItemGroup, blank=True, null=True, default=None, on_delete=models.SET_NULL, related_name='items')
 	
 	# Specification
 	is_active 	= models.BooleanField(default=True)
-	quantity 	= models.IntegerField(null=True)		# Null quand pas de restrinction sur l'item
+	quantity 	= models.IntegerField(blank=True, null=True)		# Null quand pas de restrinction sur l'item
 	usertype 	= models.ForeignKey(UserType, on_delete=models.PROTECT)			# UserType ?
 	price 		= models.FloatField()
-	nemopay_id 	= models.CharField(max_length=30, null=True)		# TODO V2 : abstraire payment
-	max_per_user = models.IntegerField(null=True)		# TODO V2 : moteur de contraintes
+	nemopay_id 	= models.CharField(max_length=30, blank=True, null=True)		# TODO V2 : abstraire payment
+	max_per_user = models.IntegerField(blank=True, null=True)		# TODO V2 : moteur de contraintes
 
 	fields 	= models.ManyToManyField('Field', through='ItemField', through_fields=('item','field')) #, related_name='fields')
 
@@ -120,6 +127,9 @@ class Item(models.Model):
 				reduce(lambda acc2, orderline: acc2 + orderline.quantity, order.orderlines.all(), 0), \
 			allOrders, 0)
 		return self.quantity - allItemsBought
+
+	def __str__(self):
+		return "%s (%s)" % (self.name, self.sale)
 
 	class JSONAPIMeta:
 		resource_name = "items"
@@ -153,15 +163,15 @@ class Order(models.Model):
 	owner 	= models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders', editable=False)
 	sale 	= models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='orders', editable=False)
 
-	created_at = models.DateTimeField(auto_now_add = True, editable=False)
-	updated_at = models.DateTimeField(auto_now_add = True)
+	created_at = models.DateTimeField(auto_now_add=True, editable=False)
+	updated_at = models.DateTimeField(auto_now_add=True)
 
 	# status = models.OrderStatus()
 	status = models.PositiveSmallIntegerField(
 		choices = OrderStatus.choices(),  # Choices is a list of Tuple
 		default = OrderStatus.ONGOING.value
 	)
-	tra_id = models.IntegerField(null = True, default = None)
+	tra_id = models.IntegerField(blank=True, null=True, default=None)
 
 	class JSONAPIMeta:
 		resource_name = "orders"
@@ -190,7 +200,7 @@ class Field(models.Model):
 	"""
 	name 	= models.CharField(max_length=200)
 	type 	= models.CharField(max_length=200)
-	default = models.CharField(max_length=200, null=True)
+	default = models.CharField(max_length=200, blank=True, null=True)
 	items 	= models.ManyToManyField(Item, through='ItemField', through_fields=('field','item'))
 
 	class JSONAPIMeta:
@@ -225,7 +235,7 @@ class OrderLineField(models.Model):
 	"""
 	orderlineitem = models.ForeignKey(OrderLineItem, on_delete=models.CASCADE, related_name='orderlinefields', editable=False)
 	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='orderlinefields', editable=False)
-	value = models.CharField(max_length=1000, null = True, editable='isEditable') # TODO ??
+	value = models.CharField(max_length=1000, blank=True, null= True, editable='isEditable') # TODO ??
 
 	def isEditable(self):
 		itemfield = ItemField.objects.get(field__pk=self.field.pk, item__pk=self.orderlineitem.orderline.item.pk)
