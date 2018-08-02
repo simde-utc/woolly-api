@@ -147,14 +147,16 @@ class OrderStatus(Enum):
 	EXPIRED = 5
 	CANCELLED = 6
 
+	# Helpers, not real choices
 	CANCELLABLE_LIST = (NOT_PAID, AWAITING_VALIDATION)
 	NOT_CANCELLED_LIST = (AWAITING_VALIDATION, VALIDATED, NOT_PAID, PAID) 
 	BUYABLE_STATUS_LIST = (ONGOING, AWAITING_VALIDATION, NOT_PAID) 
 	VALIDATED_LIST = (VALIDATED, PAID)
 
+	# Used for Django choices, return only choices whose value is int
 	@classmethod
 	def choices(cls):
-		return tuple((i.name, i.value) for i in cls)
+		return tuple((i.value, i.name) for i in cls if isinstance(i.value, int))
 
 class Order(models.Model):
 	"""
@@ -166,12 +168,14 @@ class Order(models.Model):
 	created_at = models.DateTimeField(auto_now_add=True, editable=False)
 	updated_at = models.DateTimeField(auto_now_add=True)
 
-	# status = models.OrderStatus()
 	status = models.PositiveSmallIntegerField(
-		choices = OrderStatus.choices(),  # Choices is a list of Tuple
+		choices = OrderStatus.choices(),	# Choices is a list of Tuple
 		default = OrderStatus.ONGOING.value
 	)
 	tra_id = models.IntegerField(blank=True, null=True, default=None)
+
+	def __str__(self):
+		return "%d - %s by %s" % (self.id, self.sale, self.owner)
 
 	class JSONAPIMeta:
 		resource_name = "orders"
@@ -184,6 +188,12 @@ class OrderLine(models.Model):
 	item 	 = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='orderlines', editable=False)
 	order 	 = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='orderlines', editable=False)
 	quantity = models.IntegerField()
+
+	def __str__(self):
+		return "%s - %dx %s (Order %s)" % (self.id, self.quantity, self.item.name, self.order)
+
+	class Meta:
+		verbose_name = "Order Line"
 
 	class JSONAPIMeta:
 		resource_name = "orderlines"
