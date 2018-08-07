@@ -219,6 +219,9 @@ class Field(models.Model):
 	default = models.CharField(max_length=200, blank=True, null=True)
 	items 	= models.ManyToManyField(Item, through='ItemField', through_fields=('field','item'))
 
+	def __str__(self):
+		return "%s (%s)" % (self.name, self.type)
+
 	class JSONAPIMeta:
 		resource_name = "fields"
 
@@ -228,11 +231,18 @@ class ItemField(models.Model):
 	"""
 	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='itemfields', editable=False)
 	item  = models.ForeignKey(Item,  on_delete=models.CASCADE, related_name='itemfields', editable=False)
+	# Options
 	editable = models.BooleanField(default=True)
 
 	# sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
 	# itemgroup = models.ForeignKey(ItemGroup, on_delete = None, related_name = 'itemgroups')
 	# usertype = models.ManyToManyField('authentication.UserType')
+
+	def __str__(self):
+		return "%s - %s)" % (self.item, self.field)
+
+	class Meta:
+		verbose_name = "Item Field"
 
 	class JSONAPIMeta:
 		resource_name = "itemfields"
@@ -246,6 +256,12 @@ class OrderLineItem(models.Model):
 	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 	orderline = models.ForeignKey(OrderLine, on_delete=models.CASCADE, related_name="orderlineitems", editable=False)
 
+	def __str__(self):
+		return "%s - %s" % (self.id, self.orderline)
+
+	class Meta:
+		verbose_name = "OrderLine Item"
+
 	class JSONAPIMeta:
 		resource_name = "orderlineitems"
 
@@ -255,11 +271,17 @@ class OrderLineField(models.Model):
 	"""
 	orderlineitem = models.ForeignKey(OrderLineItem, on_delete=models.CASCADE, related_name='orderlinefields', editable=False)
 	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='orderlinefields', editable=False)
-	value = models.CharField(max_length=1000, blank=True, null= True, editable='isEditable') # TODO ??
+	value = models.CharField(max_length=1000, blank=True, null= True, editable='isEditable') # TODO Working ??
 
 	def isEditable(self):
 		itemfield = ItemField.objects.get(field__pk=self.field.pk, item__pk=self.orderlineitem.orderline.item.pk)
 		return itemfield.editable
+
+	def __str__(self):
+		return "%s - %s = %s" % (self.orderlineitem.id, self.field.name, self.value)
+
+	class Meta:
+		verbose_name = "OrderLine Field"
 
 	class JSONAPIMeta:
 		resource_name = "orderlinefields"
