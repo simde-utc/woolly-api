@@ -3,7 +3,7 @@ from django.shortcuts import redirect
 from rest_framework_json_api import views
 from authlib.specs.rfc7519 import JWTError
 
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
 from .permissions import *
 
 from .serializers import UserSerializer, UserTypeSerializer
@@ -14,11 +14,15 @@ from .services import OAuthAPI, JWTClient, get_jwt_from_request
 class UserViewSet(views.ModelViewSet):
 	queryset = User.objects.all()
 	serializer_class = UserSerializer
-	permission_classes = (IsAuthenticated, IsOwnerOrAdmin)
+	permission_classes = (IsUserOrAdmin,)
 
 	# Block create and redirect to login
-	def create(self, request):
+	def create(self, request, *args, **kwargs):
 		return redirect('auth.login')
+
+	# TODO : block self is_admin -> True
+	def update(self, request, *args, **kwargs):
+		pass
 
 	def get_queryset(self):
 		user = self.request.user
@@ -27,10 +31,6 @@ class UserViewSet(views.ModelViewSet):
 		# Anonymous users see nothing
 		if not user.is_authenticated:
 			return None
-
-		# Admins see everyone otherwise filter to see only logged user
-		if not user.is_admin:
-			queryset = queryset.filter(pk=user.pk)
 
 		# if 'user_pk' in self.kwargs:
 		# 	association_pk = self.kwargs['user_pk']
