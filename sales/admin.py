@@ -1,24 +1,67 @@
 from django.contrib import admin
+from django.db.models import Count
 from .models import *
+from core.helpers import custom_editable_fields
+
+
+# ============================================
+# 	Inlines
+# ============================================
+
+class AssociationMemberInline(admin.TabularInline):
+	model = AssociationMember
+	extra = 0
+
+class ItemFieldInline(admin.TabularInline):
+	model = ItemField
+	extra = 0
+
+class OrderLineItemInline(admin.TabularInline):
+	model = OrderLineItem
+	extra = 0
+	readonly_fields = ('id',)
 
 
 # ============================================
 # 	Association & Sale
 # ============================================
 
-class AssociationMemberInline(admin.TabularInline):
-	model = Association.members.through
-
 class AssociationAdmin(admin.ModelAdmin):
+	def get_queryset(self, request):
+		queryset = super().get_queryset(request)
+		queryset = queryset.annotate(
+			_members_count = Count("members", distinct=True),
+		)
+		return queryset
+
+	# Displayers
+	def number_of_members(self, obj):
+		return obj._members_count
+
+	list_display = ('name', 'fun_id', 'number_of_members')
 	inlines = (AssociationMemberInline,)
 	exclude = ('members',)
+	search_fields = ('name', 'fun_id')
+	ordering = ('name',)
 
 class SaleAdmin(admin.ModelAdmin):
-	list_display = ('name', 'association', 'is_active', 'public', 'created_at', 'begin_at', 'end_at')
+	def get_queryset(self, request):
+		queryset = super().get_queryset(request)
+		queryset = queryset.annotate(
+			_items_count = Count("items", distinct=True),
+		)
+		return queryset
+
+	# Displayers
+	def number_of_items(self, obj):
+		return obj._items_count
+
+	list_display = ('name', 'association', 'is_active', 'public', 'number_of_items', 'created_at', 'begin_at', 'end_at')
 	list_filter = ('is_active', 'public')
 	list_editable = tuple()
 
-	readonly_fields = ('association',)
+	def get_readonly_fields(self, request, obj=None):
+		return custom_editable_fields(request, obj, ('association',))
 	fieldsets = (
 		(None, 			{ 'fields': ('name', 'description', 'association') }),
 		('Visibility', 	{ 'fields': ('is_active', 'public') }),
@@ -38,7 +81,8 @@ class ItemAdmin(admin.ModelAdmin):
 	list_filter = ('is_active', 'sale', 'group', 'usertype')
 	list_editable = tuple()
 
-	readonly_fields = ('sale',)
+	inlines = (ItemFieldInline,)
+	exclude = ('fields',)
 	fieldsets = (
 		(None, 				{ 'fields': ('name', 'description', 'sale', 'group') }),
 		('Accessibility', 	{ 'fields': ('is_active', 'quantity', 'max_per_user', 'usertype') }),
@@ -58,7 +102,8 @@ class OrderAdmin(admin.ModelAdmin):
 	list_filter = ('status', 'sale', 'owner')
 	list_editable = tuple()
 
-	readonly_fields = ('sale', 'owner')
+	def get_readonly_fields(self, request, obj=None):
+		return custom_editable_fields(request, obj, ('sale', 'owner'))
 	fieldsets = (
 		(None, 				{ 'fields': ('sale', 'owner', 'status') }),
 		('Payment', 		{ 'fields': ('tra_id',) }),
@@ -81,13 +126,64 @@ class OrderLineAdmin(admin.ModelAdmin):
 		return obj.order.owner
 
 	list_display = ('id', 'order_id', 'order_status', 'owner', 'sale_name', 'item_name', 'quantity')
-	readonly_fields = ('order', 'item')
+	def get_readonly_fields(self, request, obj=None):
+		return custom_editable_fields(request, obj, ('order', 'item'))
 
+	inlines = (OrderLineItemInline,)
 	fieldsets = (
 		(None, { 'fields': ('order', 'item', 'quantity') }),
 	)
 
 	search_fields = ('item__name', 'order__owner__email', 'order__sale__name')
+
+
+# ============================================
+# 	Field & ItemField
+# ============================================
+
+class FieldAdmin(admin.ModelAdmin):
+	list_display = ('id', 'name', 'type', 'default')
+	list_filter = ('type',)
+	search_fields = ('name',)
+
+
+# ============================================
+# 	OrderLineItem & OrderLineField
+# ============================================
+
+class OrderLineItemAdmin(admin.ModelAdmin):
+	# Displayers
+	def orderline_id(self, obj):
+		return obj.orderline.id
+	def order_id(self, obj):
+		return obj.orderline.order.id
+	def owner(self, obj):
+		return obj.orderline.order.owner
+	def sale(self, obj):
+		return obj.orderline.order.sale
+
+	list_display = ('id', 'orderline_id', 'order_id', 'owner', 'sale')
+	list_filter = ('orderline__order__sale',) # TODO Not working
+
+	def get_readonly_fields(self, request, obj=None):
+		return custom_editable_fields(request, obj, ('orderline',), ('id',))
+	search_fields = ('id', 'orderline__order__owner__email', 'orderline__order__sale__name')
+
+class OrderLineFieldAdmin(admin.ModelAdmin):
+	# Displayers
+	def orderlineitem_id(self, obj):
+		return obj.orderlineitem.id
+
+	list_display = ('id', 'orderlineitem_id', 'field', 'value')
+	list_filter = ('field',)
+
+	def get_readonly_fields(self, request, obj=None):
+		return custom_editable_fields(request, obj, ('orderlineitem', 'field'))
+	fieldsets = (
+		(None, { 'fields': ('orderlineitem', 'field', 'value') }),
+	)
+	search_fields = ('value', 'orderlineitem__id,' 'orderlineitem__orderline__owner__email')
+
 
 
 admin.site.register(Association, AssociationAdmin)
@@ -99,8 +195,8 @@ admin.site.register(ItemGroup)
 admin.site.register(Order, OrderAdmin)
 admin.site.register(OrderLine, OrderLineAdmin)
 
-admin.site.register(Field)
-admin.site.register(ItemField)
-admin.site.register(OrderLineItem)
-admin.site.register(OrderLineField)
+admin.site.register(Field, FieldAdmin)
+# admin.site.register(ItemField)
+admin.site.register(OrderLineItem, OrderLineItemAdmin)
+admin.site.register(OrderLineField, OrderLineFieldAdmin)
 

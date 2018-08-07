@@ -3,7 +3,7 @@ from authentication.models import User, UserType
 from enum import Enum
 from functools import reduce
 import uuid
-
+from core.helpers import custom_editable_fields
 
 # ============================================
 # 	Association & Member
@@ -54,7 +54,7 @@ class Sale(models.Model):
 	# Description
 	name 		= models.CharField(max_length=200)
 	description = models.CharField(max_length=1000)
-	association = models.ForeignKey(Association, on_delete=None, related_name='sales', editable=False)
+	association = models.ForeignKey(Association, on_delete=None, related_name='sales') # editable=False
 	
 	# Visibility
 	is_active 	= models.BooleanField(default=True)
@@ -168,11 +168,11 @@ class Order(models.Model):
 	"""
 	Defines the Order object
 	"""
-	owner 	= models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders', editable=False)
-	sale 	= models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='orders', editable=False)
+	owner 	= models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders') #, editable=False)
+	sale 	= models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='orders') #, editable=False)
 
 	created_at = models.DateTimeField(auto_now_add=True, editable=False)
-	updated_at = models.DateTimeField(auto_now_add=True)
+	updated_at = models.DateTimeField(auto_now=True)
 
 	status = models.PositiveSmallIntegerField(
 		choices = OrderStatus.choices(),	# Choices is a list of Tuple
@@ -191,8 +191,8 @@ class OrderLine(models.Model):
 	"""
 	Links an Order to an Item with a quantity
 	"""
-	item 	 = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='orderlines', editable=False)
-	order 	 = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='orderlines', editable=False)
+	item 	 = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='orderlines') #, editable=False)
+	order 	 = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='orderlines') #, editable=False)
 	quantity = models.IntegerField()
 
 	def __str__(self):
@@ -229,8 +229,8 @@ class ItemField(models.Model):
 	"""
 	Links an Item to a Field with additionnal options
 	"""
-	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='itemfields', editable=False)
-	item  = models.ForeignKey(Item,  on_delete=models.CASCADE, related_name='itemfields', editable=False)
+	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='itemfields') #, editable=False)
+	item  = models.ForeignKey(Item,  on_delete=models.CASCADE, related_name='itemfields') #, editable=False)
 	# Options
 	editable = models.BooleanField(default=True)
 
@@ -254,7 +254,7 @@ class OrderLineItem(models.Model):
 	May have specifications with OrderLine Fields
 	"""
 	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-	orderline = models.ForeignKey(OrderLine, on_delete=models.CASCADE, related_name="orderlineitems", editable=False)
+	orderline = models.ForeignKey(OrderLine, on_delete=models.CASCADE, related_name="orderlineitems")
 
 	def __str__(self):
 		return "%s - %s" % (self.id, self.orderline)
@@ -269,8 +269,8 @@ class OrderLineField(models.Model):
 	"""
 	Specifies the Field value taken by the OrderLine Item
 	"""
-	orderlineitem = models.ForeignKey(OrderLineItem, on_delete=models.CASCADE, related_name='orderlinefields', editable=False)
-	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='orderlinefields', editable=False)
+	orderlineitem = models.ForeignKey(OrderLineItem, on_delete=models.CASCADE, related_name='orderlinefields')
+	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='orderlinefields')
 	value = models.CharField(max_length=1000, blank=True, null= True, editable='isEditable') # TODO Working ??
 
 	def isEditable(self):
