@@ -13,7 +13,7 @@ association_detail = AssociationViewSet.as_view(VIEWSET['detail'])
 associationmember_list   = AssociationMemberViewSet.as_view(VIEWSET['list'])
 associationmember_detail = AssociationMemberViewSet.as_view(VIEWSET['detail'])
 
-sale_list   = SaleViewSet.as_view(VIEWSET['list_safe'])
+sale_list   = SaleViewSet.as_view(VIEWSET['list'])
 sale_detail = SaleViewSet.as_view(VIEWSET['detail'])
 
 itemgroup_list   = ItemGroupViewSet.as_view(VIEWSET['list'])
@@ -23,12 +23,7 @@ item_list   = ItemViewSet.as_view(VIEWSET['list'])
 item_detail = ItemViewSet.as_view(VIEWSET['detail'])
 
 order_list   = OrderViewSet.as_view(VIEWSET['list'])
-order_detail = OrderViewSet.as_view({
-	'get': 'retrieve',
-	'put': 'update',
-	'patch': 'partial_update',
-	'delete': 'destroy'
-})
+order_detail = OrderViewSet.as_view(VIEWSET['list'])
 
 orderline_list   = OrderLineViewSet.as_view(VIEWSET['list'])
 orderline_detail = OrderLineViewSet.as_view(VIEWSET['detail'])
