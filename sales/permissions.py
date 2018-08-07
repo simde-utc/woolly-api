@@ -3,7 +3,25 @@ from core.permissions import CustomPermission
 from .models import *
 
 
-def check_ownership(request, view, obj):
+
+def object_check_manager(request, view, obj):
+	user = request.user
+	# TODO
+	return user.is_authenticated and user.is_admin
+
+# Used for Association, Sale
+class IsManagerOrReadOnly(CustomPermission):
+	allow_read_only = True
+	object_permission_functions = (object_check_manager,)
+
+# Used for AssociationMember
+class IsManager(CustomPermission):
+	require_authentication = True
+	allow_admin = True
+	object_permission_functions = (object_check_manager,)
+
+
+def check_order_ownership(request, view, obj):
 	if isinstance(obj, Order):
 		return obj.owner == request.user
 	if isinstance(obj, OrderLine):
@@ -12,27 +30,12 @@ def check_ownership(request, view, obj):
 		return obj.orderline.order.owner == request.user
 	if isinstance(obj, OrderLineField):
 		return obj.orderitem.orderline.order.owner == request.user
+	return False
 
-class IsOwner(CustomPermission):
+# Used for Order, OrderLine, OrderLineItem, OrderLineField
+class IsOrderOwnerOrAdmin(CustomPermission):
 	require_authentication = True
-	object_permission_functions = (check_ownership,)
-
-class IsOwnerOrAdmin(IsOwner):
+	allow_creation = True
 	allow_admin = True
-
-class IsOwnerOrReadOnly(IsOwner):
-	allow_read_only = True
-
-
-def check_manager(request, view, obj):
-	# TODO
-	return request.user.is_authenticated and request.user.is_admin
-
-class IsManager(CustomPermission):
-	require_authentication = True
-	object_permission_functions = (check_manager,)
-
-class IsManagerOrReadOnly(CustomPermission):
-	allow_read_only = True
-	object_permission_functions = (check_manager,)
+	object_permission_functions = (check_order_ownership,)
 

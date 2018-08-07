@@ -192,7 +192,7 @@ class OrderViewSet(views.ModelViewSet):
 	"""
 	queryset = Order.objects.all()
 	serializer_class = OrderSerializer
-	permission_classes = (IsOwner,)
+	permission_classes = (IsOrderOwnerOrAdmin,)
 
 	def get_queryset(self):
 		user = self.request.user
@@ -263,7 +263,7 @@ class OrderLineViewSet(views.ModelViewSet):
 	"""
 	queryset = OrderLine.objects.all()
 	serializer_class = OrderLineSerializer
-	permission_classes = (IsOwner,)
+	permission_classes = (IsOrderOwnerOrAdmin,)
 
 	def get_queryset(self):
 		user = self.request.user
@@ -383,7 +383,7 @@ class ItemFieldRelationshipView(views.RelationshipView):
 class OrderLineItemViewSet(views.ModelViewSet):
 	queryset = OrderLineItem.objects.all()
 	serializer_class = OrderLineItemSerializer
-	permission_classes = (IsOwner,)
+	permission_classes = (IsOrderOwnerOrAdmin,)
 
 class OrderLineItemRelationshipView(views.RelationshipView):
 	"""
@@ -398,7 +398,7 @@ class OrderLineFieldViewSet(views.ModelViewSet):
 	"""
 	queryset = OrderLineField.objects.all()
 	serializer_class = OrderLineFieldSerializer
-	permission_classes = (IsOwner,)
+	permission_classes = (IsOrderOwnerOrAdmin,)
 
 	def create(self, request):
 		pass

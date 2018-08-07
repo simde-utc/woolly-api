@@ -3,8 +3,9 @@ from rest_framework import permissions
 
 class CustomPermission(permissions.BasePermission):
 	require_authentication = False
-	allow_admin = False
+	allow_admin = True
 	allow_read_only = False
+	allow_creation = False
 
 	permission_functions = []
 	object_permission_functions = []
@@ -25,23 +26,31 @@ class CustomPermission(permissions.BasePermission):
 		if self.allow_read_only and request.method in permissions.SAFE_METHODS:
 			return True
 
+		# Allow admin option
+		if self.allow_admin and request.user.is_authenticated and request.user.is_admin:
+			return True
+
 		# Check all permission_functions
 		if self.permission_functions:
 			permission_gen = (func(request, view) for func in self.permission_functions)
 			return self._check_functions(permission_gen)
 
+		# Allow creation or not
+		if view.action == 'create':
+			return self.allow_creation
+
 		return True
 
 	def has_object_permission(self, request, view, obj):
 		# Allow admin option
-		if self.allow_admin and request.user.is_admin:
+		if self.allow_admin and request.user.is_authenticated and request.user.is_admin:
 			return True
 
-		# Read Only option		
+		# Read Only option
 		if self.allow_read_only and request.method in permissions.SAFE_METHODS:
 			return True
 
-		# Check all permission_functions
+		# Check all object_permission_functions
 		if self.object_permission_functions:
 			permission_gen = (func(request, view, obj) for func in self.object_permission_functions)
 			return self._check_functions(permission_gen)
