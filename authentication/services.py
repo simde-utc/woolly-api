@@ -6,7 +6,7 @@ from authlib.specs.rfc7519 import JWT, JWTError
 from authlib.client import OAuth2Session, OAuthException
 import time
 
-from woolly_api.settings import JWT_SECRET_KEY, JWT_TTL, OAUTH as OAuthConfig
+from woolly_api.settings import DEBUG, JWT_SECRET_KEY, JWT_TTL, OAUTH as OAuthConfig
 from .helpers import get_jwt_from_request, find_or_create_user
 from .models import User, UserType
 from .serializers import UserSerializer
@@ -88,6 +88,21 @@ class JWTClient(JWT):
 		"""
 		Return JWT to the client after it logged in and got a random code to the session
 		"""
+		# WARNING : Backdoor in Debug mode for easier testing
+		if DEBUG == True and code[:8] == 'DEBUG - ':
+			print("\n####################\n\tWARNING\n####################")
+			print(" The JWT backdoor is used ")
+			print("####################\n")
+
+			# Create fake session
+			user_id = int(code[8:])
+			session = SessionStore()
+			session['portal_token'] = None
+			session['user_id'] = user_id
+			session.create()
+
+			return self.create_jwt(user_id, session.session_key)
+
 		# Retrieve session_key from random code
 		session_key = cache.get(code)
 		cache.delete(code)
