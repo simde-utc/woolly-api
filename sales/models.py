@@ -11,7 +11,7 @@ import uuid
 
 class Association(models.Model):
 	"""
-	Represents the association information
+	Defines an Association
 	"""
 	name 	= models.CharField(max_length=200)
 	members = models.ManyToManyField(User, through='AssociationMember')
@@ -26,7 +26,7 @@ class Association(models.Model):
 
 class AssociationMember(models.Model):
 	"""
-	Defines the link between Association and User
+	Links an User to an Association
 	"""
 	user 		= models.ForeignKey(User, on_delete=models.CASCADE, related_name='associationmembers')
 	association = models.ForeignKey(Association, on_delete=models.CASCADE, related_name='associationmembers')
@@ -49,7 +49,7 @@ class AssociationMember(models.Model):
 		
 class Sale(models.Model):
 	"""
-	Defines the Sale object
+	Defines a Sale
 	"""
 	# Description
 	name 		= models.CharField(max_length=200)
@@ -84,6 +84,9 @@ class Sale(models.Model):
 # ============================================
 
 class ItemGroup(models.Model):
+	"""
+	Gathers items under a common group
+	"""
 	name 	 = models.CharField(max_length = 200)
 	quantity = models.IntegerField(blank=True, null=True)
 	max_per_user = models.IntegerField(blank=True, null=True)		# TODO V2 : moteur de contraintes
@@ -100,7 +103,7 @@ class ItemGroup(models.Model):
 
 class Item(models.Model):
 	"""
-	Defines the Item object
+	Defines a sellable Item
 	"""
 	# Description
 	name 		= models.CharField(max_length=200)
@@ -139,6 +142,9 @@ class Item(models.Model):
 # ============================================
 
 class OrderStatus(Enum):
+	"""
+	Possible status of an Order
+	"""
 	ONGOING = 0
 	AWAITING_VALIDATION = 1
 	VALIDATED = 2
@@ -183,7 +189,7 @@ class Order(models.Model):
 
 class OrderLine(models.Model):
 	"""
-	Defines the link between an Order and an Item
+	Links an Order to an Item with a quantity
 	"""
 	item 	 = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='orderlines', editable=False)
 	order 	 = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='orderlines', editable=False)
@@ -206,7 +212,7 @@ class OrderLine(models.Model):
 
 class Field(models.Model):
 	"""
-	Defines the Field object
+	Defines an Item's specification
 	"""
 	name 	= models.CharField(max_length=200)
 	type 	= models.CharField(max_length=200)
@@ -218,7 +224,7 @@ class Field(models.Model):
 
 class ItemField(models.Model):
 	"""
-	Defines the ItemField object
+	Links an Item to a Field with additionnal options
 	"""
 	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='itemfields', editable=False)
 	item  = models.ForeignKey(Item,  on_delete=models.CASCADE, related_name='itemfields', editable=False)
@@ -233,6 +239,10 @@ class ItemField(models.Model):
 
 
 class OrderLineItem(models.Model):
+	"""
+	Represents a single OrderLine.item
+	May have specifications with OrderLine Fields
+	"""
 	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 	orderline = models.ForeignKey(OrderLine, on_delete=models.CASCADE, related_name="orderlineitems", editable=False)
 
@@ -241,7 +251,7 @@ class OrderLineItem(models.Model):
 
 class OrderLineField(models.Model):
 	"""
-	Defines the OrderLineField object
+	Specifies the Field value taken by the OrderLine Item
 	"""
 	orderlineitem = models.ForeignKey(OrderLineItem, on_delete=models.CASCADE, related_name='orderlinefields', editable=False)
 	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='orderlinefields', editable=False)
