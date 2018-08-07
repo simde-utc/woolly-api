@@ -10,8 +10,7 @@ class CustomPermission(permissions.BasePermission):
 	object_permission_functions = []
 	check_with_or = True
 
-	def _check_functions(function_list):
-		permission_gen = (f(request, view) for f in function_list)
+	def _check_functions(self, permission_gen):
 		return any(permission_gen) if self.check_with_or else all(permission_gen)
 
 	def _is_not_authenticated(self, request, view):
@@ -28,7 +27,8 @@ class CustomPermission(permissions.BasePermission):
 
 		# Check all permission_functions
 		if self.permission_functions:
-			return self._check_functions(self.permission_functions)
+			permission_gen = (func(request, view) for func in self.permission_functions)
+			return self._check_functions(permission_gen)
 
 		return True
 
@@ -37,9 +37,14 @@ class CustomPermission(permissions.BasePermission):
 		if self.allow_admin and request.user.is_admin:
 			return True
 
+		# Read Only option		
+		if self.allow_read_only and request.method in permissions.SAFE_METHODS:
+			return True
+
 		# Check all permission_functions
 		if self.object_permission_functions:
-			return self._check_functions(self.object_permission_functions)
+			permission_gen = (func(request, view, obj) for func in self.object_permission_functions)
+			return self._check_functions(permission_gen)
 
 		return True
 

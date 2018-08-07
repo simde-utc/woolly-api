@@ -24,10 +24,9 @@ class IsOwnerOrReadOnly(IsOwner):
 	allow_read_only = True
 
 
-# TODO
 def check_manager(request, view, obj):
-	return request.user.is_admin
-
+	# TODO
+	return request.user.is_authenticated and request.user.is_admin
 
 class IsManager(CustomPermission):
 	require_authentication = True
@@ -35,4 +34,5 @@ class IsManager(CustomPermission):
 
 class IsManagerOrReadOnly(CustomPermission):
 	allow_read_only = True
+	object_permission_functions = (check_manager,)
 

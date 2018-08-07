@@ -11,7 +11,6 @@ from core.permissions import *
 from .serializers import *
 from .permissions import *
 from core.utils import render_to_pdf, data_to_qrcode
-# TODO export core
 from core.helpers import errorResponse
 from authentication.auth import JWTAuthentication
 
@@ -52,7 +51,7 @@ class AssociationMemberViewSet(views.ModelViewSet):
 	"""
 	queryset = AssociationMember.objects.all()
 	serializer_class = AssociationMemberSerializer
-	permission_classes = (IsAdmin,)	# TODO V2 : bloquer pour l'instant
+	permission_classes = (IsManager,)
 
 	"""
 	def perform_create(self, serializer):
@@ -96,7 +95,6 @@ class SaleViewSet(views.ModelViewSet):
 	def perform_create(self, serializer):
 		serializer.save(
 			association_id=self.kwargs['association_pk'],
-			# paymentmethod_id=self.kwargs['paymentmethod_pk']
 		)
 
 	def get_queryset(self):
@@ -104,7 +102,7 @@ class SaleViewSet(views.ModelViewSet):
 					# .filter(items__itemspecifications__user_type__name=self.request.user.usertype.name)
 					# TODO filtrer par date ?
 
-		queryset = queryset.filter(is_active=True)
+		queryset = queryset.filter(is_active=True, public=True)
 		# TODO V2 : filtering
 		# filters = ('active', )
 		# filterQuery = self.request.query_params.get('filterQuery', None)
@@ -154,16 +152,18 @@ class ItemViewSet(views.ModelViewSet):
 	permission_classes = (IsManagerOrReadOnly,)
 
 	def perform_create(self, serializer):
-		if 'orderline_pk' in self.kwargs:
+		# TODO ????
+		if 'sale_pk' in self.kwargs:
 			serializer.save(
 				sale_id=self.kwargs['sale_pk']
-			),
+			)
+		elif 'orderline_pk' in self.kwargs:
 			serializer.save(
 				sale_id=self.kwargs['orderline_pk']
 			)
 
 	def get_queryset(self):
-		queryset = self.queryset.filter()
+		queryset = self.queryset.filter(is_active=True)
 
 		if 'sale_pk' in self.kwargs:
 			sale_pk = self.kwargs['sale_pk']
@@ -195,8 +195,16 @@ class OrderViewSet(views.ModelViewSet):
 	permission_classes = (IsOwner,)
 
 	def get_queryset(self):
-		# queryset = self.queryset.filter(owner=self.request.user)
+		user = self.request.user
 		queryset = self.queryset
+
+		# Anonymous users see nothing
+		if not user.is_authenticated:
+			return None
+
+		# Admins see everything otherwise filter to see only those owned by the user
+		if not user.is_admin:
+			queryset = queryset.filter(owner=user)
 
 		if 'user_pk' in self.kwargs:
 			user_pk = self.kwargs['user_pk']
@@ -257,6 +265,25 @@ class OrderLineViewSet(views.ModelViewSet):
 	serializer_class = OrderLineSerializer
 	permission_classes = (IsOwner,)
 
+	def get_queryset(self):
+		user = self.request.user
+		queryset = self.queryset
+
+		# Anonymous users see nothing
+		if not user.is_authenticated:
+			return None
+
+		# Admins see everything otherwise filter to see only those owned by the user
+		if not user.is_admin:
+			queryset = queryset.filter(order__owner=user)
+
+		if 'order_pk' in self.kwargs:
+			order_pk = self.kwargs['order_pk']
+			queryset = OrderLine.objects.all().filter(order__pk=order_pk)
+
+		return queryset
+
+
 	def create(self, request):
 		try:
 			order = Order.objects.get(pk=request.data['order']['id'])
@@ -307,14 +334,6 @@ class OrderLineViewSet(views.ModelViewSet):
 		return requests.get('http://localhost:8000/payutc/createTransaction?mail='+login+'&funId='+funId+"&orderlineId="+str(orderlineId),data=data)
 		# def perform_create(self, serializer):
 		# 	serializer.save()
-
-	def get_queryset(self):
-		queryset = self.queryset.filter(order__owner=self.request.user)
-		if 'order_pk' in self.kwargs:
-			order_pk = self.kwargs['order_pk']
-			queryset = OrderLine.objects.all().filter(order__pk=order_pk)
-
-		return queryset
 	"""
 
 class OrderLineRelationshipView(views.RelationshipView):
