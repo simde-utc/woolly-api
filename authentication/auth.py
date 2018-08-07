@@ -1,8 +1,12 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.backends import ModelBackend
+from django.utils.translation import gettext as _
+from django.forms import ValidationError
 from rest_framework import authentication
 from rest_framework import exceptions
+from .services import JWTClient
+from .helpers import get_jwt_from_request
 
-from .services import JWTClient, get_jwt_from_request
 
 class JWTAuthentication(authentication.BaseAuthentication):
 	"""
@@ -34,3 +38,33 @@ class JWTAuthentication(authentication.BaseAuthentication):
 		except UserModel.DoesNotExist:
 			raise exceptions.AuthenticationFailed("User does not exist.")
 		return (user, None)
+
+
+class AdminSiteBackend(ModelBackend):
+	def authenticate(self, request, username = None, password = None):
+		UserModel = get_user_model()
+		# Try to fetch user
+		try:
+			user = UserModel.objects.get(**{ UserModel.USERNAME_FIELD: username })
+		except UserModel.DoesNotExist:
+			return None
+
+		# Check password
+		if not user.check_password(password):
+			return None
+
+		# Check if admin
+		if not user.is_admin:
+			raise ValidationError(
+				_("This account is not allowed."),
+				code='not_allowed',
+			)
+
+		return user
+
+	def get_user(self, user_id):
+		UserModel = get_user_model()
+		try:
+			return UserModel.objects.get(id=user_id)
+		except UserModel.DoesNotExist:
+			return None

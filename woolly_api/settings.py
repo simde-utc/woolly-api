@@ -55,9 +55,11 @@ DEBUG = confidentials.DEBUG
 ALLOWED_HOSTS = confidentials.ALLOWED_HOSTS
 
 # CSRF_COOKIE_SECURE = True
-# SESSION_COOKIE_SECURE = True
 # SECURE_BROWSER_XSS_FILTER = True
 # SECURE_SSL_REDIRECT = True
+
+SESSION_COOKIE_SECURE = confidentials.HTTPS_ENABLED
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
 # CORS headers config
 CORS_ORIGIN_ALLOW_ALL = True
@@ -74,23 +76,8 @@ CORS_ALLOW_METHODS = (
 CORS_ALLOW_CREDENTIALS = True
 CSRF_COOKIE_HTTPONLY = True  # Useful ??
 CSRF_USE_SESSIONS = False  # Useful ??
-CSRF_TRUSTED_ORIGINS = (
-	"localhost"
-)
+CSRF_TRUSTED_ORIGINS = confidentials.ALLOWED_HOSTS
 
-# --------------------------------------------------------------------------
-# 		CAS Configuration => A virer ?
-# --------------------------------------------------------------------------
-
-"""
-CAS_SERVER_URL = 'https://cas.utc.fr/cas/'
-CAS_LOGOUT_COMPLETELY = True
-CAS_PROVIDE_URL_TO_LOGOUT = True
-CAS_AUTO_CREATE_USER = True
-CAS_RESPONSE_CALLBACKS = (
-	'authentication.backends.loggedCas',
-)
-"""
 
 # --------------------------------------------------------------------------
 # 		Django REST Configuration
@@ -115,9 +102,10 @@ REST_FRAMEWORK = {
 	'DEFAULT_METADATA_CLASS': 'rest_framework_json_api.metadata.JSONAPIMetadata',
 	'EXCEPTION_HANDLER': 'rest_framework_json_api.exceptions.exception_handler',
 }
+
 VIEWSET = {
 	'list': {
-		# 'get': 'list',
+		# 'get': 'list',				# "Protection" avant les permissions
 		'post': 'create'
 	},
 	'list_safe': {
@@ -146,15 +134,17 @@ DATABASES = {
 }
 
 INSTALLED_APPS = [
+	# Django
+	'django.contrib.sessions',
+	'django.contrib.staticfiles',
 	'django.contrib.admin',
 	'django.contrib.auth',
 	'django.contrib.contenttypes',
-	'django.contrib.sessions',
 	'django.contrib.messages',
-	'django.contrib.staticfiles',
+	# Django REST
 	'rest_framework',
 	'corsheaders',
-	# 'cas',
+	# Woolly
 	'core',
 	'authentication',
 	'sales',
@@ -162,24 +152,24 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-	'django.middleware.security.SecurityMiddleware',
 	'django.contrib.sessions.middleware.SessionMiddleware',
+	'django.middleware.security.SecurityMiddleware',
 	'corsheaders.middleware.CorsMiddleware',
 	'django.middleware.common.CommonMiddleware',
+	'django.middleware.clickjacking.XFrameOptionsMiddleware',
+	'django.middleware.csrf.CsrfViewMiddleware',
 	'django.contrib.auth.middleware.AuthenticationMiddleware',
 	'django.contrib.messages.middleware.MessageMiddleware',
-	'django.middleware.clickjacking.XFrameOptionsMiddleware',
-	# 'cas.middleware.CASMiddleware',
-	'django.middleware.csrf.CsrfViewMiddleware',
 ]
 
-# Useful ?
-AUTHENTICATION_BACKENDS = (
-	# 'django.contrib.auth.backends.ModelBackend',
-	# 'authentication.backends.UpdatedCASBackend',
-)
-
+# Authentication
 AUTH_USER_MODEL = 'authentication.User'
+
+# To access web admin panel
+AUTHENTICATION_BACKENDS = (
+	'django.contrib.auth.backends.ModelBackend',
+	# 'authentication.auth.AdminSiteBackend',
+)
 
 # Password validation : https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
 AUTH_PASSWORD_VALIDATORS = [
@@ -189,12 +179,10 @@ AUTH_PASSWORD_VALIDATORS = [
 	{'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
 ]
 
+# Paths
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-
-
 def ABS_DIR(rel):
 	return os.path.join(BASE_DIR, rel.replace('/', os.path.sep))
-
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR + '/static/'
@@ -203,6 +191,7 @@ STATICFILES_DIRS = (
 )
 ROOT_URLCONF = 'woolly_api.urls'
 WSGI_APPLICATION = 'woolly_api.wsgi.application'
+
 
 TEMPLATES = [
 	{
@@ -213,10 +202,10 @@ TEMPLATES = [
 		'APP_DIRS': True,
 		'OPTIONS': {
 			'context_processors': [
-				'django.template.context_processors.debug',
-				'django.template.context_processors.request',
 				'django.contrib.auth.context_processors.auth',
 				'django.contrib.messages.context_processors.messages',
+				'django.template.context_processors.debug',
+				'django.template.context_processors.request',
 			],
 		},
 	},

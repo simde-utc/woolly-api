@@ -2,7 +2,6 @@ qrcode==5.1
 xhtml2pdf==0.2.2
 django==2.0.3
 djangorestframework==3.8.2
-django-cas-client==1.4.0
 django-cors-headers==2.2.0
 djangorestframework-jsonapi==2.4.0
 pymysql==0.8.0

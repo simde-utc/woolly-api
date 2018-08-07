@@ -1,5 +1,4 @@
-from django.contrib.auth.models import AbstractBaseUser
-from django.contrib.auth.models import BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
 import datetime
 
@@ -17,36 +16,43 @@ class UserType(models.Model):
 
 	@staticmethod
 	def init_values():
-		"""
-		initialize the different default UserTypes in DB
-		"""
+		"""Initialize the different default UserTypes in DB"""
 		types = (UserType.COTISANT, UserType.NON_COTISANT, UserType.TREMPLIN, UserType.EXTERIEUR)
 		for value in types:
 			UserType(name=value).save()
+
+	def __str__(self):
+		return self.name
+
+	class Meta:
+		verbose_name = "User Type"
 
 	class JSONAPIMeta:
 		resource_name = "usertypes"
 
 
-"""
-TODO virer
 class UserManager(BaseUserManager):
-	# required by Django
-	def create_user(self, login='', password=None, **other_fields):
-		if not login:
-			raise ValueError('The given login must be set')
-		user = self.model(login=login, **other_fields)
+	def create_user(self, email, password=None, **other_fields):
+		if not email:
+			raise ValueError('Users must have an email address')
+
+		# Create and Save User
+		user = self.model(
+			email = self.normalize_email(email),
+			**other_fields
+		)
 		user.set_password(password)
 		user.save(using=self._db)
 		return user
 
-	# required by Django
-	def create_superuser(self, login, password, **other_fields):
-		user = self.create_user(login, password=password, **other_fields)
+	def create_superuser(self, email, **other_fields):
+		# TODO Create a hash password and set it by email
+		password = "hash"
+
+		user = self.create_user(email, password=password, **other_fields)
 		user.is_admin = True
 		user.save(using=self._db)
 		return user
-"""
 
 
 class User(AbstractBaseUser):
@@ -61,29 +67,30 @@ class User(AbstractBaseUser):
 	usertype = models.ForeignKey(UserType, on_delete=None, null=False, default=4, related_name='users')
 	# associations = models.ManyToManyField('sales.Association', through='sales.AssociationMember')
 
-	# required by Django.is_admin => A virer pour remplacer par les droits
+	# Rights
 	is_active = models.BooleanField(default=True)
 	is_admin = models.BooleanField(default=False)
 
-	# objects = UserManager()
+	@property
+	def is_staff(self):
+		return self.is_admin
 
-	# Cas
-	USERNAME_FIELD = 'id'
+	# Django utils
+	objects = UserManager()
+
+	USERNAME_FIELD = 'email'
 	EMAIL_FIELD = 'email'
-	REQUIRED_FIELDS = []
 
+	# Display
 	def __str__(self):
-		return '%s %s %s' % (self.email, self.first_name, self.usertype.name)
+		return self.email
+		# return '%s %s %s' % (self.email, self.first_name, self.usertype.name)
 
-	"""
-	# required by Django 1.11 for the User class
 	def get_full_name(self):
-		ret = self.first_name + ' ' + self.last_name
-		return ret if ret else self.login
+		return self.first_name + ' ' + self.last_name
 
 	def get_short_name(self):
-		ret = self.first_name
-		return ret if ret else self.login
+		return self.first_name
 
 	# required by Django.admin
 	def has_perm(self, perm, obj=None):
@@ -92,10 +99,7 @@ class User(AbstractBaseUser):
 	def has_module_perms(self, app_label):
 		return True		# ???
 
-	@property
-	def is_staff(self):
-		return self.is_admin
-
+	"""
 	def save(self, *args, **kwargs):
 		if not self.login:
 			self.login = None
@@ -103,10 +107,6 @@ class User(AbstractBaseUser):
 			# self.set_password(self.password)
 		super(User, self).save(*args, **kwargs)
 	"""
-
-	class Meta:
-		# default_manager_name = UserManager
-		pass
 
 	class JSONAPIMeta:
 		resource_name = "users"
