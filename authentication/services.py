@@ -90,9 +90,9 @@ class JWTClient(JWT):
 		"""
 		# WARNING : Backdoor in Debug mode for easier testing
 		if DEBUG == True and code[:8] == 'DEBUG - ':
-			print("\n####################\n\tWARNING\n####################")
-			print(" The JWT backdoor is used ")
-			print("####################\n")
+			print("\n##########################################")
+			print("   WARNING --- The JWT backdoor is used   ")
+			print("##########################################\n")
 
 			# Create fake session
 			user_id = int(code[8:])
