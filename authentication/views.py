@@ -29,8 +29,8 @@ class UserViewSet(views.ModelViewSet):
 		queryset = self.queryset
 
 		# Anonymous users see nothing
-		if not user.is_authenticated:
-			return None
+		# if not user.is_authenticated:
+		# 	return None
 
 		# if 'user_pk' in self.kwargs:
 		# 	association_pk = self.kwargs['user_pk']
@@ -41,19 +41,15 @@ class UserViewSet(views.ModelViewSet):
 class UserTypeViewSet(views.ModelViewSet):
 	queryset = UserType.objects.all()
 	serializer_class = UserTypeSerializer
-	permission_classes = (AllowAny,)
+	permission_classes = (AllowAny,)		# Visible by everyone by default
 
 	def get_queryset(self):
-		# Visible by everyone by default
 		queryset = self.queryset
 
-		if 'itemspec_pk' in self.kwargs:
-			itemspec_pk = self.kwargs['itemspec_pk']
-			queryset = UserType.objects.all().filter(itemspecifications__pk=itemspec_pk)
-
+		# user-usertype-list route
 		if 'user_pk' in self.kwargs:
 			user_pk = self.kwargs['user_pk']
-			queryset = UserType.objects.all().filter(users__pk=user_pk)
+			queryset = queryset.filter(users__pk=user_pk) # TODO Not working
 
 		return queryset
 

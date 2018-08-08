@@ -3,7 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf.urls import url, include
 
 from woolly_api.settings import VIEWSET
-from .views import UserViewSet, UserRelationshipView, UserTypeViewSet, AuthView, JWTView
+from .views import *
 
 
 # Configure Viewsets
@@ -18,7 +18,7 @@ user_type_detail = UserTypeViewSet.as_view(VIEWSET['detail'])
 urlpatterns = {
 
 	# ============================================
-	# 	Authentification des utilisateurs
+	# 	Authentification
 	# ============================================
 
 	# Get login URL to log through Portail des Assos
@@ -37,10 +37,8 @@ urlpatterns = {
 	# Validate JWT : TODO
 	url(r'^auth/validate$', JWTView.validate_jwt, name = 'auth.validate'),
 
-
 	# Basic login/logout for Browsable API
 	url(r'^auth/basic/', include('rest_framework.urls', namespace = 'rest_framework') ),
-
 
 
 	# ============================================
@@ -53,8 +51,7 @@ urlpatterns = {
 	url(r'^users/(?P<pk>[0-9]+)$',
 		user_detail, name = 'user-detail'),
 	url(r'^users/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
-		view = UserRelationshipView.as_view(), name = 'user-relationships'
-	),
+		view = UserRelationshipView.as_view(), name = 'user-relationships'),
 
 	# UsersTypes
 	url(r'^usertypes$',
@@ -62,9 +59,9 @@ urlpatterns = {
 	url(r'^usertypes/(?P<pk>[0-9]+)$',
 		user_type_detail, name = 'usertype-detail'),
 	url(r'^users/(?P<user_pk>[0-9]+)/usertypes$',
-		user_type_list, name = 'usertype-list'),
+		user_type_list, name = 'user-usertype-list'),
 	url(r'^users/(?P<user_pk>[0-9]+)/usertypes/(?P<pk>[0-9]+)$',
-		user_type_detail, name = 'usertype-detail'),
+		user_type_detail, name = 'user-usertype-detail'),
 
 }
 
