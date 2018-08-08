@@ -117,7 +117,7 @@ class AssociationSerializer(serializers.ModelSerializer):
 		many = True,
 		related_link_view_name = 'sale-list',
 		related_link_url_kwarg = 'association_pk',
-		self_link_view_name = 'association-relationships'
+		self_link_view_name = 'associations-relationships'
 	)
 
 	included_serializers = {

@@ -16,7 +16,7 @@ def api_root(request, format=None):
 		'usertypes': 			reverse('usertype-list', 			request=request, format=format),
 
 		# Associations
-		'associations': 		reverse('association-list', 		request=request, format=format),
+		'associations': 		reverse('associations-list', 		request=request, format=format),
 		'associationmembers': 	reverse('associationmember-list', 	request=request, format=format),
 
 		# Sales & Item

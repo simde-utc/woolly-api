@@ -27,18 +27,15 @@ class AssociationViewSet(views.ModelViewSet):
 	serializer_class = AssociationSerializer
 	permission_classes = (IsManagerOrReadOnly,)
 
-	"""
 	def get_queryset(self):
-		# queryset = self.queryset.filter(associationmembers__user=self.request.user_pk)
-		if 'associationmember_pk' in self.kwargs:
-			associationmember_pk = self.kwargs['associationmember_pk']
-			queryset = Association.objects.all().filter(associationmembers__pk=associationmember_pk)
+		queryset = self.queryset
 
+		# user-association-list
 		if 'user_pk' in self.kwargs:
 			user_pk = self.kwargs['user_pk']
-			queryset = Association.objects.all().filter(associationmembers__user=user_pk)
+			queryset = queryset.filter(members__pk=user_pk)
+
 		return queryset
-	"""
 
 class AssociationRelationshipView(views.RelationshipView):
 	"""
