@@ -2,7 +2,7 @@ from django.conf.urls import url, include
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.templatetags.static import static
 
-from core.helpers import gen_base_url_set
+from core.helpers import gen_url_set
 from woolly_api.settings import VIEWSET
 from .views import *
 
@@ -44,14 +44,19 @@ orderlinefield_detail = OrderLineFieldViewSet.as_view(VIEWSET['detail'])
 
 
 # The urlpatterns defines the endpoints of the API
-urlpatterns = [
+urlpatterns = \
+	gen_url_set(['association'], AssociationViewSet, AssociationRelationshipView) \
+	+ gen_url_set(['user', 'association'], AssociationViewSet)
+
+print(urlpatterns)
+
+urlpatterns += [
 
 	# ============================================
 	# 	Association
 	# ============================================
 
-	*gen_base_url_set('associations', AssociationViewSet, AssociationRelationshipView),
-	
+
 	# url(r'^associations$',
 	# 	view = association_list, name = 'association-list'),
 	# url(r'^associations/(?P<pk>[0-9]+)$',
