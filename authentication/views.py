@@ -3,56 +3,59 @@ from django.shortcuts import redirect
 from rest_framework_json_api import views
 from authlib.specs.rfc7519 import JWTError
 
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from .permissions import *
 
 from .serializers import UserSerializer, UserTypeSerializer
 from .models import UserType, User
 from .services import OAuthAPI, JWTClient, get_jwt_from_request
-# from sales.models import AssociationMember
 
 
 class UserViewSet(views.ModelViewSet):
-	"""
-	API endpoint that allows Users to be viewed or edited.
-	support Post request to create a new User
-	"""
 	queryset = User.objects.all()
 	serializer_class = UserSerializer
-	permission_classes = (IsUser,)
+	permission_classes = (IsUserOrAdmin,)
 
-	def create(self, request):
+	# Block create and redirect to login
+	def create(self, request, *args, **kwargs):
 		return redirect('auth.login')
 
-	# def list(self, request):
-		# pass
-	"""
+	# TODO : block self is_admin -> True
+	def update(self, request, *args, **kwargs):
+		pass
+
 	def get_queryset(self):
-		queryset = self.queryset.filter(pk=self.request.user.pk)
-		if 'user_pk' in self.kwargs:
-			association_pk = self.kwargs['user_pk']
-			queryset = queryset.filter(user__pk=association_pk)
+		user = self.request.user
+		queryset = self.queryset
+
+		# Anonymous users see nothing
+		if not user.is_authenticated:
+			return None
+
+		# if 'user_pk' in self.kwargs:
+		# 	association_pk = self.kwargs['user_pk']
+		# 	queryset = queryset.filter(user__pk=association_pk)
+
 		return queryset
-	"""
 
 class UserTypeViewSet(views.ModelViewSet):
 	queryset = UserType.objects.all()
 	serializer_class = UserTypeSerializer
-	permission_classes = (IsAuthenticated,)
+	permission_classes = (AllowAny,)
 
-	# TODO : Normal que cela ne retourne que l'usertype loggué ?
-	# def get_queryset(self):
-	# 	queryset = self.queryset.filter(users=self.request.user)
+	def get_queryset(self):
+		# Visible by everyone by default
+		queryset = self.queryset
 
-	# 	if 'itemspec_pk' in self.kwargs:
-	# 		itemspec_pk = self.kwargs['itemspec_pk']
-	# 		queryset = UserType.objects.all().filter(itemspecifications__pk=itemspec_pk)
+		if 'itemspec_pk' in self.kwargs:
+			itemspec_pk = self.kwargs['itemspec_pk']
+			queryset = UserType.objects.all().filter(itemspecifications__pk=itemspec_pk)
 
-	# 	if 'user_pk' in self.kwargs:
-	# 		user_pk = self.kwargs['user_pk']
-	# 		queryset = UserType.objects.all().filter(users__pk=user_pk)
+		if 'user_pk' in self.kwargs:
+			user_pk = self.kwargs['user_pk']
+			queryset = UserType.objects.all().filter(users__pk=user_pk)
 
-	# 	return queryset
+		return queryset
 
 
 class UserRelationshipView(views.RelationshipView):

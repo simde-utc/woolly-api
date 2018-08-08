@@ -108,10 +108,6 @@ REST_FRAMEWORK = {
 
 VIEWSET = {
 	'list': {
-		# 'get': 'list',				# "Protection" avant les permissions
-		'post': 'create'
-	},
-	'list_safe': {
 		'get': 'list',
 		'post': 'create'
 	},
@@ -119,7 +115,7 @@ VIEWSET = {
 		'get': 'retrieve',
 		'put': 'update',
 		'patch': 'partial_update',
-		# 'delete': 'destroy'
+		'delete': 'destroy'
 	}
 }
 

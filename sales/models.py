@@ -137,6 +137,7 @@ class Item(models.Model):
 	class JSONAPIMeta:
 		resource_name = "items"
 
+
 # ============================================
 # 	Order
 # ============================================
@@ -208,7 +209,6 @@ class OrderLine(models.Model):
 # ============================================
 # 	Field
 # ============================================
-
 
 class Field(models.Model):
 	"""
