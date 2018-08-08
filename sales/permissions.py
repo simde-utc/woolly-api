@@ -9,7 +9,7 @@ def object_check_manager(request, view, obj):
 	# TODO
 	return user.is_authenticated and user.is_admin
 
-# Used for Association, Sale
+# Used for Association, Sale, ItemGroup, Item, ItemField
 class IsManagerOrReadOnly(CustomPermission):
 	allow_read_only = True
 	object_permission_functions = (object_check_manager,)

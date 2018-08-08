@@ -1,18 +1,19 @@
-from io import BytesIO
-
-import base64
 from django.views import View
 from rest_framework_json_api import views
 from rest_framework.response import Response
 from rest_framework import status
 from django.http import HttpResponse
 
+from core.helpers import errorResponse
 from core.permissions import *
 from .serializers import *
 from .permissions import *
-from core.utils import render_to_pdf, data_to_qrcode
-from core.helpers import errorResponse
+
 from authentication.auth import JWTAuthentication
+from core.utils import render_to_pdf, data_to_qrcode
+from io import BytesIO
+import base64
+
 
 # ============================================
 # 	Association
@@ -368,7 +369,7 @@ class ItemFieldViewSet(views.ModelViewSet):
 	"""
 	queryset = ItemField.objects.all()
 	serializer_class = ItemFieldSerializer
-	permission_classes = (IsAdminOrReadOnly,)
+	permission_classes = (IsManagerOrReadOnly,)
 
 class ItemFieldRelationshipView(views.RelationshipView):
 	"""
