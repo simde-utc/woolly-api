@@ -8,7 +8,19 @@ from woolly_api import settings
 from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import get_template
+from rest_framework.renderers import BrowsableAPIRenderer
 
+class BrowsableAPIRendererWithoutForms(BrowsableAPIRenderer):
+    """Renders the browsable api, but excludes the forms."""
+    def get_context(self, *args, **kwargs):
+        ctx = super().get_context(*args, **kwargs)
+        ctx['display_edit_forms'] = False
+        return ctx
+
+
+# ===============================================================================
+# 		HELPERS
+# ===============================================================================
 
 def render_to_pdf(template_src, context_dict={}):
 	template = get_template(template_src)
@@ -19,10 +31,6 @@ def render_to_pdf(template_src, context_dict={}):
 		return HttpResponse(result.getvalue(), content_type='application/pdf')
 	return None
 
-
-# ===============================================================================
-# HELPERS
-# ===============================================================================
 def fetch_resources(uri, rel):
 	"""
 	Callback to allow xhtml2pdf/reportlab to retrieve Images,Stylesheets, etc.
@@ -43,7 +51,6 @@ def fetch_resources(uri, rel):
 	elif uri.startswith("http://") or uri.startswith("https://"):
 		path = uri
 	return path
-
 
 def data_to_qrcode(data):
 	""" Return a qrcode image from data """
