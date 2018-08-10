@@ -1,307 +1,59 @@
+from rest_framework.urlpatterns import format_suffix_patterns
 from django.conf.urls import url, include
-from django.contrib.staticfiles.urls import staticfiles_urlpatterns
-from django.templatetags.static import static
 
-from core.helpers import gen_url_set
+from core.helpers import gen_url_set, merge_sets
 from woolly_api.settings import VIEWSET
 from .views import *
 
-# Configure Viewsets
-association_list   = AssociationViewSet.as_view(VIEWSET['list'])
-association_detail = AssociationViewSet.as_view(VIEWSET['detail'])
 
-associationmember_list   = AssociationMemberViewSet.as_view(VIEWSET['list'])
-associationmember_detail = AssociationMemberViewSet.as_view(VIEWSET['detail'])
+# JSON API Resource routes
+urlpatterns = merge_sets(
+	# User
+	gen_url_set(['user', 'association'], AssociationViewSet),
+	gen_url_set(['user', 'order'], OrderViewSet),
+	# Association
+	gen_url_set('association', AssociationViewSet, AssociationRelationshipView),
+	gen_url_set(['association', 'sale'], SaleViewSet),
+	# Sale
+	gen_url_set('sale', SaleViewSet, SaleRelationshipView),
+	gen_url_set(['sale', 'item'], ItemViewSet),
+	gen_url_set(['sale', 'itemgroup'], ItemGroupViewSet),
+	gen_url_set(['sale', 'order'], OrderViewSet),
+	# ItemGroup
+	gen_url_set('itemgroup', ItemGroupViewSet, ItemGroupRelationshipView),
+	gen_url_set(['itemgroup', 'item'], ItemViewSet),
+	# Item
+	gen_url_set('item', ItemViewSet, ItemRelationshipView),
+	gen_url_set(['item', 'field'], FieldViewSet),
+	# Order
+	gen_url_set('order', OrderViewSet, OrderRelationshipView),
+	gen_url_set(['order', 'orderline'], OrderLineViewSet),
+	# OrderLine
+	gen_url_set('orderline', OrderLineViewSet, OrderLineRelationshipView),
+	gen_url_set(['orderline', 'item'], ItemViewSet),
+	gen_url_set(['orderline', 'orderlineitem'], OrderLineItemViewSet),
+	# OrderLineItem
+	gen_url_set('orderlineitem', OrderLineItemViewSet, OrderLineItemRelationshipView),
+	# Field
+	gen_url_set('field', FieldViewSet, FieldRelationshipView),
+	# OrderLineField ?????????????????????
+	gen_url_set('orderlinefield', OrderLineFieldViewSet, OrderLineFieldRelationshipView),
+	gen_url_set(['orderlineitem', 'orderlinefield'], OrderLineFieldViewSet),
+	# AssociationMember ????????????????????
+	gen_url_set('associationmember', AssociationMemberViewSet, AssociationMemberRelationshipView),
+	gen_url_set(['associationmember', 'association'], AssociationViewSet),
+	gen_url_set(['association', 'associationmember'], AssociationMemberViewSet),
+	# ItemField ??????????????????????
+	gen_url_set('itemfield', ItemFieldViewSet, ItemFieldRelationshipView),
+	gen_url_set(['item', 'itemfield'], ItemFieldViewSet, ItemFieldRelationshipView),
+)
 
-sale_list   = SaleViewSet.as_view(VIEWSET['list'])
-sale_detail = SaleViewSet.as_view(VIEWSET['detail'])
 
-itemgroup_list   = ItemGroupViewSet.as_view(VIEWSET['list'])
-itemgroup_detail = ItemGroupViewSet.as_view(VIEWSET['detail'])
-
-item_list   = ItemViewSet.as_view(VIEWSET['list'])
-item_detail = ItemViewSet.as_view(VIEWSET['detail'])
-
-order_list   = OrderViewSet.as_view(VIEWSET['list'])
-order_detail = OrderViewSet.as_view(VIEWSET['list'])
-
-orderline_list   = OrderLineViewSet.as_view(VIEWSET['list'])
-orderline_detail = OrderLineViewSet.as_view(VIEWSET['detail'])
-
-field_list   = FieldViewSet.as_view(VIEWSET['list'])
-field_detail = FieldViewSet.as_view(VIEWSET['detail'])
-
-itemfield_list   = ItemFieldViewSet.as_view(VIEWSET['list'])
-itemfield_detail = ItemFieldViewSet.as_view(VIEWSET['detail'])
-
-orderlineitem_list   = OrderLineItemViewSet.as_view(VIEWSET['list'])
-orderlineitem_detail = OrderLineItemViewSet.as_view(VIEWSET['detail'])
-
-orderlinefield_list   = OrderLineFieldViewSet.as_view(VIEWSET['list'])
-orderlinefield_detail = OrderLineFieldViewSet.as_view(VIEWSET['detail'])
-
-
-
-
-# The urlpatterns defines the endpoints of the API
-urlpatterns = \
-	gen_url_set(['association'], AssociationViewSet, AssociationRelationshipView) \
-	+ gen_url_set(['user', 'association'], AssociationViewSet)
-
-print(urlpatterns)
-
+# Addtionnal API endpoints for Authentication
 urlpatterns += [
-
-	# ============================================
-	# 	Association
-	# ============================================
-
-
-	# url(r'^associations$',
-	# 	view = association_list, name = 'association-list'),
-	# url(r'^associations/(?P<pk>[0-9]+)$',
-	# 	view = association_detail, name = 'association-detail'),
-	# url(r'^associations/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
-	# 	view = AssociationRelationshipView.as_view(), name = 'association-relationships'),
-
-	# Assos from Users
-	url(r'^users/(?P<user_pk>[0-9]+)/associations$',
-		view = association_list, name = 'user-association-list'),
-	url(r'^users/(?P<user_pk>[0-9]+)/associations/(?P<pk>[0-9]+)$',
-		view = association_detail, name = 'user-association-detail'),
-
-	# Assos from Members: TODO UTILE ?
-	url(r'^associationmembers/(?P<associationmember_pk>[0-9]+)/associations$',
-		view = association_list, name = 'association-list'),
-	url(r'^associationmembers/(?P<associationmember_pk>[0-9]+)/associations/(?P<pk>[0-9]+)$',
-		view = association_detail, name = 'association-detail'),
-
-
-	# ============================================
-	# 	Association Members
-	# ============================================
-	# TODO UTILE ?
-	url(r'^associationmembers$',
-		view = associationmember_list, name = 'associationmember-list'),
-	url(r'^associationmembers/(?P<pk>[0-9]+)$',
-		view = associationmember_detail, name = 'associationmember-detail'),
-	url(r'^associationmembers/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
-		view = AssociationMemberRelationshipView.as_view(), name = 'associationmember-relationships'),
-
-	# Members from Assos
-	url(r'^associations/(?P<association_pk>[0-9]+)/associationmembers$',
-		view = associationmember_list, name = 'associationmember-list'),
-	url(r'^associations/(?P<association_pk>[0-9]+)/associationmembers/(?P<pk>[0-9]+)$',
-		view = associationmember_detail, name = 'associationmember-list'),
-
-
-	# ============================================
-	# 	Sale
-	# ============================================
-
-	url(r'^sales$',
-		view = sale_list, name = 'sale-list'),
-	url(r'^sales/(?P<pk>[0-9]+)$',
-		view = sale_detail, name = 'sale-detail'),
-	url(r'^sales/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
-		view = SaleRelationshipView.as_view(), name = 'sale-relationships'),
-
-	# Sales From Assos
-	url(r'^associations/(?P<association_pk>[0-9]+)/sales$',
-		view = sale_list, name = 'sale-list'),
-	url(r'^associations/(?P<association_pk>[0-9]+)/sales/(?P<pk>[0-9]+)$',
-		view = sale_detail, name = 'sale-detail'),
-
-
-	# ============================================
-	# 	ItemGroup
-	# ============================================
-
-	url(r'^itemgroups$',
-		view = itemgroup_list, name = 'itemgroup-list'),
-	url(r'^itemgroups/(?P<pk>[0-9]+)$',
-		view = itemgroup_detail, name = 'itemgroup-detail'),
-	url(r'^itemgroups/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
-		view = ItemGroupRelationshipView.as_view(), name = 'item-relationships'),
-
-	# Itemgroups From Sale
-	url(r'^sales/(?P<sale_pk>[0-9]+)/itemgroups$',
-		view = itemgroup_list, name = 'itemgroup-list'),
-	url(r'^sales/(?P<sale_pk>[0-9]+)/itemgroups/(?P<pk>[0-9]+)$',
-		view = itemgroup_detail, name = 'itemgroup-detail'),
-
-
-	# ============================================
-	# 	Item
-	# ============================================
-
-	url(r'^items$',
-		view = item_list, name = 'item-list'),
-	url(r'^items/(?P<pk>[0-9]+)$',
-		view = item_detail, name = 'item-detail'),
-	url(r'^items/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
-		view = ItemRelationshipView.as_view(), name = 'item-relationships'),
-
-	# Items from ItemGroup
-	url(r'^itemgroups/(?P<item_pk>[0-9]+)/items$',
-		view = item_list, name = 'item-list'),
-	url(r'^itemgroups/(?P<item_pk>[0-9]+)/items/(?P<pk>[0-9]+)$',
-		view = item_detail, name = 'item-detail'),
-
-	# Items from Sales
-	url(r'^sales/(?P<sale_pk>[0-9]+)/items$',
-		view = item_list, name = 'item-list'),
-	url(r'^sales/(?P<sale_pk>[0-9]+)/items/(?P<pk>[0-9]+)$',
-		view = item_detail, name = 'item-detail'),
-
-	# Items from Assos > Sales
-	url(r'^associations/(?P<association_pk>[0-9]+)/sales/(?P<sale_pk>[0-9]+)/items$',
-		view = item_list, name = 'item-list'),
-	url(r'^associations/(?P<association_pk>[0-9]+)/sales/(?P<sale_pk>[0-9]+)/items/(?P<pk>[0-9]+)$',
-		view = item_detail, name = 'item-detail'),
-
-	# Items from Orderlines
-	url(r'^orderlines/(?P<orderline_pk>[0-9]+)/items$',
-		view = item_list, name = 'orderline-item-list'),
-	url(r'^orderlines/(?P<orderline_pk>[0-9]+)/items/(?P<pk>[0-9]+)$',
-		view = item_detail, name = 'orderline-item-detail'),
-
-
-	# ============================================
-	# 	Order
-	# ============================================
-
-	# Orders
-	url(r'^orders$',
-		view = order_list, name = 'order-list'),
-	url(r'^orders/(?P<pk>[0-9]+)$',
-		view = order_detail, name = 'order-detail'),
-	url(r'^orders/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
-		view = OrderRelationshipView.as_view(), name = 'order-relationships'),
-
-	# Orders from Sales
-	url(r'^sales/(?P<sale_pk>[0-9]+)/orders$',
-		view = order_list, name = 'order-list'),
-	url(r'^sales/(?P<sale_pk>[0-9]+)/orders/(?P<pk>[0-9]+)$',
-		view = order_detail, name = 'order-detail'),
-
-	# Orders from Users
-	url(r'^users/(?P<user_pk>[0-9]+)/orders$',
-		view = order_list, name = 'order-list'),
-	url(r'^users/(?P<user_pk>[0-9]+)/orders/(?P<pk>[0-9]+)$',
-		view = order_detail, name = 'order-detail'),
-
-
-	# ============================================
-	# 	OrderLine
-	# ============================================
-
-	# Orderlines
-	url(r'^orderlines$',
-		view = orderline_list, name = 'orderline-list'),
-	url(r'^orderlines/(?P<pk>[0-9]+)$',
-		view = orderline_detail, name = 'orderline-detail'),
-	url(r'^orderlines/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
-		view = OrderLineRelationshipView.as_view(), name = 'orderline-relationships'),
-
-	# Orderlines from Orders
-	url(r'^orders/(?P<order_pk>[0-9]+)/orderlines$',
-		view = orderline_list, name = 'orderline-list'),
-	url(r'^orders/(?P<order_pk>[0-9]+)/orderlines/(?P<pk>[0-9]+)$',
-		view = orderline_detail, name = 'orderline-detail'),
-
-
-	# Orderlineitems from
-	url(r'^orderlines/(?P<orderline_pk>[0-9]+)/orderlineitems$',
-		view = item_list, name = 'orderline-orderlineitem-list'),
-	url(r'^orderlines/(?P<orderline_pk>[0-9]+)/orderlineitems/(?P<pk>[0-9a-f-]+)$',
-		view = item_detail, name = 'orderline-orderlineitem-detail'),
-
-
-	# ============================================
-	# 	Field
-	# ============================================
-	url(r'^fields$',
-		view = field_list, name = 'field-list'),
-	url(r'^fields/(?P<pk>[0-9]+)$',
-		view = field_detail, name = 'field-detail'),
-	url(r'^fields/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
-		view = FieldRelationshipView.as_view(), name = 'field-relationships'),
-
-	# From Items
-	url(r'^items/(?P<item_pk>[0-9]+)/fields$',
-		view = field_list, name = 'field-list'),
-	url(r'^items/(?P<item_pk>[0-9]+)/fields/(?P<pk>[0-9]+)$',
-		view = orderline_detail, name = 'orderline-detail'),
-
-
-	# ============================================
-	# 	ItemField : INUTILE ????
-	# ============================================
-	url(r'^itemfields$',
-		view = itemfield_list, name = 'itemfield-list'),
-	url(r'^itemfields/(?P<pk>[0-9]+)$',
-		view = itemfield_detail, name = 'itemfield-detail'),
-	url(r'^itemfields/(?P<pk>[^/.]+)/relationships/(?P<related_itemfield>[^/.]+)$',
-		view = ItemFieldRelationshipView.as_view(), name = 'itemfield-relationships'),
-
-	# From Items
-	url(r'^items/(?P<item_pk>[0-9]+)/itemfields$',
-		view = itemfield_list, name = 'itemfield-list'),
-	url(r'^items/(?P<item_pk>[0-9]+)/itemfields/(?P<pk>[0-9]+)$',
-		view = orderline_detail, name = 'itemfields-detail'),
-
-	# ============================================
-	# 	OrderLineItem (UUID)
-	# ============================================
-
-	# Orderlineitems
-	url(r'^orderlineitems$',
-		view = orderlineitem_list, name = 'orderlineitem-list'),
-	url(r'^orderlineitems/(?P<pk>[0-9a-f-]+)$',
-		view = orderlineitem_detail, name = 'orderlineitem-detail'),
-	url(r'^orderlineitems/(?P<pk>[^/.]+)/relationships/(?P<related_orderlineitem>[^/.]+)$',
-		view = OrderLineItemRelationshipView.as_view(), name = 'orderlineitem-relationships'),
-
-	# Orderlineitems from Orderlines
-	url(r'^orderlines/(?P<orderline_pk>[0-9a-f-]+)/orderlineitems$',
-		view = orderline_list, name = 'orderlineitem-list'),
-	url(r'^orderlines/(?P<orderline_pk>[0-9a-f-]+)/orderlineitems/(?P<pk>[0-9]+)$',
-		view = orderline_detail, name = 'orderlineitem-detail'),
-
-	# Orderlineitems from OrderLineFields
-	url(r'^orderlines/(?P<orderline_pk>[0-9a-f-]+)/orderlineitems$',
-		view = orderline_list, name = 'orderlineitem-list'),
-	url(r'^orderlines/(?P<orderline_pk>[0-9a-f-]+)/orderlineitems/(?P<pk>[0-9]+)$',
-		view = orderline_detail, name = 'orderlineitem-detail'),
-
-
-	# ============================================
-	# 	OrderLineField : INUTILE ???
-	# ============================================
-	url(r'^orderlinefields$',
-		view = orderlinefield_list, name = 'orderlinefield-list'),
-	url(r'^orderlinefields/(?P<pk>[0-9]+)$',
-		view = orderlinefield_detail, name = 'orderlinefield-detail'),
-	url(r'^orderlinefields/(?P<pk>[^/.]+)/relationships/(?P<related_orderlinefield>[^/.]+)$',
-		view = OrderLineFieldRelationshipView.as_view(), name = 'orderlinefield-relationships'),
-
-	# From Orderlineitems
-	url(r'^orderlineitems/(?P<orderlineitem_pk>[0-9a-f-]+)/orderlinefields$',
-		view = orderlinefield_list, name = 'orderlinefield-list'),
-	url(r'^orderlineitems/(?P<orderlineitem_pk>[0-9a-f-]+)/orderlinefields/(?P<pk>[0-9]+)$',
-		view = orderlinefield_detail, name = 'orderlinefields-detail'),
-
-	# From Order > OrderLine > OrderLineItem
-	url(r'^order/(?P<order_pk>[0-9]+)/orderlines/(?P<orderline_pk>[0-9]+)/orderlineitems/(?P<orderlineitem_pk>[0-9a-f-]+)/orderlinefields$',
-		view = orderlinefield_list, name = 'orderlinefield-list'),
-	url(r'^order/(?P<order_pk>[0-9]+)/orderlines/(?P<orderline_pk>[0-9]+)/orderlineitems/(?P<orderlineitem_pk>[0-9a-f-]+)/orderlinefields/(?P<pk>[0-9]+)$',
-		view = orderlinefield_detail, name = 'orderlinefields-detail'),
-
-
-	# ============================================
-	# 	Generation du PDF
-	# ============================================
+	# Generation du PDF
 	url(r'^orders/(?P<order_pk>[0-9]+)/pdf/$', GeneratePdf.as_view()),
-
 ]
+
+
+urlpatterns = format_suffix_patterns(urlpatterns)

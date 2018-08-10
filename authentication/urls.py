@@ -2,17 +2,17 @@ from rest_framework.urlpatterns import format_suffix_patterns
 from django.views.decorators.csrf import csrf_exempt
 from django.conf.urls import url, include
 
-from core.helpers import gen_url_set
+from core.helpers import gen_url_set, merge_sets
 from .views import *
 
 
 # JSON API Resource routes
-urlpatterns = \
-	gen_url_set('user', UserViewSet, UserRelationshipView) \
-	+ gen_url_set('usertype', UserTypeViewSet, UserTypeRelationshipView) \
-	+ gen_url_set(['user', 'usertype'], UserTypeViewSet)
+urlpatterns = merge_sets(
+	gen_url_set('user', UserViewSet, UserRelationshipView),
+	gen_url_set('usertype', UserTypeViewSet, UserTypeRelationshipView),
+	gen_url_set(['user', 'usertype'], UserTypeViewSet),
+)
 
-print(urlpatterns)
 
 # Addtionnal API endpoints for Authentication
 urlpatterns += [
