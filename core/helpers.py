@@ -1,7 +1,7 @@
 from django.http import JsonResponse
 from rest_framework import status
 from woolly_api.settings import VIEWSET
-from django.conf.urls import url
+from django.conf.urls import re_path
 
 def errorResponse(message, errors = tuple(), httpStatus = status.HTTP_400_BAD_REQUEST):
 	resp = {
@@ -29,29 +29,34 @@ def gen_url_set(path, viewset, relationship_viewset=None):
 	@return     A list of url pattern
 	"""
 
-	# TODO if for nested vs relationship_viewset
+	# Pluralize the resource name for the url
+	pluralize = lambda name: name + 's' if type(name) is str else name[1]
 
 	# ===== Build base url
-	base_url = r'^'
-	base_name = ''
-	for step in path[:-1]:
-		# Pluralize the resource name for the url
-		plural = step + 's' if type(step) is str else step[1]
+	if type(path) is str:				# Simple version
+		plural = pluralize(path)
+		base_url = r'^' + plural
+		base_name = plural
+	else:								# Nested version
+		base_url = r'^'
+		base_name = ''
+		
+		for step in path[:-1]:
+			plural = pluralize(step)
 
-		# Build base url regex
-		base_url += plural + r'/(?P<' + step + r'_pk>[0-9]+)/'
+			# Build base url route
+			base_url += plural + r'/(?P<' + step + r'_pk>[0-9]+)/'
 
-		# Build base route name
-		base_name += plural + '-'
+			# Build base route name
+			base_name += plural + '-'
 
-	resource_name = path[-1]
-	plural = resource_name + 's' if type(resource_name) is str else resource_name[1]
-	base_url += plural
-	base_name += plural
+		plural = pluralize(path[-1])
+		base_url += plural
+		base_name += plural
 
 	# ===== Build url patterns
 	list = {
-		'regex': base_url + '$',
+		'route': base_url + '$',
 		'view': viewset.as_view(VIEWSET['list']),
 		'name': base_name + '-list',
 	}
@@ -59,7 +64,7 @@ def gen_url_set(path, viewset, relationship_viewset=None):
 	# Simpler to use [^/.]+
 	# detail_pk_regex = '[0-9a-f-]+' if pk_is_uuid else '[0-9]+'
 	detail = {
-		'regex': base_url + r'/(?P<pk>[^/.]+)$',
+		'route': base_url + r'/(?P<pk>[^/.]+)$',
 		'view': viewset.as_view(VIEWSET['detail']),
 		'name': base_name + '-detail',
 	}
@@ -67,12 +72,12 @@ def gen_url_set(path, viewset, relationship_viewset=None):
 
 	if relationship_viewset is not None:
 		relationships = {
-			'regex': base_url + r'/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
+			'route': base_url + r'/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
 			'view': relationship_viewset.as_view(),
 			'name': base_name + '-relationships',
 		}
 		set.append(relationships)
 
-	return [ url(**route) for route in set ]
+	return [ re_path(**route) for route in set ]
 
 
