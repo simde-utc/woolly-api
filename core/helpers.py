@@ -34,25 +34,20 @@ def gen_url_set(path, viewset, relationship_viewset=None):
 
 	# ===== Build base url
 	if type(path) is str:				# Simple version
-		plural = pluralize(path)
-		base_url = r'^' + plural
-		base_name = plural
+		base_url = r'^' + pluralize(path)
+		base_name = path
 	else:								# Nested version
 		base_url = r'^'
 		base_name = ''
-		
+
 		for step in path[:-1]:
-			plural = pluralize(step)
+			# Build base url route & name
+			base_url += pluralize(step) + r'/(?P<' + step + r'_pk>[0-9]+)/'
+			base_name += step + '-'
 
-			# Build base url route
-			base_url += plural + r'/(?P<' + step + r'_pk>[0-9]+)/'
-
-			# Build base route name
-			base_name += plural + '-'
-
-		plural = pluralize(path[-1])
-		base_url += plural
-		base_name += plural
+		resource_name = path[-1]
+		base_url += pluralize(resource_name)
+		base_name += resource_name
 
 	# ===== Build url patterns
 	list = {

@@ -8,10 +8,11 @@ from .views import *
 
 # JSON API Resource routes
 urlpatterns = \
-	gen_url_set(['user'], UserViewSet, UserRelationshipView) \
-	+ gen_url_set(['usertype'], UserTypeViewSet, UserTypeRelationshipView) \
+	gen_url_set('user', UserViewSet, UserRelationshipView) \
+	+ gen_url_set('usertype', UserTypeViewSet, UserTypeRelationshipView) \
 	+ gen_url_set(['user', 'usertype'], UserTypeViewSet)
 
+print(urlpatterns)
 
 # Addtionnal API endpoints for Authentication
 urlpatterns += [
