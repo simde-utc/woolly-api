@@ -1,5 +1,7 @@
 from django.http import JsonResponse
 from rest_framework import status
+
+from rest_framework_json_api.relations import ResourceRelatedField
 from woolly_api.settings import VIEWSET
 from django.conf.urls import re_path
 
@@ -79,3 +81,17 @@ def gen_url_set(path, viewset, relationship_viewset=None):
 	return [ re_path(**route) for route in set ]
 
 
+def get_ResourceRelatedField(parent, child, queryset = None, read_only = False, many = False):
+	route_name = "%s-%s-%s" % (parent, child, 'list' if many else 'detail')
+	params = {
+		'many': many,
+		'related_link_view_name': route_name,
+		'related_link_url_kwarg': parent + "_pk",
+		'self_link_view_name': parent + '-relationships'
+	}
+	if queryset is None or read_only is True:
+		params['read_only'] = True
+	else:
+		params['queryset'] = queryset
+
+	return ResourceRelatedField(**params)

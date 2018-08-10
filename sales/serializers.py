@@ -1,6 +1,7 @@
 from rest_framework_json_api import serializers
 from rest_framework_json_api.relations import ResourceRelatedField
 
+from core.helpers import get_ResourceRelatedField
 from authentication.models import User, UserType
 from authentication.serializers import UserSerializer, UserTypeSerializer
 from .models import *
@@ -15,13 +16,7 @@ class ItemGroupSerializer(serializers.ModelSerializer):
 	# 	queryset = Sale.objects,
 	# 	many = False
 	# )
-	items = ResourceRelatedField(
-		queryset = Item.objects,
-		many = True,
-		related_link_view_name = 'item-list',
-		related_link_url_kwarg = 'itemgroup_pk',
-		self_link_view_name = 'itemgroup-relationships'
-	)
+	items = get_ResourceRelatedField('itemgroup', 'item', queryset = Item.objects, many = True)
 
 	class Meta:
 		model = ItemGroup
@@ -33,15 +28,24 @@ class ItemSerializer(serializers.ModelSerializer):
 	"""
 	sale = ResourceRelatedField(
 		queryset = Sale.objects,
-		many = False
+		many = False,
+		related_link_view_name = 'item-sale-list',
+		related_link_url_kwarg = 'item_pk',
+		self_link_view_name = 'item-relationships'
 	)
 	group = ResourceRelatedField(
 		queryset = ItemGroup.objects,
-		many = False
+		many = False,
+		related_link_view_name = 'item-itemgroup-list',
+		related_link_url_kwarg = 'item_pk',
+		self_link_view_name = 'item-relationships'
 	)
 	usertype = ResourceRelatedField(
 		queryset = UserType.objects,
-		many = False
+		many = False,
+		related_link_view_name = 'item-usertype-list',
+		related_link_url_kwarg = 'item_pk',
+		self_link_view_name = 'item-relationships'
 	)
 	itemfields = ResourceRelatedField(
 		queryset = Field.objects,
