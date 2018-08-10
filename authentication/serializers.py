@@ -2,7 +2,7 @@ from rest_framework_json_api import serializers
 from rest_framework_json_api.relations import ResourceRelatedField
 
 from authentication.models import User, UserType
-from sales.models import Order
+from sales.models import AssociationMember, Order
 
 class UserTypeSerializer(serializers.ModelSerializer):
 	class Meta:
@@ -15,19 +15,18 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
 	usertype = ResourceRelatedField(
 		read_only = True,
 		# queryset = UserType.objects,
-		related_link_view_name = 'usertype-list',
+		related_link_view_name = 'user-usertype-list',
 		related_link_url_kwarg = 'user_pk',
 		self_link_view_name = 'user-relationships',
 		required = False
 	)
-	"""
 	associations = ResourceRelatedField(
-		queryset=AssociationMember.objects,
-		related_link_view_name='associationmember-list',
-		related_link_url_kwarg='user_pk',
-		self_link_view_name='user-relationships'
+		queryset = AssociationMember.objects,
+		related_link_view_name = 'user-association-list',
+		related_link_url_kwarg = 'user_pk',
+		self_link_view_name = 'user-relationships',
+		required = False
 	)
-	"""
 	orders = ResourceRelatedField(
 		queryset = Order.objects,
 		many = True,

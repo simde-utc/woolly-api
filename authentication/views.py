@@ -38,6 +38,10 @@ class UserViewSet(views.ModelViewSet):
 
 		return queryset
 
+class UserRelationshipView(views.RelationshipView):
+	queryset = User.objects
+
+
 class UserTypeViewSet(views.ModelViewSet):
 	queryset = UserType.objects.all()
 	serializer_class = UserTypeSerializer
@@ -53,9 +57,8 @@ class UserTypeViewSet(views.ModelViewSet):
 
 		return queryset
 
-
-class UserRelationshipView(views.RelationshipView):
-	queryset = User.objects
+class UserTypeRelationshipView(views.RelationshipView):
+	queryset = UserType.objects
 
 
 # ========================================================
