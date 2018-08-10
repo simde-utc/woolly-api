@@ -18,6 +18,9 @@ def custom_editable_fields(request, obj=None, edition_readonly_fields=tuple(), a
 	return edition_readonly_fields if obj else always_readonly_fields
 
 
+def merge_sets(*sets):
+	return [ route for set in sets for route in set ]
+
 def gen_url_set(path, viewset, relationship_viewset=None):
 	"""
 	@brief      Helper to generate JSON API friendly url pattern set
