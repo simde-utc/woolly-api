@@ -13,7 +13,6 @@ urlpatterns = merge_sets(
 	gen_url_set(['user', 'usertype'], UserTypeViewSet),
 )
 
-
 # Addtionnal API endpoints for Authentication
 urlpatterns += [
 

@@ -16,41 +16,18 @@ class ItemGroupSerializer(serializers.ModelSerializer):
 	# 	queryset = Sale.objects,
 	# 	many = False
 	# )
-	items = get_ResourceRelatedField('itemgroup', 'item', queryset = Item.objects, many = True)
+	items = get_ResourceRelatedField('itemgroup', 'item', queryset=Item.objects, many=True)
 
 	class Meta:
 		model = ItemGroup
 		fields = '__all__' 		# DEBUG
 
 class ItemSerializer(serializers.ModelSerializer):
-	"""
-	Defines how the Item fields are serialized
-	"""
-	sale = ResourceRelatedField(
-		queryset = Sale.objects,
-		many = False,
-		related_link_view_name = 'item-sale-list',
-		related_link_url_kwarg = 'item_pk',
-		self_link_view_name = 'item-relationships'
-	)
-	group = ResourceRelatedField(
-		queryset = ItemGroup.objects,
-		many = False,
-		related_link_view_name = 'item-itemgroup-list',
-		related_link_url_kwarg = 'item_pk',
-		self_link_view_name = 'item-relationships'
-	)
-	usertype = ResourceRelatedField(
-		queryset = UserType.objects,
-		many = False,
-		related_link_view_name = 'item-usertype-list',
-		related_link_url_kwarg = 'item_pk',
-		self_link_view_name = 'item-relationships'
-	)
-	itemfields = ResourceRelatedField(
-		queryset = Field.objects,
-		many = True
-	)
+	sale = get_ResourceRelatedField('item', 'sale', queryset=Sale.objects)
+	group = get_ResourceRelatedField('item', 'itemgroup', queryset=ItemGroup.objects)
+	usertype = get_ResourceRelatedField('item', 'usertype', queryset=UserType.objects)
+	fields = get_ResourceRelatedField('item', 'field', queryset=Field.objects, many=True)
+	
 	quantity_left = serializers.IntegerField(read_only=True)
 
 	included_serializers = {
@@ -72,25 +49,9 @@ class ItemSerializer(serializers.ModelSerializer):
 
 
 class SaleSerializer(serializers.HyperlinkedModelSerializer):
-	"""
-	Defines how the Sale fields are serialized, without the payment methods
-	"""
-	# association = serializers.ReadOnlyField(source='association.name')
-	association = ResourceRelatedField(
-		queryset = Association.objects,
-		many = False
-	)
-	items = ResourceRelatedField(
-		queryset = Item.objects,
-		many = True,
-		related_link_view_name = 'item-list',
-		related_link_url_kwarg = 'sale_pk',
-		self_link_view_name = 'sale-relationships'
-	)
-	# orders = ResourceRelatedField(
-	# 	queryset = Order.objects,
-	# 	many = True
-	# )
+	association = get_ResourceRelatedField('sale', 'association', queryset=Association.objects)
+	items = get_ResourceRelatedField('sale', 'item', queryset=Item.objects, many=True)
+	orders = ResourceRelatedField('sale', 'order', queryset=Order.objects, many=True)
 
 	included_serializers = {
 		'association': 'sales.serializers.AssociationSerializer',
@@ -113,16 +74,8 @@ class SaleSerializer(serializers.HyperlinkedModelSerializer):
 # ============================================
 
 class AssociationSerializer(serializers.ModelSerializer):
-	"""
-	Defines how the Association fields are serialized
-	"""
-	sales = ResourceRelatedField(
-		queryset = Sale.objects,
-		many = True,
-		related_link_view_name = 'sale-list',
-		related_link_url_kwarg = 'association_pk',
-		self_link_view_name = 'associations-relationships'
-	)
+	sales = get_ResourceRelatedField('association', 'sale', queryset=Sale.objects, many=True)
+	# members
 
 	included_serializers = {
 		'sales': SaleSerializer
@@ -137,21 +90,8 @@ class AssociationSerializer(serializers.ModelSerializer):
 		included_resources = ['sales']
 
 class AssociationMemberSerializer(serializers.ModelSerializer):
-	"""
-	Defines how the AssociationMember fields are serialized
-	"""
-	association = ResourceRelatedField(
-		queryset = Association.objects,
-		related_link_view_name = 'association-list',
-		related_link_url_kwarg = 'associationmember_pk',
-		self_link_view_name = 'associationmember-relationships'
-	)
-	user = ResourceRelatedField(
-		queryset = User.objects,
-		related_link_view_name = 'association-list',
-		related_link_url_kwarg = 'associationmember_pk',
-		self_link_view_name = 'associationmember-relationships'
-	)
+	association = get_ResourceRelatedField('associationmember', 'association', queryset=Association.objects)
+	user = get_ResourceRelatedField('associationmember', 'user', queryset=User.objects)
 
 	included_serializers = {
 		'association': AssociationSerializer,
@@ -172,9 +112,6 @@ class AssociationMemberSerializer(serializers.ModelSerializer):
 # ============================================
 
 class OrderSerializer(serializers.ModelSerializer):
-	"""
-	Defines how the Order fields are serialized
-	"""
 	owner = ResourceRelatedField(
 		queryset = User.objects,
 		# read_only = True,
@@ -214,9 +151,6 @@ class OrderSerializer(serializers.ModelSerializer):
 		pass
 
 class OrderLineSerializer(serializers.ModelSerializer):
-	"""
-	Defines how the OrderLine fields are serialized
-	"""
 	# order = serializers.ReadOnlyField(source='order.id')
 	order = ResourceRelatedField(
 		queryset = Order.objects,

@@ -3,6 +3,7 @@ from django.conf.urls import url, include
 
 from core.helpers import gen_url_set, merge_sets
 from woolly_api.settings import VIEWSET
+from authentication.views import *
 from .views import *
 
 
@@ -25,6 +26,10 @@ urlpatterns = merge_sets(
 	# Item
 	gen_url_set('item', ItemViewSet, ItemRelationshipView),
 	gen_url_set(['item', 'field'], FieldViewSet),
+	gen_url_set(['item', 'sale'], SaleViewSet),
+	gen_url_set(['item', 'itemgroup'], ItemGroupViewSet),
+	gen_url_set(['item', 'usertype'], UserTypeViewSet),
+
 	# Order
 	gen_url_set('order', OrderViewSet, OrderRelationshipView),
 	gen_url_set(['order', 'orderline'], OrderLineViewSet),
@@ -47,7 +52,6 @@ urlpatterns = merge_sets(
 	gen_url_set('itemfield', ItemFieldViewSet, ItemFieldRelationshipView),
 	gen_url_set(['item', 'itemfield'], ItemFieldViewSet, ItemFieldRelationshipView),
 )
-
 
 # Addtionnal API endpoints for Authentication
 urlpatterns += [

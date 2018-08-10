@@ -81,13 +81,14 @@ def gen_url_set(path, viewset, relationship_viewset=None):
 	return [ re_path(**route) for route in set ]
 
 
-def get_ResourceRelatedField(parent, child, queryset = None, read_only = False, many = False):
-	route_name = "%s-%s-%s" % (parent, child, 'list' if many else 'detail')
+def get_ResourceRelatedField(parent, child, queryset = None, read_only = False, many = False, **kwargs):
+	route_type = 'list' # if many else 'detail'
 	params = {
 		'many': many,
-		'related_link_view_name': route_name,
+		'related_link_view_name': "%s-%s-%s" % (parent, child, route_type),
 		'related_link_url_kwarg': parent + "_pk",
-		'self_link_view_name': parent + '-relationships'
+		'self_link_view_name': parent + '-relationships',
+		**kwargs
 	}
 	if queryset is None or read_only is True:
 		params['read_only'] = True
