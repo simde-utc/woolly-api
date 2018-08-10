@@ -39,7 +39,7 @@ class CustomPermission(permissions.BasePermission):
 		if view.action == 'create':
 			return self.allow_creation
 
-		return True
+		return False
 
 	def has_object_permission(self, request, view, obj):
 		# Allow admin option
