@@ -19,7 +19,7 @@ class CustomPermission(permissions.BasePermission):
 
 	def has_permission(self, request, view):
 		# Is Authenticated option
-		if self.require_authentication and self._is_not_authenticated:
+		if self.require_authentication and self._is_not_authenticated(request, view):
 			return False
 
 		# Read Only option
