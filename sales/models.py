@@ -21,6 +21,9 @@ class Association(models.Model):
 	def __str__(self):
 		return self.name
 
+	class Meta:
+		ordering = ('id',)
+
 	class JSONAPIMeta:
 		resource_name = "associations"
 
@@ -37,6 +40,7 @@ class AssociationMember(models.Model):
 		return "%s, %s @ %s" % (self.user, self.role, self.association)
 
 	class Meta:
+		ordering = ('id',)
 		verbose_name = "Association Member"			
 
 	class JSONAPIMeta:
@@ -75,6 +79,9 @@ class Sale(models.Model):
 	def __str__(self):
 		return "%s par %s" % (self.name, self.association)
 
+	class Meta:
+		ordering = ('id',)
+
 	class JSONAPIMeta:
 		resource_name = "sales"
 
@@ -96,6 +103,7 @@ class ItemGroup(models.Model):
 		return self.name
 
 	class Meta:
+		ordering = ('id',)
 		verbose_name = "Item Group"
 
 	class JSONAPIMeta:
@@ -133,6 +141,9 @@ class Item(models.Model):
 
 	def __str__(self):
 		return "%s (%s)" % (self.name, self.sale)
+
+	class Meta:
+		ordering = ('id',)
 
 	class JSONAPIMeta:
 		resource_name = "items"
@@ -184,6 +195,9 @@ class Order(models.Model):
 	def __str__(self):
 		return "%d - %s by %s" % (self.id, self.sale, self.owner)
 
+	class Meta:
+		ordering = ('id',)
+
 	class JSONAPIMeta:
 		resource_name = "orders"
 
@@ -200,6 +214,7 @@ class OrderLine(models.Model):
 		return "%s - %dx %s (Order %s)" % (self.id, self.quantity, self.item.name, self.order)
 
 	class Meta:
+		ordering = ('id',)
 		verbose_name = "Order Line"
 
 	class JSONAPIMeta:
@@ -222,6 +237,9 @@ class Field(models.Model):
 	def __str__(self):
 		return "%s (%s)" % (self.name, self.type)
 
+	class Meta:
+		ordering = ('id',)
+
 	class JSONAPIMeta:
 		resource_name = "fields"
 
@@ -242,6 +260,7 @@ class ItemField(models.Model):
 		return "%s - %s)" % (self.item, self.field)
 
 	class Meta:
+		ordering = ('id',)
 		verbose_name = "Item Field"
 
 	class JSONAPIMeta:
@@ -260,6 +279,7 @@ class OrderLineItem(models.Model):
 		return "%s - %s" % (self.id, self.orderline)
 
 	class Meta:
+		ordering = ('id',)
 		verbose_name = "OrderLine Item"
 
 	class JSONAPIMeta:
@@ -281,6 +301,7 @@ class OrderLineField(models.Model):
 		return "%s - %s = %s" % (self.orderlineitem.id, self.field.name, self.value)
 
 	class Meta:
+		ordering = ('id',)
 		verbose_name = "OrderLine Field"
 
 	class JSONAPIMeta:
