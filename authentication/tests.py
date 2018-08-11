@@ -1,4 +1,5 @@
 from rest_framework.test import APITestCase
+from rest_framework import status
 from core.tests import CRUDViewSetTestMixin, get_permissions_from_compact
 from authentication.models import *
 
@@ -13,6 +14,18 @@ class UserViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 		'delete': 	"...a", 	# Only user and admin can delete
 	})
 
+	# Custom create to comply with the redirection
+	def test_create_view(self):
+		url = self._get_url()
+		self._test_user_permission(url, 'admin', method="post", data={}, expected_status_code=status.HTTP_302_FOUND)
+		self._test_user_permission(url, 'lambda1', method="post", data={}, expected_status_code=status.HTTP_403_FORBIDDEN)
+		self._test_user_permission(url, None, method="post", data={}, expected_status_code=status.HTTP_403_FORBIDDEN)
+
+	def _create_object(self, user=None):
+		return self.users['user']
+
+
+
 class UserTypeViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 	resource_name = 'usertype'
 	permissions = get_permissions_from_compact({
@@ -23,4 +36,5 @@ class UserTypeViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 		'delete': 	"...a", 	# Only admin can delete
 	})
 
-
+	def _create_object(self, user=None):
+		return UserType.objects.create(name="Test_UserType")
