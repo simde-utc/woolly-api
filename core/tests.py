@@ -104,7 +104,7 @@ class CRUDViewSetTestMixin(object):
 			return None
 		return {
 			'data': {
-				'type': self.model.JSONAPIMeta.resource_name,
+				'type': self.resource_name,
 				'id': id,
 				'attributes': data,
 			}

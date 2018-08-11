@@ -29,7 +29,7 @@ class UserType(models.Model):
 		verbose_name = "User Type"
 
 	class JSONAPIMeta:
-		resource_name = "usertypes"
+		resource_name = "usertype"
 
 
 class UserManager(BaseUserManager):
@@ -113,4 +113,4 @@ class User(AbstractBaseUser):
 		ordering = ('id',)
 
 	class JSONAPIMeta:
-		resource_name = "users"
+		resource_name = "user"

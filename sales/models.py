@@ -25,7 +25,7 @@ class Association(models.Model):
 		ordering = ('id',)
 
 	class JSONAPIMeta:
-		resource_name = "associations"
+		resource_name = "association"
 
 class AssociationMember(models.Model):
 	"""
@@ -44,7 +44,7 @@ class AssociationMember(models.Model):
 		verbose_name = "Association Member"			
 
 	class JSONAPIMeta:
-		resource_name = "associationmembers"
+		resource_name = "associationmember"
 
 
 # ============================================
@@ -83,7 +83,7 @@ class Sale(models.Model):
 		ordering = ('id',)
 
 	class JSONAPIMeta:
-		resource_name = "sales"
+		resource_name = "sale"
 
 
 # ============================================
@@ -107,7 +107,7 @@ class ItemGroup(models.Model):
 		verbose_name = "Item Group"
 
 	class JSONAPIMeta:
-		resource_name = "itemgroups"
+		resource_name = "itemgroup"
 
 class Item(models.Model):
 	"""
@@ -146,7 +146,7 @@ class Item(models.Model):
 		ordering = ('id',)
 
 	class JSONAPIMeta:
-		resource_name = "items"
+		resource_name = "item"
 
 
 # ============================================
@@ -199,7 +199,7 @@ class Order(models.Model):
 		ordering = ('id',)
 
 	class JSONAPIMeta:
-		resource_name = "orders"
+		resource_name = "order"
 
 
 class OrderLine(models.Model):
@@ -218,7 +218,7 @@ class OrderLine(models.Model):
 		verbose_name = "Order Line"
 
 	class JSONAPIMeta:
-		resource_name = "orderlines"
+		resource_name = "orderline"
 
 
 # ============================================
@@ -241,7 +241,7 @@ class Field(models.Model):
 		ordering = ('id',)
 
 	class JSONAPIMeta:
-		resource_name = "fields"
+		resource_name = "field"
 
 class ItemField(models.Model):
 	"""
@@ -264,7 +264,7 @@ class ItemField(models.Model):
 		verbose_name = "Item Field"
 
 	class JSONAPIMeta:
-		resource_name = "itemfields"
+		resource_name = "itemfield"
 
 
 class OrderLineItem(models.Model):
@@ -283,7 +283,7 @@ class OrderLineItem(models.Model):
 		verbose_name = "OrderLine Item"
 
 	class JSONAPIMeta:
-		resource_name = "orderlineitems"
+		resource_name = "orderlineitem"
 
 class OrderLineField(models.Model):
 	"""
@@ -305,5 +305,5 @@ class OrderLineField(models.Model):
 		verbose_name = "OrderLine Field"
 
 	class JSONAPIMeta:
-		resource_name = "orderlinefields"
+		resource_name = "orderlinefield"
 

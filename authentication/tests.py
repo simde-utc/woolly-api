@@ -9,7 +9,7 @@ from faker import Faker
 faker = Faker()
 
 class UserViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
-	resource_name = 'user'
+	resource_name = User.JSONAPIMeta.resource_name
 	permissions = get_permissions_from_compact({
 		'list': 	"...a", 	# Only admin can list
 		'retrieve': ".u.a", 	# Only user and admin can retrieve
@@ -43,7 +43,7 @@ class UserViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 
 
 class UserTypeViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
-	resource_name = 'usertype'
+	resource_name = UserType.JSONAPIMeta.resource_name
 	permissions = get_permissions_from_compact({
 		'list': 	"puoa", 	# Everyone can list
 		'retrieve': "puoa", 	# Everyone can retrieve
