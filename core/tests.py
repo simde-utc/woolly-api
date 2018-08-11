@@ -39,7 +39,6 @@ class RoutesTestCase(APITestCase):
 
 
 
-
 def gen_route_test(route):
 	return lambda self: self._test_one_route(route)
 

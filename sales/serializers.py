@@ -1,7 +1,6 @@
 from rest_framework_json_api import serializers
-from rest_framework_json_api.relations import ResourceRelatedField
-
 from core.helpers import get_ResourceRelatedField
+
 from authentication.models import User, UserType
 from authentication.serializers import UserSerializer, UserTypeSerializer
 from .models import *
@@ -12,10 +11,6 @@ from .models import *
 # ============================================
 
 class ItemGroupSerializer(serializers.ModelSerializer):
-	# sale = ResourceRelatedField(
-	# 	queryset = Sale.objects,
-	# 	many = False
-	# )
 	items = get_ResourceRelatedField('itemgroup', 'item', queryset=Item.objects, many=True)
 
 	class Meta:

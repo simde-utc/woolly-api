@@ -1,5 +1,5 @@
 from rest_framework_json_api import serializers
-from rest_framework_json_api.relations import ResourceRelatedField
+from core.helpers import get_ResourceRelatedField
 
 from authentication.models import User, UserType
 from sales.models import AssociationMember, Order
@@ -12,29 +12,9 @@ class UserTypeSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
 
-	usertype = ResourceRelatedField(
-		read_only = True,
-		# queryset = UserType.objects,
-		related_link_view_name = 'user-usertype-list',
-		related_link_url_kwarg = 'user_pk',
-		self_link_view_name = 'user-relationships',
-		required = False
-	)
-	associations = ResourceRelatedField(
-		queryset = AssociationMember.objects,
-		related_link_view_name = 'user-association-list',
-		related_link_url_kwarg = 'user_pk',
-		self_link_view_name = 'user-relationships',
-		required = False
-	)
-	orders = ResourceRelatedField(
-		queryset = Order.objects,
-		many = True,
-		# related_link_view_name = 'orders-list',
-		# related_link_url_kwarg = 'user_pk',
-		# self_link_view_name = 'user-relationships',
-		required = False
-	)
+	usertype = get_ResourceRelatedField('user', 'usertype', read_only=True, required=False)
+	associations = get_ResourceRelatedField('user', 'association', queryset=AssociationMember.objects, required=False)
+	orders = get_ResourceRelatedField('user', 'order', queryset=Order.objects, many=True, required=False)
 
 	class Meta:
 		model = User
