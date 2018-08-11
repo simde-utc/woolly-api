@@ -65,7 +65,7 @@ class CRUDViewSetTestMixin(object):
 		}
 
 		# Create test object
-		self.object = self._create_object()
+		self.object = self._create_object(self.users.get('user'))
 
 		# Debug
 		if self.debug:
@@ -120,6 +120,7 @@ class CRUDViewSetTestMixin(object):
 		@param   allowed               Whether the user should be allowed to perform the request
 		@param   method                The HTTP method used to access the url
 		@param   data                  The data to bind to the HTTP request
+		@param   id                    The id of the resource to modify
 		@param   expected_status_code  The status code that should be returned by the request
 		"""
 		# Authenticate with specified user
@@ -127,14 +128,14 @@ class CRUDViewSetTestMixin(object):
 
 		# Create request
 		HTTP_method = kwargs.get('method', 'get')
-		data = self._parse_data_for_request(kwargs.get('data', None))
+		data = self._parse_data_for_request(data = kwargs.get('data', None), id = kwargs.get('id', None))
 		call_method = getattr(self.client, HTTP_method)
 		response = call_method(url, data, format='vnd.api+json')
 
 		# Get expected status_code 
 		expected_status_code = kwargs.get('expected_status_code', self._get_expected_status_code(HTTP_method, allowed))
 		if self.debug:
-			print(" Expected status_code for '" + (user or 'public') +"': ", expected_status_code)
+			print(" Status code for '%s': \t expected %d, got %d" % ((user or 'public'), expected_status_code, response.status_code))
 
 		# Build detailled error message
 		error_message = "for '%s' user" % user
@@ -163,8 +164,7 @@ class CRUDViewSetTestMixin(object):
 		"""Test all users permissions to list"""
 		url = self._get_url()
 		if self.debug:
-			print("\n== Begin '" + self.resource_name + "' list view test")
-			print(" url:", url)
+			print("\n== Begin '" + self.resource_name + "' list view test", "\n url:", url)
 
 		# Test permissions for all users
 		for user in self.users:
@@ -174,8 +174,7 @@ class CRUDViewSetTestMixin(object):
 		"""Test all users permissions to retrieve self.object"""
 		url = self._get_url(pk = self.object.pk)
 		if self.debug:
-			print("\n== Begin '" + self.resource_name + "' retrieve view test")
-			print(" url:", url)
+			print("\n== Begin '" + self.resource_name + "' retrieve view test", "\n url:", url)
 
 		# Test permissions for all users
 		for user in self.users:
@@ -185,11 +184,23 @@ class CRUDViewSetTestMixin(object):
 		"""Test all users permissions to create an object"""
 		url = self._get_url()
 		if self.debug:
-			print("\n== Begin '" + self.resource_name + "' create view test")
-			print(" url:", url)
+			print("\n== Begin '" + self.resource_name + "' create view test", "\n url:", url)
 
 		# Test permissions for all users
 		for user in self.users:
 			data = self._get_object_attributes(user)
 			self._test_user_permission(url, user, self._is_allowed('create', user), method='post', data=data)
+
+	def test_update_view(self):
+		"""Test all users permissions to modify an object"""
+		pk = self.object.pk
+		url = self._get_url(pk = pk)
+		if self.debug:
+			print("\n== Begin '" + self.resource_name + "' update view test", "\n url:", url)
+
+		# Test permissions for all users
+		for user in self.users:
+			data = self._get_object_attributes(user)
+			self._test_user_permission(url, user, self._is_allowed('update', user), method='patch', data=data, id=pk)
+			self._test_user_permission(url, user, self._is_allowed('update', user), method='put', data=data, id=pk)
 

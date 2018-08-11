@@ -19,12 +19,13 @@ class UserViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 	})
 
 	def _get_object_attributes(self, user=None):
-		self.usertype = self.usertype or UserType.objects.create(name="Test_UserType")
+		# hasattr(self, 'usertype') and self.usertype or
+		self.usertype = UserType.objects.create(name="Test_UserType")
 		return {
 			'email': faker.email(),
 			'first_name': faker.first_name(),
 			'last_name': faker.last_name(),
-			'birthdate': faker.date_of_birth(),
+			# 'birthdate': faker.date_of_birth(),
 			'usertype': self.usertype.pk
 		}
 
