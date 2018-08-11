@@ -1,6 +1,7 @@
 from rest_framework import permissions
 from .models import *
 
+# Used for User
 class IsUserOrAdmin(permissions.BasePermission):
 	"""
 	Custom permission class to allow only order owners and admin to edit them.
@@ -26,4 +27,4 @@ class IsAdminOrReadOnly(permissions.BasePermission):
 	def has_permission(self, request, view):
 		if request.method in permissions.SAFE_METHODS:
 			return True
-		return request.user and request.user.is_admin
+		return request.user.is_authenticated and request.user.is_admin
