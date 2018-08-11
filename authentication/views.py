@@ -45,7 +45,7 @@ class UserRelationshipView(views.RelationshipView):
 class UserTypeViewSet(views.ModelViewSet):
 	queryset = UserType.objects.all()
 	serializer_class = UserTypeSerializer
-	permission_classes = (AllowAny,)		# Visible by everyone by default
+	permission_classes = (IsAdminOrReadOnly,)
 
 	def get_queryset(self):
 		queryset = self.queryset

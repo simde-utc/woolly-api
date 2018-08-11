@@ -1,5 +1,5 @@
 from rest_framework import permissions
-from .models import User, UserType
+from .models import *
 
 class IsUserOrAdmin(permissions.BasePermission):
 	"""
@@ -20,3 +20,10 @@ class IsUserOrAdmin(permissions.BasePermission):
 	def has_object_permission(self, request, view, obj):
 		user = request.user
 		return user.is_admin or obj == user
+
+# For UserType
+class IsAdminOrReadOnly(permissions.BasePermission):
+	def has_permission(self, request, view):
+		if request.method in permissions.SAFE_METHODS:
+			return True
+		return request.user and request.user.is_admin
