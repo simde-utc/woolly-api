@@ -23,8 +23,7 @@ class CRUDViewSetTestMixin(object):
 	def _get_url(self, pk=None):
 		try:
 			if pk is None:
-				return reverse('user-list')
-				# return reverse(self.resource_name + '-list'),
+				return reverse(self.resource_name + '-list')
 			else:
 				return reverse(self.resource_name + '-detail', { 'pk': pk })
 		except exceptions.NoReverseMatch:
@@ -33,12 +32,11 @@ class CRUDViewSetTestMixin(object):
 	def _test_user_permission(self, url, user = None, allowed = True):
 		# Authenticate with specified user
 		self.client.force_authenticate(user = self.users.get(user, None))
+
 		# Get url and check code
 		response = self.client.get(url, format='json')
 
 		expected_status_code = status.HTTP_200_OK if allowed else status.HTTP_403_FORBIDDEN
-		# expected_status_code = status.HTTP_401_UNAUTHORIZED if user is None else status.HTTP_403_FORBIDDEN
-
 		self.assertEqual(response.status_code, expected_status_code, "for '%s' user" % user)
 
 	def test_list_view(self):
@@ -50,34 +48,11 @@ class CRUDViewSetTestMixin(object):
 		self._test_user_permission(url, None, self.route_visibility['public'])
 
 
-
-class RoutesTestCase(APITestCase):
-	def setUp(self):
-		self.users = {
-			'admin': User.objects.create_superuser(email="admin@woolly.com"),
-			'lambda1': User.objects.create_user(email="lambda1@woolly.com"),
-			'lambda2': User.objects.create_user(email="lambda2@woolly.com"),
-		}
-
-	def _test_user_permissions(self, url, user = None, allowed = True):
-		# Authenticate with specified user
-		self.client.force_authenticate(user = self.users.get(user, None))
-		# Get url and check code
-		response = self.client.get(url, format='json')
-
-		status_code = status.HTTP_200_OK if allowed else status.HTTP_403_FORBIDDEN
-		# status_code = status.HTTP_401_UNAUTHORIZED if user is None else status.HTTP_403_FORBIDDEN
-
-		error_msg = "is allowed" if response.status_code == status.HTTP_200_OK else "is not allowed"
-		self.assertEqual(response.status_code, status_code, "'%s' user %s, but it should not" % (user, error_msg))
-		
+"""
+class RoutesTestCase(CRUDViewSetTestMixin, APITestCase):
 
 	def _test_one_route(self, route):
-		try:
-			url = reverse(route['name'] + '-list')
-		except exceptions.NoReverseMatch:
-			url = None
-		self.assertIsNotNone(url, "Route '%s' is not defined" % route['name'])
+		self._get_url(route['name'])
 
 		# Test List permissions
 		self._test_user_permissions(url, 'admin', True)
@@ -88,6 +63,7 @@ class RoutesTestCase(APITestCase):
 
 def gen_route_test(route):
 	return lambda self: self._test_one_route(route)
+"""
 
 ROUTE_LIST = [
 	{ 'name': 'user', 				'public': False, 	'onlyAdmin': True },
