@@ -147,7 +147,7 @@ class CRUDViewSetTestMixin(object):
 		"""Method used to create the initial object with no user and then the per-user objects, must be overriden"""
 		raise NotImplementedError("This function must be overriden")
 
-	def _get_object_properties(self, user=None):
+	def _get_object_attributes(self, user=None):
 		"""Method used to create new object with user, must be overriden"""
 		raise NotImplementedError("This function must be overriden")
 
@@ -187,6 +187,6 @@ class CRUDViewSetTestMixin(object):
 
 		# Test permissions for all users
 		for user in self.users:
-			data = self._get_object_properties(user)
+			data = self._get_object_attributes(user)
 			self._test_user_permission(url, user, self._is_allowed('create', user), method='post', data=data)
 

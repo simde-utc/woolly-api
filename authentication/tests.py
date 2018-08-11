@@ -21,7 +21,7 @@ class UserViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 	def _create_object(self, user=None):
 		return self.users['user']
 
-	def _get_object_properties(self, user):
+	def _get_object_attributes(self, user):
 		self.usertype = self.usertype or UserType.objects.create(name="Test_UserType")
 		return {
 			'email': faker.email(),
@@ -52,7 +52,7 @@ class UserTypeViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 		'delete': 	"...a", 	# Only admin can delete
 	})
 
-	def _get_object_properties(self, user):
+	def _get_object_attributes(self, user):
 		return {
 			'name': faker.sentence(nb_words=2),
 		}
