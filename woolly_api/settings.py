@@ -104,6 +104,13 @@ REST_FRAMEWORK = {
 	),
 	'DEFAULT_METADATA_CLASS': 'rest_framework_json_api.metadata.JSONAPIMetadata',
 	'EXCEPTION_HANDLER': 'rest_framework_json_api.exceptions.exception_handler',
+	'TEST_REQUEST_RENDERER_CLASSES': (
+		'rest_framework_json_api.renderers.JSONRenderer',
+		'rest_framework.renderers.MultiPartRenderer',
+		'rest_framework.renderers.JSONRenderer',
+		'rest_framework.renderers.TemplateHTMLRenderer'
+	),
+	'TEST_REQUEST_DEFAULT_FORMAT': 'vnd.api+json',
 }
 
 VIEWSET = {
