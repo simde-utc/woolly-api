@@ -12,14 +12,20 @@ urlpatterns = merge_sets(
 	# User
 	gen_url_set(['user', 'association'], AssociationViewSet),
 	gen_url_set(['user', 'order'], OrderViewSet),
+
 	# Association
 	gen_url_set('association', AssociationViewSet, AssociationRelationshipView),
 	gen_url_set(['association', 'sale'], SaleViewSet),
+	# AssociationMember ????????????????????
+	gen_url_set('associationmember', AssociationMemberViewSet, AssociationMemberRelationshipView),
+	gen_url_set(['associationmember', 'association'], AssociationViewSet),
+	gen_url_set(['association', 'associationmember'], AssociationMemberViewSet),
 	# Sale
 	gen_url_set('sale', SaleViewSet, SaleRelationshipView),
 	gen_url_set(['sale', 'item'], ItemViewSet),
 	gen_url_set(['sale', 'itemgroup'], ItemGroupViewSet),
 	gen_url_set(['sale', 'order'], OrderViewSet),
+
 	# ItemGroup
 	gen_url_set('itemgroup', ItemGroupViewSet, ItemGroupRelationshipView),
 	gen_url_set(['itemgroup', 'item'], ItemViewSet),
@@ -39,15 +45,12 @@ urlpatterns = merge_sets(
 	gen_url_set(['orderline', 'orderlineitem'], OrderLineItemViewSet),
 	# OrderLineItem
 	gen_url_set('orderlineitem', OrderLineItemViewSet, OrderLineItemRelationshipView),
+
 	# Field
 	gen_url_set('field', FieldViewSet, FieldRelationshipView),
 	# OrderLineField ?????????????????????
 	gen_url_set('orderlinefield', OrderLineFieldViewSet, OrderLineFieldRelationshipView),
-	gen_url_set(['orderlineitem', 'orderlinefield'], OrderLineFieldViewSet),
-	# AssociationMember ????????????????????
-	gen_url_set('associationmember', AssociationMemberViewSet, AssociationMemberRelationshipView),
-	gen_url_set(['associationmember', 'association'], AssociationViewSet),
-	gen_url_set(['association', 'associationmember'], AssociationMemberViewSet),
+	gen_url_set(['orderlineitem', 'orderlinefield'], OrderLineFieldViewSet),	
 	# ItemField ??????????????????????
 	gen_url_set('itemfield', ItemFieldViewSet, ItemFieldRelationshipView),
 	gen_url_set(['item', 'itemfield'], ItemFieldViewSet, ItemFieldRelationshipView),
