@@ -91,40 +91,14 @@ class CRUDViewSetTestMixin(object):
 		self._test_user_permission(url, 'lambda1', 	self._get_expected_permission('list', 'user'))
 		self._test_user_permission(url, None, 		self._get_expected_permission('list', 'public'))
 
-
-"""
-class RoutesTestCase(CRUDViewSetTestMixin, APITestCase):
-
-	def _test_one_route(self, route):
-		self._get_url(route['name'])
+	def test_create_view(self):
+		url = self._get_url()
+		if self.debug:
+			print("\n== Begin '" + self.resource_name + "' create view test")
+			print(" url:", url)
 
 		# Test List permissions
-		self._test_user_permissions(url, 'admin', True)
-		self._test_user_permissions(url, 'lambda1', not route['onlyAdmin'])
-		self._test_user_permissions(url, None, route['public'])
+		self._test_user_permission(url, 'admin', 	self._get_expected_permission('list', 'admin'))
+		self._test_user_permission(url, 'lambda1', 	self._get_expected_permission('list', 'user'))
+		self._test_user_permission(url, None, 		self._get_expected_permission('list', 'public'))
 
-
-
-def gen_route_test(route):
-	return lambda self: self._test_one_route(route)
-"""
-
-ROUTE_LIST = [
-	{ 'name': 'user', 				'public': False, 	'onlyAdmin': True },
-	{ 'name': 'usertype', 			'public': True, 	'onlyAdmin': False },
-	{ 'name': 'association', 		'public': True, 	'onlyAdmin': False },
-	{ 'name': 'associationmember',	'public': False, 	'onlyAdmin': True },
-	{ 'name': 'sale', 				'public': True, 	'onlyAdmin': False },
-	{ 'name': 'itemgroup', 			'public': True, 	'onlyAdmin': False },
-	{ 'name': 'item', 				'public': True, 	'onlyAdmin': False },
-	{ 'name': 'order', 				'public': False, 	'onlyAdmin': True },
-	{ 'name': 'orderline', 			'public': False, 	'onlyAdmin': True },
-	{ 'name': 'orderlineitem', 		'public': False, 	'onlyAdmin': True },
-	{ 'name': 'field', 				'public': True, 	'onlyAdmin': False },
-	{ 'name': 'orderlinefield', 	'public': False, 	'onlyAdmin': True },
-	{ 'name': 'itemfield', 			'public': True, 	'onlyAdmin': False },
-]
-
-# Programmaticaly add tests for each routes
-# for route in ROUTE_LIST:
-	# setattr(RoutesTestCase, 'test_'+route['name']+'_route', gen_route_test(route))
