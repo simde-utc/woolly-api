@@ -5,11 +5,11 @@ from core.tests import CRUDViewSetTestMixin, get_permissions_from_compact
 from authentication.models import *
 from authentication.serializers import *
 from faker import Faker
-
 faker = Faker()
 
+
 class UserViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
-	resource_name = User.JSONAPIMeta.resource_name
+	model = User
 	permissions = get_permissions_from_compact({
 		'list': 	"...a", 	# Only admin can list
 		'retrieve': ".u.a", 	# Only user and admin can retrieve
@@ -18,10 +18,7 @@ class UserViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 		'delete': 	"...a", 	# Only user and admin can delete
 	})
 
-	def _create_object(self, user=None):
-		return self.users['user']
-
-	def _get_object_attributes(self, user):
+	def _get_object_attributes(self, user=None):
 		self.usertype = self.usertype or UserType.objects.create(name="Test_UserType")
 		return {
 			'email': faker.email(),
@@ -31,8 +28,10 @@ class UserViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 			'usertype': self.usertype.pk
 		}
 
-
 	# Custom create to comply with the redirection
+	def _create_object(self, user=None):
+		return self.users['user']
+
 	def test_create_view(self):
 		url = self._get_url()
 		self._test_user_permission(url, 'admin', method="post", data={}, expected_status_code=status.HTTP_302_FOUND)
@@ -43,7 +42,7 @@ class UserViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 
 
 class UserTypeViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
-	resource_name = UserType.JSONAPIMeta.resource_name
+	model = UserType
 	permissions = get_permissions_from_compact({
 		'list': 	"puoa", 	# Everyone can list
 		'retrieve': "puoa", 	# Everyone can retrieve
@@ -52,10 +51,7 @@ class UserTypeViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 		'delete': 	"...a", 	# Only admin can delete
 	})
 
-	def _get_object_attributes(self, user):
+	def _get_object_attributes(self, user=None):
 		return {
 			'name': faker.sentence(nb_words=2),
 		}
-
-	def _create_object(self, user=None):
-		return UserType.objects.create(name="Test_UserType")

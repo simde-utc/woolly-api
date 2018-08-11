@@ -43,7 +43,7 @@ def get_permissions_from_compact(compact):
 
 
 class CRUDViewSetTestMixin(object):
-	resource_name = None
+	model = None
 	permissions = DEFAULT_CRUD_PERMISSIONS
 	debug = False
 
@@ -51,8 +51,10 @@ class CRUDViewSetTestMixin(object):
 		"""Function run before beginning the tests"""
 
 		# resource_name MUST be specified
-		if not self.resource_name:
+		if not self.model:
 			raise NotImplementedError("Please specify the resource_name")
+
+		self.resource_name = self.model.JSONAPIMeta.resource_name
 
 		# Get users
 		self.users = {
@@ -144,8 +146,9 @@ class CRUDViewSetTestMixin(object):
 
 
 	def _create_object(self, user=None):
-		"""Method used to create the initial object with no user and then the per-user objects, must be overriden"""
-		raise NotImplementedError("This function must be overriden")
+		"""Method used to create the initial object"""
+		data = self._get_object_attributes(user)
+		return self.model.objects.create(**data)
 
 	def _get_object_attributes(self, user=None):
 		"""Method used to create new object with user, must be overriden"""
