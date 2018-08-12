@@ -69,7 +69,7 @@ class SaleSerializer(serializers.HyperlinkedModelSerializer):
 # ============================================
 
 class AssociationSerializer(serializers.ModelSerializer):
-	sales = get_ResourceRelatedField('association', 'sale', queryset=Sale.objects, many=True)
+	sales = get_ResourceRelatedField('association', 'sale', queryset=Sale.objects, many=True, required=False)
 	# members
 
 	included_serializers = {
