@@ -11,7 +11,7 @@ from .models import *
 # ============================================
 
 class ItemGroupSerializer(serializers.ModelSerializer):
-	items = get_ResourceRelatedField('itemgroup', 'item', queryset=Item.objects, many=True)
+	items = get_ResourceRelatedField('itemgroup', 'item', queryset=Item.objects, many=True, required=False)
 
 	class Meta:
 		model = ItemGroup
@@ -21,7 +21,7 @@ class ItemSerializer(serializers.ModelSerializer):
 	sale     = get_ResourceRelatedField('item', 'sale', queryset=Sale.objects)
 	group    = get_ResourceRelatedField('item', 'itemgroup', queryset=ItemGroup.objects)
 	usertype = get_ResourceRelatedField('item', 'usertype', queryset=UserType.objects)
-	fields   = get_ResourceRelatedField('item', 'field', queryset=Field.objects, many=True)
+	fields   = get_ResourceRelatedField('item', 'field', queryset=Field.objects, many=True, required=False)
 	
 	quantity_left = serializers.IntegerField(read_only=True)
 

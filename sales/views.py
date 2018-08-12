@@ -144,6 +144,7 @@ class ItemViewSet(views.ModelViewSet):
 	serializer_class = ItemSerializer
 	permission_classes = (IsManagerOrReadOnly,)
 
+	"""
 	def perform_create(self, serializer):
 		# TODO ????
 		if 'sale_pk' in self.kwargs:
@@ -154,6 +155,7 @@ class ItemViewSet(views.ModelViewSet):
 			serializer.save(
 				sale_id=self.kwargs['orderline_pk']
 			)
+	"""
 
 	def get_queryset(self):
 		queryset = self.queryset.filter(is_active=True)

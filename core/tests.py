@@ -137,7 +137,7 @@ class FakeModelFactory(object):
 				'name': 		self.faker.word(),
 				'description': 	self.faker.paragraph(),
 				'sale':			_get_related('sale', Sale),
-				'group':		_get_related('group', Group),
+				'group':		_get_related('group', ItemGroup),
 				'quantity': 	self.faker.random_number(),
 				'max_per_user': self.faker.random_number(),
 				'is_active': 	True,
