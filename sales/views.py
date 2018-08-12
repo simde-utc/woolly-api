@@ -269,8 +269,8 @@ class OrderLineViewSet(views.ModelViewSet):
 			return None
 
 		# Admins see everything otherwise filter to see only those owned by the user
-		if not user.is_admin:
-			queryset = queryset.filter(order__owner=user)
+		# if not user.is_admin:
+		# 	queryset = queryset.filter(order__owner=user)
 
 		if 'order_pk' in self.kwargs:
 			order_pk = self.kwargs['order_pk']
@@ -278,33 +278,46 @@ class OrderLineViewSet(views.ModelViewSet):
 
 		return queryset
 
-
-	def create(self, request):
+	def create(self, request, *args, **kwargs):
+		# Retrieve Order...
 		try:
 			order = Order.objects.get(pk=request.data['order']['id'])
+		# ...or fail
 		except Order.DoesNotExist as err:
 			msg = "Impossible de trouver la commande."
 			return errorResponse(msg, [msg], status.HTTP_404_NOT_FOUND)
+
+		# Check Order owner
+		user = request.user
+		if not (user.is_authenticated and user.is_admin or order.owner == user):
+			msg = "Vous n'avez pas la permission d'effectuer cette action."
+			return errorResponse(msg, [msg], status.HTTP_403_FORBIDDEN)
+
+		# Check if Order is open
 		if order.status != OrderStatus.ONGOING.value:
 			msg = "La commande n'accepte plus de changement."
 			return errorResponse(msg, [msg], status.HTTP_400_BAD_REQUEST)
 
+		# Try to retrieve a similar OrderLine...
 		try:
 			orderline = OrderLine.objects.get(order=request.data['order']['id'], item=request.data['item']['id'])
 			# TODO ajout de la vérification de la limite de temps
 			serializer = OrderLineSerializer(orderline, data={'quantity': request.data['quantity']}, partial=True)
-			# On delete les orderlines vides
+
+			# Delete empty OrderLines
 			if request.data['quantity'] <= 0:
 				orderline.delete()
 				return Response(serializer.initial_data, status=status.HTTP_205_RESET_CONTENT)
+		# ...or create a new one
 		except OrderLine.DoesNotExist as err:
 			if request.data['quantity'] > 0:
 				# Configure Order
 				serializer = self.get_serializer(data={
 					'order': request.data['order'],
 					'item': request.data['item'],
-					'quantity': request.data['quantity']
+					'quantity': request.data['quantity'],
 				})
+			# If no quantity, then no OrderLine
 			else:
 				return Response(request.data, status=status.HTTP_204_NO_CONTENT)
 		serializer.is_valid(raise_exception=True)

@@ -110,7 +110,7 @@ class OrderSerializer(serializers.ModelSerializer):
 	owner = get_ResourceRelatedField('order', 'user', queryset=User.objects, required=False)
 	sale  = get_ResourceRelatedField('order', 'sale', queryset=Sale.objects)
 	orderlines = get_ResourceRelatedField(
-		'order', 'orderlines', queryset=OrderLine.objects,
+		'order', 'orderline', queryset=OrderLine.objects,
 		many=True, required=False, allow_null=True
 	)
 
@@ -134,7 +134,7 @@ class OrderLineSerializer(serializers.ModelSerializer):
 	order = get_ResourceRelatedField('orderline', 'order', queryset=Order.objects)
 	item  = get_ResourceRelatedField('orderline', 'item', queryset=Item.objects)
 	orderlineitems = get_ResourceRelatedField(
-		'orderline', 'orderlineitems', queryset=OrderLineItem.objects,
+		'orderline', 'orderlineitem', queryset=OrderLineItem.objects,
 		many=True, required=False, allow_null=True
 	)
 

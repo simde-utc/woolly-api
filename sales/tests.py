@@ -61,11 +61,26 @@ class ItemViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 
 class OrderViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 	model = Order
-	permissions = OrderOwnerOrAdmin
+	permissions = {
+		**OrderOwnerOrAdmin,
+		'create': ".uoa",		# Every logged user can create order
+	}
 
 class OrderLineViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 	model = OrderLine
 	permissions = OrderOwnerOrAdmin
+
+	def _additionnal_setUp(self):
+		self.sale = self.modelFactory.create(Sale)
+		# Order is own by user for the purpose of the tests
+		self.order = self.modelFactory.create(Order, owner=self.users['user'])
+		self.assertEqual(self.order.owner, self.users['user'], "Erreur de configuration, l'order doit être faite par 'user'")
+
+	def _get_object_attributes(self, user=None, withPk=True):
+		overiddes = {
+			'quantity': 5
+		}
+		return self.modelFactory.get_attributes(self.model, withPk=withPk, overiddes=overiddes, order=self.order)
 
 
 class FieldViewSetTestCase(CRUDViewSetTestMixin, APITestCase):

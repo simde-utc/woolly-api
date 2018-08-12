@@ -39,10 +39,13 @@ urlpatterns = merge_sets(
 
 	# Order
 	gen_url_set('order', OrderViewSet, OrderRelationshipView),
+	gen_url_set(['order', 'sale'], SaleViewSet),
+	gen_url_set(['order', 'user'], UserViewSet),
 	gen_url_set(['order', 'orderline'], OrderLineViewSet),
 	# OrderLine
 	gen_url_set('orderline', OrderLineViewSet, OrderLineRelationshipView),
 	gen_url_set(['orderline', 'item'], ItemViewSet),
+	gen_url_set(['orderline', 'order'], OrderViewSet),
 	gen_url_set(['orderline', 'orderlineitem'], OrderLineItemViewSet),
 	# OrderLineItem
 	gen_url_set('orderlineitem', OrderLineItemViewSet, OrderLineItemRelationshipView),

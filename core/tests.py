@@ -45,6 +45,8 @@ def get_permissions_from_compact(compact):
 			permissions[action][visibility] = True
 	return permissions
 
+def format_date(date):
+	return timezone.make_aware(date, timezone.get_current_timezone(), is_dst=False)
 
 class FakeModelFactory(object):
 
@@ -115,10 +117,10 @@ class FakeModelFactory(object):
 				'association': 	_get_related('association', Association),
 				'is_active': 	True,
 				'public': 		True,
-				'begin_at':		timezone.make_aware(self.faker.date_time_this_year(before_now=True, after_now=False)),
-				'end_at': 		timezone.make_aware(self.faker.date_time_this_year(before_now=False, after_now=True)),
+				'begin_at':		format_date(self.faker.date_time_this_year(before_now=True, after_now=False)),
+				'end_at': 		format_date(self.faker.date_time_this_year(before_now=False, after_now=True)),
 				'max_item_quantity': self.faker.random_number(),
-				'max_payment_date':	 timezone.make_aware(self.faker.date_time_this_year(before_now=False, after_now=True)),
+				'max_payment_date':	 format_date(self.faker.date_time_this_year(before_now=False, after_now=True)),
 			}
 
 		# ============================================
@@ -157,8 +159,8 @@ class FakeModelFactory(object):
 			return {
 				'owner':		_get_related('owner', User),
 				'sale':			_get_related('sale', Sale),
-				'created_at':	timezone.make_aware(self.faker.date_time_this_year(before_now=True, after_now=False)),
-				'updated_at':	timezone.make_aware(self.faker.date_time_this_year(before_now=True, after_now=False)),
+				'created_at':	format_date(self.faker.date_time_this_year(before_now=True, after_now=False)),
+				'updated_at':	format_date(self.faker.date_time_this_year(before_now=True, after_now=False)),
 				'status':		OrderStatus.ONGOING.value,
 				'tra_id':		self.faker.random_number(),
 			}
@@ -212,6 +214,8 @@ class CRUDViewSetTestMixin(object):
 
 	def setUp(self):
 		"""Function run before beginning the tests"""
+		if self.debug:
+			print('')
 
 		# resource_name MUST be specified
 		if not self.model:
@@ -227,11 +231,11 @@ class CRUDViewSetTestMixin(object):
 			'public': None
 		}
 
-		# Create test object
-		self.object = self._create_object(self.users.get('user'))
-
 		# Additional setUp
 		self._additionnal_setUp()
+
+		# Create test object
+		self.object = self._create_object(self.users.get('user'))
 
 		# Debug
 		if self.debug:
@@ -358,6 +362,9 @@ class CRUDViewSetTestMixin(object):
 
 		# Test permissions for all users
 		for user in self.users:
+			# Re-save the object in the db in order to have the same after each user modifications
+			self.object.save()
+
 			if action in ('create', 'update'):
 				options['data'] = self._get_object_attributes(user)
 				if self.debug:
@@ -365,7 +372,9 @@ class CRUDViewSetTestMixin(object):
 
 			# Perform the test
 			self._test_user_permission(url, user, self._is_allowed(action, user), **options)
-			if action == 'update':			# Additionnal test with PUT for update
+
+			# Additionnal test with PUT for update
+			if action == 'update':
 				options['method'] = 'put'
 				self._test_user_permission(url, user, self._is_allowed(action, user), **options)
 

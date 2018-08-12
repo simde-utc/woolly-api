@@ -35,7 +35,8 @@ def check_order_ownership(request, view, obj):
 # Used for Order, OrderLine, OrderLineItem, OrderLineField
 class IsOrderOwnerOrAdmin(CustomPermission):
 	require_authentication = True
-	allow_creation = True
+	pass_for_obj = True
 	allow_admin = True
+	allow_create = True
 	object_permission_functions = (check_order_ownership,)
 
