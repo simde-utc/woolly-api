@@ -1,10 +1,12 @@
 from django.urls import reverse, exceptions
 from rest_framework import status
 from rest_framework.test import APITestCase
-from authentication.models import User
+
 from copy import deepcopy
-from rest_framework_json_api.renderers import JSONRenderer
-from rest_framework_json_api.parsers import JSONParser
+from faker import Faker
+
+from authentication.models import *
+from sales.models import *
 
 
 # Only admin can do things by default
@@ -43,9 +45,156 @@ def get_permissions_from_compact(compact):
 	return permissions
 
 
+class FakeModelFactory(object):
+
+	def __init__(self, seed=None):
+		self.faker = Faker()
+		if seed:
+			self.faker.seed(seed)
+
+	def create(self, model, nb=None, overiddes={}, **kwargs):
+		if nb is None:
+			props = self.get_attributes(model, overiddes, **kwargs)
+			return model.objects.create(**props)
+
+		fake_models = list()
+		for i in range(nb):
+			props = self.get_attributes(model, overiddes, **kwargs)
+			fake_models.append(model.objects.create(**props))
+		return fake_models
+
+	def get_attributes(self, model, overiddes={}, **kwargs):
+
+		# ============================================
+		# 	Authentication
+		# ============================================
+
+		if model == User:
+			return {
+				'email': self.faker.email(),
+				'first_name': self.faker.first_name(),
+				'last_name': self.faker.last_name(),
+				# 'birthdate': self.faker.date_of_birth(),
+				'usertype': kwargs.get('usertype_pk', self.create(UserType).pk)
+			}
+
+		if model == UserType:
+			return {
+				'name': self.faker.sentence(nb_words=2),
+			}
+
+		# ============================================
+		# 	Association & Sale
+		# ============================================
+
+		if model == Association:
+			return {
+				'name':		self.faker.company(),
+				'fun_id':	self.faker.random_number(),
+			}
+
+		# if model == AssociationMember:
+	
+		if model == Sale:
+			return {
+				'name':			self.faker.company(),
+				'description': 	self.faker.paragraph(),
+				'association': 	kwargs.get('association_pk', self.create(Association).pk),
+				'is_active': 	True,
+				'public': 		True,
+				'begin_at':		self.faker.date_time_this_year(before_now=True, after_now=False),
+				'end_at': 		self.faker.date_time_this_year(before_now=False, after_now=True),
+				'max_item_quantity': 	self.faker.random_number(),
+				'max_payment_date': 	self.faker.date_time_this_year(before_now=False, after_now=True),
+			}
+
+		# ============================================
+		# 	Item & ItemGroup
+		# ============================================
+
+		if model == ItemGroup:
+			return {
+				'name': 		self.faker.word(),
+				'quantity': 	self.faker.random_number(),
+				'max_per_user': self.faker.random_number(),
+			}
+
+		if model == Item:
+			return {
+				'name': 		self.faker.word(),
+				'description': 	self.faker.paragraph(),
+				'sale':			kwargs.get('sale_pk', self.create(Sale).pk),
+				'group':		kwargs.get('group_pk', self.create(Group).pk),
+				'quantity': 	self.faker.random_number(),
+				'max_per_user': self.faker.random_number(),
+				'is_active': 	True,
+				'quantity': 	self.faker.random_number(),
+				'usertype': 	kwargs.get('usertype_pk', self.create(UserType).pk),
+				'price': 		float(self.faker.random_number()) / 10.,
+				'nemopay_id': 	self.faker.random_number(),
+				'max_per_user': self.faker.random_number(),
+				# 'fields':
+			}
+
+		# ============================================
+		# 	Order, OrderLine, OrderLineItem
+		# ============================================
+
+		if model == Order:
+			return {
+				'owner':		kwargs.get('owner_pk', self.create(User).pk),
+				'sale':			kwargs.get('sale_pk', self.create(Sale).pk),
+				'created_at':	self.faker.date_time_this_year(before_now=True, after_now=False),
+				'updated_at':	self.faker.date_time_this_year(before_now=True, after_now=False),
+				'status':		OrderStatus.ONGOING.value,
+				'tra_id':		self.faker.random_number(),
+			}
+
+		if model == OrderLine:
+			return {
+				'item': 	kwargs.get('item_pk', self.create(Item).pk),
+				'order': 	kwargs.get('order_pk', self.create(Order).pk),
+				'quantity': self.faker.random_digit(),
+			}
+
+		if model == OrderLineItem:
+			return {
+				orderline: kwargs.get('orderline_pk', self.create(OrderLine).pk),
+			}
+
+		# ============================================
+		# 	Field, ItemField, OrderLineField
+		# ============================================
+
+		if model == Field:
+			return {
+				'name': 	self.faker.word(),
+				'type': 	self.faker.word(),
+				'default': 	self.faker.word(),
+				# 'items': 	
+			}
+
+		if model == ItemField:
+			return {
+				'field': 	kwargs.get('field_pk', self.create(Field).pk),
+				'item': 	kwargs.get('item_pk', self.create(Item).pk),
+				'editable': self.faker.boolean(),
+			}
+
+		if model == OrderLineField:
+			return {
+				'orderlineitem': kwargs.get('orderlineitem_pk', self.create(OrderLineItem).pk),
+				'field': 		 kwargs.get('field_pk', self.create(Field).pk),
+				'value': 		 self.faker.word(),
+			}
+
+		raise NotImplementedError("This model isn't faked yet")
+
+
 class CRUDViewSetTestMixin(object):
 	model = None
 	permissions = DEFAULT_CRUD_PERMISSIONS
+	modelFactory = FakeModelFactory()
 	debug = False
 
 	def setUp(self):
@@ -162,8 +311,8 @@ class CRUDViewSetTestMixin(object):
 		return self.model.objects.create(**data)
 
 	def _get_object_attributes(self, user=None):
-		"""Method used to create new object with user, must be overriden"""
-		raise NotImplementedError("This function must be overriden")
+		"""Method used to create new object with user, can be overriden"""
+		return self.modelFactory.get_attributes(self.model)
 
 
 	def _perform_crud_test(self, action):
@@ -204,8 +353,6 @@ class CRUDViewSetTestMixin(object):
 			if action == 'update':			# Additionnal test with PUT for update
 				options['method'] = 'put'
 				self._test_user_permission(url, user, self._is_allowed(action, user), **options)
-
-
 
 
 	# ========================================================

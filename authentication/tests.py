@@ -1,11 +1,9 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
-from core.tests import CRUDViewSetTestMixin, get_permissions_from_compact
+from core.tests import FakeModelFactory, CRUDViewSetTestMixin, get_permissions_from_compact
+from .models import *
 
-from authentication.models import *
-from authentication.serializers import *
-from faker import Faker
-faker = Faker()
+modelFactory = FakeModelFactory()
 
 
 class UserViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
@@ -21,15 +19,6 @@ class UserViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 	def _additionnal_setUp(self):
 		self.usertype = UserType.objects.create(name="Test_UserType")
 		
-	def _get_object_attributes(self, user=None):
-		return {
-			'email': faker.email(),
-			'first_name': faker.first_name(),
-			'last_name': faker.last_name(),
-			# 'birthdate': faker.date_of_birth(),
-			'usertype': self.usertype.pk
-		}
-
 	# Custom create to comply with the redirection
 	def _create_object(self, user=None):
 		return self.users['user']
@@ -50,8 +39,3 @@ class UserTypeViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 		'update': 	"...a", 	# Only admin can update
 		'delete': 	"...a", 	# Only admin can delete
 	})
-
-	def _get_object_attributes(self, user=None):
-		return {
-			'name': faker.sentence(nb_words=2),
-		}
