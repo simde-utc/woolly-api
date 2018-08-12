@@ -72,7 +72,11 @@ class FakeModelFactory(object):
 
 		def _get_related(kw, model):
 			related = kwargs.get(kw, self.create(model))
-			return related.pk if withPk else related
+			jsonApiId = {
+				'type': model.JSONAPIMeta.resource_name,
+				'id': 	related.pk,
+			}
+			return jsonApiId if withPk else related
 
 		# ============================================
 		# 	Authentication
@@ -316,13 +320,13 @@ class CRUDViewSetTestMixin(object):
 		self.assertEqual(response.status_code, expected_status_code, error_message)
 
 
-	def _get_object_attributes(self, user=None):
+	def _get_object_attributes(self, user=None, withPk=True):
 		"""Method used to create new object with user, can be overriden"""
-		return self.modelFactory.get_attributes(self.model, withPk=True, user=user)
+		return self.modelFactory.get_attributes(self.model, withPk=withPk, user=user)
 
 	def _create_object(self, user=None):
 		"""Method used to create the initial object, can be overriden"""
-		data = self._get_object_attributes(user)
+		data = self._get_object_attributes(user, withPk=False)
 		return self.model.objects.create(**data)
 
 

@@ -44,9 +44,9 @@ class ItemSerializer(serializers.ModelSerializer):
 
 
 class SaleSerializer(serializers.HyperlinkedModelSerializer):
-	association = get_ResourceRelatedField('sale', 'association', queryset=Association.objects)
-	items       = get_ResourceRelatedField('sale', 'item', queryset=Item.objects, many=True)
-	orders      = get_ResourceRelatedField('sale', 'order', queryset=Order.objects, many=True)
+	association = get_ResourceRelatedField('sale', 'association', queryset=Association.objects, required=True)
+	orders      = get_ResourceRelatedField('sale', 'order', queryset=Order.objects, many=True, required=False)
+	items       = get_ResourceRelatedField('sale', 'item', queryset=Item.objects, many=True, required=False)
 
 	included_serializers = {
 		'association': 'sales.serializers.AssociationSerializer',

@@ -90,11 +90,6 @@ class SaleViewSet(views.ModelViewSet):
 	serializer_class = SaleSerializer
 	permission_classes = (IsManagerOrReadOnly,)
 
-	def perform_create(self, serializer):
-		serializer.save(
-			association_id=self.kwargs['association_pk'],
-		)
-
 	def get_queryset(self):
 		queryset = Sale.objects.all()
 					# .filter(items__itemspecifications__user_type__name=self.request.user.usertype.name)

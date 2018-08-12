@@ -22,6 +22,7 @@ urlpatterns = merge_sets(
 	gen_url_set(['association', 'associationmember'], AssociationMemberViewSet),
 	# Sale
 	gen_url_set('sale', SaleViewSet, SaleRelationshipView),
+	gen_url_set(['sale', 'association'], AssociationViewSet),
 	gen_url_set(['sale', 'item'], ItemViewSet),
 	gen_url_set(['sale', 'itemgroup'], ItemGroupViewSet),
 	gen_url_set(['sale', 'order'], OrderViewSet),
