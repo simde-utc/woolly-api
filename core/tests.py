@@ -6,6 +6,7 @@ from copy import deepcopy
 from rest_framework_json_api.renderers import JSONRenderer
 from rest_framework_json_api.parsers import JSONParser
 
+
 # Only admin can do things by default
 DEFAULT_CRUD_PERMISSIONS = {
 	'list': 	{ 'public': False, 	'user': False, 	'other': False, 	'admin': True },
@@ -67,6 +68,9 @@ class CRUDViewSetTestMixin(object):
 		# Create test object
 		self.object = self._create_object(self.users.get('user'))
 
+		# Additional setUp
+		self._additionnal_setUp()
+
 		# Debug
 		if self.debug:
 			print("\n")
@@ -74,6 +78,10 @@ class CRUDViewSetTestMixin(object):
 			print("    DEBUG: '"+self.resource_name+"' ViewTestCase")
 			print("-" * (35 + len(self.resource_name)))
 			debug_permissions(self.permissions)
+
+	def _additionnal_setUp(self):
+		"""Method to be overriden in order to perform additional actions on setUp"""
+		pass
 
 	# ========================================================
 	# 		Helpers
@@ -99,6 +107,8 @@ class CRUDViewSetTestMixin(object):
 			return status.HTTP_403_FORBIDDEN
 		if method == 'post':
 			return status.HTTP_201_CREATED
+		if method == 'delete':
+			return status.HTTP_204_NO_CONTENT
 		return status.HTTP_200_OK
 
 	def _parse_data_for_request(self, data, id=None):
@@ -139,7 +149,7 @@ class CRUDViewSetTestMixin(object):
 
 		# Build detailled error message
 		error_message = "for '%s' user" % user
-		if hasattr(response, 'data'):
+		if hasattr(response, 'data') and response.data:
 			error_details = ', '.join(data.get('detail', '') for data in response.data if type(data) is dict)
 			error_message += " (%s)" % error_details
 
@@ -156,51 +166,69 @@ class CRUDViewSetTestMixin(object):
 		raise NotImplementedError("This function must be overriden")
 
 
+	def _perform_crud_test(self, action):
+		"""
+		@brief   Helper to perform CRUD action tests
+		@param   action           The url to access
+		@param   withPkInUrl      Whether the url need a primary key or not
+		"""
+
+		action_to_method_map = {
+			'list': 'get',
+			'retrieve': 'get',			
+			'create': 'post',
+			'update': 'patch',
+			'delete': 'delete',
+		}
+
+		# Build options
+		options = dict()
+		options['id'] = None if action in ('list', 'create') else self.object.pk
+		options['method'] = action_to_method_map[action]
+		
+		url = self._get_url(pk = options['id'])
+
+		# Debug
+		if self.debug:
+			print("\n== Begin '%s' %s view test\n url : %s" % (self.resource_name, action, url))
+
+		# Test permissions for all users
+		for user in self.users:
+			if action in ('create', 'update'):
+				options['data'] = self._get_object_attributes(user)
+				if self.debug:
+					print(" options : ", options['data'])
+
+			# Perform the test
+			self._test_user_permission(url, user, self._is_allowed(action, user), **options)
+			if action == 'update':			# Additionnal test with PUT for update
+				options['method'] = 'put'
+				self._test_user_permission(url, user, self._is_allowed(action, user), **options)
+
+
+
+
 	# ========================================================
 	# 		Tests
 	# ========================================================
 
 	def test_list_view(self):
 		"""Test all users permissions to list"""
-		url = self._get_url()
-		if self.debug:
-			print("\n== Begin '" + self.resource_name + "' list view test", "\n url:", url)
-
-		# Test permissions for all users
-		for user in self.users:
-			self._test_user_permission(url, user, self._is_allowed('list', user))
+		self._perform_crud_test('list')
 
 	def test_retrieve_view(self):
 		"""Test all users permissions to retrieve self.object"""
-		url = self._get_url(pk = self.object.pk)
-		if self.debug:
-			print("\n== Begin '" + self.resource_name + "' retrieve view test", "\n url:", url)
-
-		# Test permissions for all users
-		for user in self.users:
-			self._test_user_permission(url, user, self._is_allowed('retrieve', user))
+		self._perform_crud_test('retrieve')
 
 	def test_create_view(self):
 		"""Test all users permissions to create an object"""
-		url = self._get_url()
-		if self.debug:
-			print("\n== Begin '" + self.resource_name + "' create view test", "\n url:", url)
-
-		# Test permissions for all users
-		for user in self.users:
-			data = self._get_object_attributes(user)
-			self._test_user_permission(url, user, self._is_allowed('create', user), method='post', data=data)
+		self._perform_crud_test('create')
 
 	def test_update_view(self):
 		"""Test all users permissions to modify an object"""
-		pk = self.object.pk
-		url = self._get_url(pk = pk)
-		if self.debug:
-			print("\n== Begin '" + self.resource_name + "' update view test", "\n url:", url)
+		self._perform_crud_test('update')
 
-		# Test permissions for all users
-		for user in self.users:
-			data = self._get_object_attributes(user)
-			self._test_user_permission(url, user, self._is_allowed('update', user), method='patch', data=data, id=pk)
-			self._test_user_permission(url, user, self._is_allowed('update', user), method='put', data=data, id=pk)
+	def test_delete_view(self):
+		"""Test all users permissions to delete an object"""
+		self._perform_crud_test('delete')
 

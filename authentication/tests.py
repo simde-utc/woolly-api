@@ -18,9 +18,10 @@ class UserViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 		'delete': 	"...a", 	# Only user and admin can delete
 	})
 
-	def _get_object_attributes(self, user=None):
-		# hasattr(self, 'usertype') and self.usertype or
+	def _additionnal_setUp(self):
 		self.usertype = UserType.objects.create(name="Test_UserType")
+		
+	def _get_object_attributes(self, user=None):
 		return {
 			'email': faker.email(),
 			'first_name': faker.first_name(),
@@ -38,8 +39,6 @@ class UserViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 		self._test_user_permission(url, 'admin', method="post", data={}, expected_status_code=status.HTTP_302_FOUND)
 		self._test_user_permission(url, 'user', method="post", data={}, expected_status_code=status.HTTP_403_FORBIDDEN)
 		self._test_user_permission(url, 'public', method="post", data={}, expected_status_code=status.HTTP_403_FORBIDDEN)
-
-
 
 
 class UserTypeViewSetTestCase(CRUDViewSetTestMixin, APITestCase):

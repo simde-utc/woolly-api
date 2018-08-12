@@ -21,8 +21,8 @@ class UserViewSet(views.ModelViewSet):
 		return redirect('auth.login')
 
 	# TODO : block self is_admin -> True
-	def update(self, request, *args, **kwargs):
-		pass
+	# def update(self, request, *args, **kwargs):
+		# pass
 
 	def get_queryset(self):
 		user = self.request.user
