@@ -167,7 +167,8 @@ class OrderStatus(Enum):
 
 	# Helpers, not real choices
 	CANCELLABLE_LIST = (NOT_PAID, AWAITING_VALIDATION)
-	NOT_CANCELLED_LIST = (AWAITING_VALIDATION, VALIDATED, NOT_PAID, PAID) 
+	# NOT_CANCELLED_LIST = (AWAITING_VALIDATION, VALIDATED, NOT_PAID, PAID) 
+	NOT_CANCELLED_LIST = (PAID, VALIDATED) 
 	BUYABLE_STATUS_LIST = (ONGOING, AWAITING_VALIDATION, NOT_PAID) 
 	VALIDATED_LIST = (VALIDATED, PAID)
 
@@ -193,7 +194,7 @@ class Order(models.Model):
 	tra_id = models.IntegerField(blank=True, null=True, default=None)
 
 	def __str__(self):
-		return "%d - %s by %s" % (self.id, self.sale, self.owner)
+		return "%d - %s ordered by %s" % (self.id, self.sale, self.owner)
 
 	class Meta:
 		ordering = ('id',)

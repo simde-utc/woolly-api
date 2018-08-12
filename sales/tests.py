@@ -63,8 +63,30 @@ class OrderViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 	model = Order
 	permissions = {
 		**OrderOwnerOrAdmin,
-		'create': ".uoa",		# Every logged user can create order
+		'create': { 'public': False, 'user': True, 'other': True, 'admin': True }, 	# Every logged user can create order
 	}
+
+	def _additionnal_setUp(self):
+		self.sale = self.modelFactory.create(Sale)
+
+	def _get_object_attributes(self, user=None, withPk=True):
+		return self.modelFactory.get_attributes(self.model, withPk=withPk, sale=self.sale, owner=user)
+
+	def _create_object(self, user=None):
+		data = self._get_object_attributes(user, withPk=False)
+		data['status'] = OrderStatus.NOT_PAID.value
+		return self.model.objects.create(**data)
+
+	def _get_expected_status_code(self, method, allowed, user):
+		if not allowed:
+			return status.HTTP_403_FORBIDDEN
+		if method == 'post':
+			return status.HTTP_200_OK if user == 'user' else status.HTTP_201_CREATED
+		if method == 'delete':
+			return status.HTTP_204_NO_CONTENT
+		return status.HTTP_200_OK
+
+
 
 class OrderLineViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 	model = OrderLine

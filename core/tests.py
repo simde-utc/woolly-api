@@ -76,7 +76,7 @@ class FakeModelFactory(object):
 			related = kwargs.get(kw, self.create(model))
 			jsonApiId = {
 				'type': model.JSONAPIMeta.resource_name,
-				'id': 	related.pk,
+				'id': 	related.pk if hasattr(related, 'pk') else None,
 			}
 			return jsonApiId if withPk else related
 
@@ -219,15 +219,15 @@ class CRUDViewSetTestMixin(object):
 
 		# resource_name MUST be specified
 		if not self.model:
-			raise NotImplementedError("Please specify the resource_name")
+			raise NotImplementedError("Please specify the model")
 
 		self.resource_name = self.model.JSONAPIMeta.resource_name
 
 		# Get users
 		self.users = {
-			'admin': User.objects.create_superuser(email="admin@woolly.com"),
-			'user': User.objects.create_user(email="user@woolly.com"),
-			'other': User.objects.create_user(email="other@woolly.com"),
+			'admin':  User.objects.create_superuser(email="admin@woolly.com"),
+			'user':   User.objects.create_user(email="user@woolly.com"),
+			'other':  User.objects.create_user(email="other@woolly.com"),
 			'public': None
 		}
 
@@ -244,6 +244,7 @@ class CRUDViewSetTestMixin(object):
 			print("    DEBUG: '"+self.resource_name+"' ViewTestCase")
 			print("-" * (35 + len(self.resource_name)))
 			debug_permissions(self.permissions)
+			print("Object :", self.object)
 
 	def _additionnal_setUp(self):
 		"""Method to be overriden in order to perform additional actions on setUp"""
@@ -268,7 +269,7 @@ class CRUDViewSetTestMixin(object):
 		except exceptions.NoReverseMatch:
 			self.assertIsNotNone(url, "Route '%s' is not defined" % route['name'])
 
-	def _get_expected_status_code(self, method, allowed):
+	def _get_expected_status_code(self, method, allowed, user):
 		if not allowed:
 			return status.HTTP_403_FORBIDDEN
 		if method == 'post':
@@ -292,7 +293,7 @@ class CRUDViewSetTestMixin(object):
 		"""
 		@brief   Helper to make the user try to access the url with specified method
 		@param   url                   The url to access
-		@param   user                  The user which does the request
+		@param   user                  The user which does the request (BEWARE ! Actually the username key in self.users dict)
 		@param   allowed               Whether the user should be allowed to perform the request
 		@param   method                The HTTP method used to access the url
 		@param   data                  The data to bind to the HTTP request
@@ -309,7 +310,7 @@ class CRUDViewSetTestMixin(object):
 		response = call_method(url, data, format='vnd.api+json')
 
 		# Get expected status_code 
-		expected_status_code = kwargs.get('expected_status_code', self._get_expected_status_code(HTTP_method, allowed))
+		expected_status_code = kwargs.get('expected_status_code', self._get_expected_status_code(HTTP_method, allowed, user))
 		if self.debug:
 			print(" Status code for '%s': \t expected %d, got %d" % ((user or 'public'), expected_status_code, response.status_code))
 
@@ -366,7 +367,7 @@ class CRUDViewSetTestMixin(object):
 			self.object.save()
 
 			if action in ('create', 'update'):
-				options['data'] = self._get_object_attributes(user)
+				options['data'] = self._get_object_attributes(self.users.get(user))
 				if self.debug:
 					print(" options : ", options['data'])
 

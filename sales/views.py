@@ -8,6 +8,7 @@ from core.helpers import errorResponse
 from core.permissions import *
 from .serializers import *
 from .permissions import *
+from .models import OrderStatus
 
 from authentication.auth import JWTAuthentication
 from core.utils import render_to_pdf, data_to_qrcode
@@ -198,8 +199,8 @@ class OrderViewSet(views.ModelViewSet):
 			return None
 
 		# Admins see everything otherwise filter to see only those owned by the user
-		if not user.is_admin:
-			queryset = queryset.filter(owner=user)
+		# if not user.is_admin:
+		# 	queryset = queryset.filter(owner=user)
 
 		if 'user_pk' in self.kwargs:
 			user_pk = self.kwargs['user_pk']
@@ -223,7 +224,7 @@ class OrderViewSet(views.ModelViewSet):
 				'sale': request.data['sale'],
 				'owner': {
 					'id': request.user.id,
-					'type': 'users'
+					'type': 'user'
 				},
 				'orderlines': [],
 				'status': OrderStatus.ONGOING.value
@@ -235,15 +236,16 @@ class OrderViewSet(views.ModelViewSet):
 		headers = self.get_success_headers(serializer.data)
 		return Response(serializer.data, status=httpStatus, headers=headers)
 
-	def destroy(self, request, pk=None):
-		try:
+	def destroy(self, request, *args, **kwargs):
+		order = self.get_object()
+		if order.status in OrderStatus.CANCELLABLE_LIST.value:
 			# TODO Add time
-			order = Order.objects \
-				.filter(owner=request.user.id, status__in=OrderStatus.CANCELLABLE_LIST.value, pk=pk) \
-				.update(status=OrderStatus.CANCELLED.value)
-			return Response(None, status=status.HTTP_200_OK)
-		except Order.DoesNotExist as err:
-			return Response(None, status=status.HTTP_404_NOT_FOUND)
+			order.status = OrderStatus.CANCELLED.value
+			order.save()
+			return Response(None, status=status.HTTP_204_NO_CONTENT)
+		else:
+			msg = "La commande n'est pas annulable."
+			return errorResponse(msg, [msg], status.HTTP_406_NOT_ACCEPTABLE)
 
 class OrderRelationshipView(views.RelationshipView):
 	"""
