@@ -307,9 +307,11 @@ class CRUDViewSetTestMixin(object):
 		# Build detailled error message
 		error_message = "for '%s' user" % user
 		if hasattr(response, 'data') and response.data:
-			error_details = ', '.join(data.get('detail', '') for data in response.data if type(data) is dict)
+			error_details = ', '.join(
+				data.get('detail', '') + " [%s]" % data['source']['pointer'] \
+				for data in response.data if type(data) is dict
+			)
 			error_message += " (%s)" % error_details
-
 		self.assertEqual(response.status_code, expected_status_code, error_message)
 
 
