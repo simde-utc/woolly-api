@@ -1,4 +1,5 @@
 from django.urls import reverse, exceptions
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -110,10 +111,10 @@ class FakeModelFactory(object):
 				'association': 	_get_related('association', Association),
 				'is_active': 	True,
 				'public': 		True,
-				'begin_at':		self.faker.date_time_this_year(before_now=True, after_now=False),
-				'end_at': 		self.faker.date_time_this_year(before_now=False, after_now=True),
-				'max_item_quantity': 	self.faker.random_number(),
-				'max_payment_date': 	self.faker.date_time_this_year(before_now=False, after_now=True),
+				'begin_at':		timezone.make_aware(self.faker.date_time_this_year(before_now=True, after_now=False)),
+				'end_at': 		timezone.make_aware(self.faker.date_time_this_year(before_now=False, after_now=True)),
+				'max_item_quantity': self.faker.random_number(),
+				'max_payment_date':	 timezone.make_aware(self.faker.date_time_this_year(before_now=False, after_now=True)),
 			}
 
 		# ============================================
@@ -152,8 +153,8 @@ class FakeModelFactory(object):
 			return {
 				'owner':		_get_related('owner', User),
 				'sale':			_get_related('sale', Sale),
-				'created_at':	self.faker.date_time_this_year(before_now=True, after_now=False),
-				'updated_at':	self.faker.date_time_this_year(before_now=True, after_now=False),
+				'created_at':	timezone.make_aware(self.faker.date_time_this_year(before_now=True, after_now=False)),
+				'updated_at':	timezone.make_aware(self.faker.date_time_this_year(before_now=True, after_now=False)),
 				'status':		OrderStatus.ONGOING.value,
 				'tra_id':		self.faker.random_number(),
 			}
