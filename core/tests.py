@@ -63,7 +63,15 @@ class FakeModelFactory(object):
 			fake_models.append(model.objects.create(**props))
 		return fake_models
 
-	def get_attributes(self, model, overiddes={}, **kwargs):
+	def get_attributes(self, model, withPk=False, overiddes={}, **kwargs):
+		props = self._get_attributes(model, withPk, **kwargs)
+		return { **props, **overiddes }
+
+	def _get_attributes(self, model, withPk, **kwargs):
+
+		def _get_related(kw, model):
+			related = kwargs.get(kw, self.create(model))
+			return related.pk if withPk else related
 
 		# ============================================
 		# 	Authentication
@@ -71,11 +79,11 @@ class FakeModelFactory(object):
 
 		if model == User:
 			return {
-				'email': self.faker.email(),
-				'first_name': self.faker.first_name(),
-				'last_name': self.faker.last_name(),
-				# 'birthdate': self.faker.date_of_birth(),
-				'usertype': kwargs.get('usertype_pk', self.create(UserType).pk)
+				'email': 		self.faker.email(),
+				'first_name': 	self.faker.first_name(),
+				'last_name': 	self.faker.last_name(),
+				# 'birthdate': 	self.faker.date_of_birth(),
+				'usertype': 	_get_related('usertype', UserType)
 			}
 
 		if model == UserType:
@@ -99,7 +107,7 @@ class FakeModelFactory(object):
 			return {
 				'name':			self.faker.company(),
 				'description': 	self.faker.paragraph(),
-				'association': 	kwargs.get('association_pk', self.create(Association).pk),
+				'association': 	_get_related('association', Association),
 				'is_active': 	True,
 				'public': 		True,
 				'begin_at':		self.faker.date_time_this_year(before_now=True, after_now=False),
@@ -123,13 +131,13 @@ class FakeModelFactory(object):
 			return {
 				'name': 		self.faker.word(),
 				'description': 	self.faker.paragraph(),
-				'sale':			kwargs.get('sale_pk', self.create(Sale).pk),
-				'group':		kwargs.get('group_pk', self.create(Group).pk),
+				'sale':			_get_related('sale', Sale),
+				'group':		_get_related('group', Group),
 				'quantity': 	self.faker.random_number(),
 				'max_per_user': self.faker.random_number(),
 				'is_active': 	True,
 				'quantity': 	self.faker.random_number(),
-				'usertype': 	kwargs.get('usertype_pk', self.create(UserType).pk),
+				'usertype': 	_get_related('usertype', UserType),
 				'price': 		float(self.faker.random_number()) / 10.,
 				'nemopay_id': 	self.faker.random_number(),
 				'max_per_user': self.faker.random_number(),
@@ -142,8 +150,8 @@ class FakeModelFactory(object):
 
 		if model == Order:
 			return {
-				'owner':		kwargs.get('owner_pk', self.create(User).pk),
-				'sale':			kwargs.get('sale_pk', self.create(Sale).pk),
+				'owner':		_get_related('owner', User),
+				'sale':			_get_related('sale', Sale),
 				'created_at':	self.faker.date_time_this_year(before_now=True, after_now=False),
 				'updated_at':	self.faker.date_time_this_year(before_now=True, after_now=False),
 				'status':		OrderStatus.ONGOING.value,
@@ -152,14 +160,14 @@ class FakeModelFactory(object):
 
 		if model == OrderLine:
 			return {
-				'item': 	kwargs.get('item_pk', self.create(Item).pk),
-				'order': 	kwargs.get('order_pk', self.create(Order).pk),
+				'item': 	_get_related('item', Item),
+				'order': 	_get_related('order', Order),
 				'quantity': self.faker.random_digit(),
 			}
 
 		if model == OrderLineItem:
 			return {
-				orderline: kwargs.get('orderline_pk', self.create(OrderLine).pk),
+				orderline: _get_related('orderline', OrderLine),
 			}
 
 		# ============================================
@@ -176,15 +184,15 @@ class FakeModelFactory(object):
 
 		if model == ItemField:
 			return {
-				'field': 	kwargs.get('field_pk', self.create(Field).pk),
-				'item': 	kwargs.get('item_pk', self.create(Item).pk),
+				'field': 	_get_related('field', Field),
+				'item': 	_get_related('item', Item),
 				'editable': self.faker.boolean(),
 			}
 
 		if model == OrderLineField:
 			return {
-				'orderlineitem': kwargs.get('orderlineitem_pk', self.create(OrderLineItem).pk),
-				'field': 		 kwargs.get('field_pk', self.create(Field).pk),
+				'orderlineitem': _get_related('orderlineitem', OrderLineItem),
+				'field': 		 _get_related('field', Field),
 				'value': 		 self.faker.word(),
 			}
 
@@ -305,14 +313,14 @@ class CRUDViewSetTestMixin(object):
 		self.assertEqual(response.status_code, expected_status_code, error_message)
 
 
-	def _create_object(self, user=None):
-		"""Method used to create the initial object"""
-		data = self._get_object_attributes(user)
-		return self.model.objects.create(**data)
-
 	def _get_object_attributes(self, user=None):
 		"""Method used to create new object with user, can be overriden"""
-		return self.modelFactory.get_attributes(self.model)
+		return self.modelFactory.get_attributes(self.model, withPk=True, user=user)
+
+	def _create_object(self, user=None):
+		"""Method used to create the initial object, can be overriden"""
+		data = self._get_object_attributes(user)
+		return self.model.objects.create(**data)
 
 
 	def _perform_crud_test(self, action):
