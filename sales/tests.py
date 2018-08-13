@@ -5,7 +5,6 @@ from .models import *
 
 modelFactory = FakeModelFactory()
 
-
 # Used for Association, Sale, ItemGroup, Item, ItemField
 ManagerOrReadOnly = get_permissions_from_compact({
 	'list': 	"puoa", 	# Everyone can list
@@ -86,8 +85,6 @@ class OrderViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 			return status.HTTP_204_NO_CONTENT
 		return status.HTTP_200_OK
 
-
-
 class OrderLineViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 	model = OrderLine
 	permissions = OrderOwnerOrAdmin
@@ -132,7 +129,6 @@ class OrderLineItemViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 
 	def _get_object_attributes(self, user=None, withPk=True):
 		return self.modelFactory.get_attributes(self.model, withPk=withPk, orderline=self.orderline)
-
 
 class OrderLineFieldViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 	model = OrderLineField
