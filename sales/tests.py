@@ -98,8 +98,11 @@ class OrderLineViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 		self.assertEqual(self.order.owner, self.users['user'], "Erreur de configuration, l'order doit être faite par 'user'")
 
 	def _get_object_attributes(self, user=None, withPk=True):
-		overiddes = { 'quantity': 5 }
-		return self.modelFactory.get_attributes(self.model, withPk=withPk, overiddes=overiddes, order=self.order)
+		options = {
+			'order': self.order,
+			'quantity': 5
+		}
+		return self.modelFactory.get_attributes(self.model, withPk=withPk, **options)
 
 
 class FieldViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
@@ -133,5 +136,33 @@ class OrderLineItemViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 
 class OrderLineFieldViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 	model = OrderLineField
-	permissions = OrderOwnerOrAdmin
+	permissions = get_permissions_from_compact({
+		'list': 	"...a", 	# Only admin can list
+		'retrieve': ".u.a", 	# Only owner and admin can retrieve
+		'create': 	"...a", 	# Only admin can create
+		'update': 	".u.a", 	# Only admin can update
+		'delete': 	"...a", 	# Only admin can delete
+	})
 
+	def _additionnal_setUp(self):
+		self.item = self.modelFactory.create(Item)
+		self.field = self.modelFactory.create(Field)
+		self.itemfield = self.modelFactory.create(ItemField, item=self.item, field=self.field, editable=True)
+
+		# Order is own by user for the purpose of the tests
+		self.order = self.modelFactory.create(Order, owner=self.users['user'])
+		self.orderline = self.modelFactory.create(OrderLine, order=self.order, item=self.item, quantity=1)
+		self.orderlineitem = self.modelFactory.create(OrderLineItem, orderline=self.orderline)
+
+		# Tests
+		self.assertEqual(self.orderlineitem.orderline.order.owner, self.users['user'])
+		self.assertEqual(self.orderlineitem.orderline.item, self.item)
+		self.assertEqual(self.itemfield.item, self.item)
+		self.assertEqual(self.itemfield.field, self.field)
+
+	def _get_object_attributes(self, user=None, withPk=True):
+		options = {
+			'orderlineitem': self.orderlineitem,
+			'field': self.field,
+		}
+		return self.modelFactory.get_attributes(self.model, withPk=withPk, **options)

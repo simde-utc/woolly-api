@@ -32,7 +32,7 @@ def check_order_ownership(request, view, obj):
 		return obj.orderlineitem.orderline.order.owner == request.user
 	return False
 
-# Used for Order, OrderLine, OrderLineField
+# Used for Order, OrderLine
 class IsOrderOwnerOrAdmin(CustomPermission):
 	require_authentication = True
 	pass_for_obj = True
@@ -50,3 +50,13 @@ class IsOrderOwnerReadOnlyOrAdmin(CustomPermission):
 	permission_functions = (allow_only_retrieve_for_non_admin,)
 	object_permission_functions = (check_order_ownership,)
 
+def no_delete(request, view, obj):
+	return not view.action == 'destroy'
+
+# Used for OrderLineField
+class IsOrderOwnerReadUpdateOrAdmin(CustomPermission):
+	require_authentication = True
+	pass_for_obj = True
+	allow_admin = True
+	object_permission_functions = (check_order_ownership, no_delete)
+	check_with_or = False

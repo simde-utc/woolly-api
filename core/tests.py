@@ -55,22 +55,18 @@ class FakeModelFactory(object):
 		if seed:
 			self.faker.seed(seed)
 
-	def create(self, model, nb=None, overiddes={}, **kwargs):
+	def create(self, model, nb=None, **kwargs):
 		if nb is None:
-			props = self.get_attributes(model, overiddes, **kwargs)
+			props = self.get_attributes(model, **kwargs)
 			return model.objects.create(**props)
 
 		fake_models = list()
 		for i in range(nb):
-			props = self.get_attributes(model, overiddes, **kwargs)
+			props = self.get_attributes(model, **kwargs)
 			fake_models.append(model.objects.create(**props))
 		return fake_models
 
-	def get_attributes(self, model, withPk=False, overiddes={}, **kwargs):
-		props = self._get_attributes(model, withPk, **kwargs)
-		return { **props, **overiddes }
-
-	def _get_attributes(self, model, withPk, **kwargs):
+	def get_attributes(self, model, withPk=False, **kwargs):
 
 		def _get_related(kw, model):
 			related = kwargs.get(kw, self.create(model))
@@ -86,16 +82,16 @@ class FakeModelFactory(object):
 
 		if model == User:
 			return {
-				'email': 		self.faker.email(),
-				'first_name': 	self.faker.first_name(),
-				'last_name': 	self.faker.last_name(),
-				# 'birthdate': 	self.faker.date_of_birth(),
-				'usertype': 	_get_related('usertype', UserType)
+				'email': 		kwargs.get('email', 		self.faker.email()),
+				'first_name': 	kwargs.get('first_name', 	self.faker.first_name()),
+				'last_name': 	kwargs.get('last_name', 	self.faker.last_name()),
+				# 'birthdate': 	kwargs.get('birthdate', 	self.faker.date_of_birth()),
+				'usertype': 	kwargs.get('usertype', 		_get_related('usertype', UserType))
 			}
 
 		if model == UserType:
 			return {
-				'name': self.faker.sentence(nb_words=2),
+				'name': kwargs.get('name', self.faker.sentence(nb_words=4)),
 			}
 
 		# ============================================
@@ -104,23 +100,29 @@ class FakeModelFactory(object):
 
 		if model == Association:
 			return {
-				'name':		self.faker.company(),
-				'fun_id':	self.faker.random_number(),
+				'name':		kwargs.get('name', 		self.faker.company()),
+				'fun_id':	kwargs.get('fun_id', 	self.faker.random_number()),
 			}
 
 		# if model == AssociationMember:
 	
 		if model == Sale:
 			return {
-				'name':			self.faker.company(),
-				'description': 	self.faker.paragraph(),
+				'name':			kwargs.get('name',			self.faker.company()),
+				'description': 	kwargs.get('description',	self.faker.paragraph()),
 				'association': 	_get_related('association', Association),
-				'is_active': 	True,
-				'public': 		True,
-				'begin_at':		format_date(self.faker.date_time_this_year(before_now=True, after_now=False)),
-				'end_at': 		format_date(self.faker.date_time_this_year(before_now=False, after_now=True)),
-				'max_item_quantity': self.faker.random_number(),
-				'max_payment_date':	 format_date(self.faker.date_time_this_year(before_now=False, after_now=True)),
+				'is_active': 	kwargs.get('is_active', True),
+				'public': 		kwargs.get('public', 	True),
+				'begin_at':		format_date(kwargs.get('begin_at',
+						self.faker.date_time_this_year(before_now=True, after_now=False
+				))),
+				'end_at': 		format_date(kwargs.get('end_at',
+						self.faker.date_time_this_year(before_now=False, after_now=True
+				))),
+				'max_item_quantity': kwargs.get('max_item_quantity', self.faker.random_number()),
+				'max_payment_date':	 format_date(kwargs.get('max_payment_date',
+					self.faker.date_time_this_year(before_now=False, after_now=True
+				))),
 			}
 
 		# ============================================
@@ -129,25 +131,25 @@ class FakeModelFactory(object):
 
 		if model == ItemGroup:
 			return {
-				'name': 		self.faker.word(),
-				'quantity': 	self.faker.random_number(),
-				'max_per_user': self.faker.random_number(),
+				'name': 		kwargs.get('name',			self.faker.word()),
+				'quantity': 	kwargs.get('quantity',		self.faker.random_number()),
+				'max_per_user': kwargs.get('max_per_user',	self.faker.random_number()),
 			}
 
 		if model == Item:
 			return {
-				'name': 		self.faker.word(),
-				'description': 	self.faker.paragraph(),
+				'name': 		kwargs.get('name', self.faker.word()),
+				'description': 	kwargs.get('description', self.faker.paragraph()),
 				'sale':			_get_related('sale', Sale),
 				'group':		_get_related('group', ItemGroup),
-				'quantity': 	self.faker.random_number(),
-				'max_per_user': self.faker.random_number(),
-				'is_active': 	True,
-				'quantity': 	self.faker.random_number(),
 				'usertype': 	_get_related('usertype', UserType),
-				'price': 		float(self.faker.random_number()) / 10.,
-				'nemopay_id': 	self.faker.random_number(),
-				'max_per_user': self.faker.random_number(),
+				'quantity': 	kwargs.get('quantity', 		self.faker.random_number()),
+				'max_per_user': kwargs.get('max_per_user', 	self.faker.random_number()),
+				'is_active': 	kwargs.get('is_active', 	True),
+				'quantity': 	kwargs.get('quantity', 		self.faker.random_number()),
+				'price': 		float(kwargs.get('price', 	self.faker.random_number()/10.)),
+				'nemopay_id': 	kwargs.get('nemopay_id', 	self.faker.random_number()),
+				'max_per_user': kwargs.get('max_per_user', 	self.faker.random_number()),
 				# 'fields':
 			}
 
@@ -159,17 +161,21 @@ class FakeModelFactory(object):
 			return {
 				'owner':		_get_related('owner', User),
 				'sale':			_get_related('sale', Sale),
-				'created_at':	format_date(self.faker.date_time_this_year(before_now=True, after_now=False)),
-				'updated_at':	format_date(self.faker.date_time_this_year(before_now=True, after_now=False)),
-				'status':		OrderStatus.ONGOING.value,
-				'tra_id':		self.faker.random_number(),
+				'created_at':	format_date(kwargs.get('created_at', 
+					self.faker.date_time_this_year(before_now=True, after_now=False
+				))),
+				'updated_at':	format_date(kwargs.get('updated_at', 
+					self.faker.date_time_this_year(before_now=True, after_now=False
+				))),
+				'status':		kwargs.get('status', OrderStatus.ONGOING.value),
+				'tra_id':		kwargs.get('tra_id', self.faker.random_number()),
 			}
 
 		if model == OrderLine:
 			return {
 				'item': 	_get_related('item', Item),
 				'order': 	_get_related('order', Order),
-				'quantity': self.faker.random_digit(),
+				'quantity': kwargs.get('quantity', self.faker.random_digit()),
 			}
 
 		if model == OrderLineItem:
@@ -183,9 +189,9 @@ class FakeModelFactory(object):
 
 		if model == Field:
 			return {
-				'name': 	self.faker.word(),
-				'type': 	self.faker.word(),
-				'default': 	self.faker.word(),
+				'name': 	kwargs.get('name', 		self.faker.word()),
+				'type': 	kwargs.get('type', 		self.faker.word()),
+				'default': 	kwargs.get('default', 	self.faker.word()),
 				# 'items': 	
 			}
 
@@ -193,14 +199,14 @@ class FakeModelFactory(object):
 			return {
 				'field': 	_get_related('field', Field),
 				'item': 	_get_related('item', Item),
-				'editable': self.faker.boolean(),
+				'editable': kwargs.get('editable', self.faker.boolean()),
 			}
 
 		if model == OrderLineField:
 			return {
 				'orderlineitem': _get_related('orderlineitem', OrderLineItem),
 				'field': 		 _get_related('field', Field),
-				'value': 		 self.faker.word(),
+				'value': 		 kwargs.get('value', self.faker.word()),
 			}
 
 		raise NotImplementedError("This model isn't faked yet")
@@ -241,7 +247,7 @@ class CRUDViewSetTestMixin(object):
 		if self.debug:
 			print("\n")
 			print("=" * (35 + len(self.resource_name)))
-			print("    DEBUG: '"+self.resource_name+"' ViewTestCase")
+			print("    DEBUG: '" + self.resource_name + "' ViewTestCase")
 			print("-" * (35 + len(self.resource_name)))
 			debug_permissions(self.permissions)
 			print("Object :", self.object)

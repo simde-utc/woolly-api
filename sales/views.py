@@ -408,24 +408,7 @@ class OrderLineFieldViewSet(views.ModelViewSet):
 	"""
 	queryset = OrderLineField.objects.all()
 	serializer_class = OrderLineFieldSerializer
-	permission_classes = (IsOrderOwnerOrAdmin,)
-
-	def create(self, request):
-		pass
-
-	def update(self, request, pk=None, partial=False):
-		instance = self.queryset.get(pk=pk)
-		if instance.isEditable() == True:
-			serializer = OrderLineFieldSerializer(instance, data={'value': request.data['value']}, partial=True)
-			serializer.is_valid(raise_exception=True)
-			serializer.save()
-		else:
-			serializer = OrderLineFieldSerializer(instance)
-		return Response(serializer.data)
-
-
-	def partial_update(self, request, pk=None):
-		return self.update(request, pk, True)
+	permission_classes = (IsOrderOwnerReadUpdateOrAdmin,)
 
 	def get_queryset(self):
 		queryset = self.queryset
@@ -434,6 +417,17 @@ class OrderLineFieldViewSet(views.ModelViewSet):
 			queryset = queryset.filter(orderlineitem__pk=orderlineitem_pk)
 
 		return queryset
+
+	def update(self, request, *args, **kwargs):
+		partial = kwargs.pop('partial', False)
+		instance = self.get_object()
+		if instance.isEditable() == True:
+			serializer = OrderLineFieldSerializer(instance, data={'value': request.data['value']}, partial=True)
+			serializer.is_valid(raise_exception=True)
+			serializer.save()
+		else:
+			serializer = OrderLineFieldSerializer(instance)
+		return Response(serializer.data)
 
 class OrderLineFieldRelationshipView(views.RelationshipView):
 	"""

@@ -58,7 +58,9 @@ urlpatterns = merge_sets(
 	gen_url_set(['field', 'itemfield'], ItemFieldViewSet),
 	# OrderLineField ?????????????????????
 	gen_url_set('orderlinefield', OrderLineFieldViewSet, OrderLineFieldRelationshipView),
-	gen_url_set(['orderlinefield', 'orderline'], OrderLineViewSet),	
+	gen_url_set(['orderlinefield', 'field'], FieldViewSet),	
+	# gen_url_set(['orderlinefield', 'orderline'], OrderLineViewSet),	
+	gen_url_set(['orderlinefield', 'orderlineitem'], OrderLineItemViewSet),	
 	# ItemField ??????????????????????
 	gen_url_set('itemfield', ItemFieldViewSet, ItemFieldRelationshipView),
 	gen_url_set(['itemfield', 'item'], ItemViewSet),
