@@ -36,6 +36,7 @@ urlpatterns = merge_sets(
 	gen_url_set(['item', 'sale'], SaleViewSet),
 	gen_url_set(['item', 'itemgroup'], ItemGroupViewSet),
 	gen_url_set(['item', 'usertype'], UserTypeViewSet),
+	gen_url_set(['item', 'itemfield'], ItemFieldViewSet, ItemFieldRelationshipView),
 
 	# Order
 	gen_url_set('order', OrderViewSet, OrderRelationshipView),
@@ -52,12 +53,14 @@ urlpatterns = merge_sets(
 
 	# Field
 	gen_url_set('field', FieldViewSet, FieldRelationshipView),
+	gen_url_set(['field', 'itemfield'], ItemFieldViewSet),
 	# OrderLineField ?????????????????????
 	gen_url_set('orderlinefield', OrderLineFieldViewSet, OrderLineFieldRelationshipView),
 	gen_url_set(['orderlineitem', 'orderlinefield'], OrderLineFieldViewSet),	
 	# ItemField ??????????????????????
 	gen_url_set('itemfield', ItemFieldViewSet, ItemFieldRelationshipView),
-	gen_url_set(['item', 'itemfield'], ItemFieldViewSet, ItemFieldRelationshipView),
+	gen_url_set(['itemfield', 'item'], ItemViewSet),
+	gen_url_set(['itemfield', 'field'], FieldViewSet),
 )
 
 # Addtionnal API endpoints for Authentication

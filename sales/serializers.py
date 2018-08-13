@@ -159,7 +159,7 @@ class OrderLineSerializer(serializers.ModelSerializer):
 # ============================================
 
 class FieldSerializer(serializers.ModelSerializer):
-	itemfields = get_ResourceRelatedField('field', 'itemfield', queryset='ItemField.objects', many=True)
+	itemfields = get_ResourceRelatedField('field', 'itemfield', queryset='ItemField.objects', many=True, required=False)
 
 	included_serializers = {
 		'itemfields': 'sales.serializers.ItemFieldSerializer',
