@@ -93,15 +93,12 @@ class OrderLineViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 	permissions = OrderOwnerOrAdmin
 
 	def _additionnal_setUp(self):
-		self.sale = self.modelFactory.create(Sale)
 		# Order is own by user for the purpose of the tests
 		self.order = self.modelFactory.create(Order, owner=self.users['user'])
 		self.assertEqual(self.order.owner, self.users['user'], "Erreur de configuration, l'order doit être faite par 'user'")
 
 	def _get_object_attributes(self, user=None, withPk=True):
-		overiddes = {
-			'quantity': 5
-		}
+		overiddes = { 'quantity': 5 }
 		return self.modelFactory.get_attributes(self.model, withPk=withPk, overiddes=overiddes, order=self.order)
 
 
@@ -116,8 +113,25 @@ class ItemFieldViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 
 class OrderLineItemViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 	model = OrderLineItem
-	permissions = OrderOwnerOrAdmin
+	permissions = get_permissions_from_compact({
+		'list': 	"...a", 	# Only admin can list
+		'retrieve': ".u.a", 	# Only owner and admin can retrieve
+		'create': 	"...a", 	# Only admin can create
+		'update': 	"...a", 	# Only admin can update
+		'delete': 	"...a", 	# Only admin can delete
+	})
+
+	def _additionnal_setUp(self):
+		# Order is own by user for the purpose of the tests
+		self.order = self.modelFactory.create(Order, owner=self.users['user'])
+		self.orderline = self.modelFactory.create(OrderLine, order=self.order)
+		self.assertEqual(self.orderline.order.owner, self.users['user'], "Erreur de configuration, l'order doit être faite par 'user'")
+
+	def _get_object_attributes(self, user=None, withPk=True):
+		return self.modelFactory.get_attributes(self.model, withPk=withPk, orderline=self.orderline)
+
 
 class OrderLineFieldViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 	model = OrderLineField
 	permissions = OrderOwnerOrAdmin
+

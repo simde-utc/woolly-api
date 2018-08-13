@@ -213,6 +213,7 @@ class OrderLineFieldSerializer(serializers.ModelSerializer):
 	orderlineitem = get_ResourceRelatedField('orderlinefield', 'orderlineitem', queryset=OrderLineItem.objects)
 	field         = get_ResourceRelatedField('orderlinefield', 'field', queryset=Field.objects)
 
+	# For easier access
 	name 	 = serializers.CharField(read_only=True, source='field.name')
 	type 	 = serializers.CharField(read_only=True, source='field.type')
 	editable = serializers.BooleanField(read_only=True, source='isEditable')

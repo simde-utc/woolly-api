@@ -393,7 +393,7 @@ class ItemFieldRelationshipView(views.RelationshipView):
 class OrderLineItemViewSet(views.ModelViewSet):
 	queryset = OrderLineItem.objects.all()
 	serializer_class = OrderLineItemSerializer
-	permission_classes = (IsOrderOwnerOrAdmin,)
+	permission_classes = (IsOrderOwnerReadOnlyOrAdmin,)
 
 class OrderLineItemRelationshipView(views.RelationshipView):
 	"""

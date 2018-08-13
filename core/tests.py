@@ -174,7 +174,7 @@ class FakeModelFactory(object):
 
 		if model == OrderLineItem:
 			return {
-				orderline: _get_related('orderline', OrderLine),
+				'orderline': _get_related('orderline', OrderLine),
 			}
 
 		# ============================================

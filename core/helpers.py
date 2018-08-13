@@ -47,7 +47,7 @@ def gen_url_set(path, viewset, relationship_viewset=None):
 
 		for step in path[:-1]:
 			# Build base url route & name
-			base_url += pluralize(step) + r'/(?P<' + step + r'_pk>[0-9]+)/'
+			base_url += pluralize(step) + r'/(?P<' + step + r'_pk>[^/.]+)/'
 			base_name += step + '-'
 
 		resource_name = path[-1]
