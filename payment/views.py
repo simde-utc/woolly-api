@@ -304,11 +304,15 @@ def orderErrorResponse(errors):
 
 def sendConfirmationMail(order):
 	# TODO : généraliser
-	subject = "Woolly - Place achetée"
-	message = "Bonjour,\n\nMerci d'avoir acheté votre place pour Baignoires dans l'Oise.\nPlus d'informations ici : http://assos.utc.fr/baignoirutc/"
+	nb_places = reduce(lambda acc, orderline: acc + orderline.quantity, order.orderlines.all(), 0)
+	subject = "Confirmation Côtisation - Baignoires dans l'Oise"
+	message = "Bonjour " + order.owner.get_full_name() + ",\n\n" \
+			+ "Nous vous confirmons avoir cotisé pour " + str(nb_places) + " place(s) " \
+			+ "pour participer à la course de baignoires le dimanche 30 septembre.\n" \
+			+ "Vous êtes désormais officiellement inscrit comme participant à la course !\n\n" \
+			+ "Rendez vous le 30 septembre !!"
 	from_email = "baignoirutc@assos.utc.fr"
 	recipient_list = [order.owner.email]
-
 	send_mail(subject, message, from_email, recipient_list)
 
 

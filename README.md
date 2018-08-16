@@ -27,7 +27,7 @@ On Windows :
 virtualenv "venv"
 ```
 
-To activate the virtual environment use :
+Now activate the virtual environment. You have to do this everytime you want to work with Woolly and don't see the `(venv)` on the left of your terminal prompt.
 ```sh
 # On Linux :
 source venv/bin/activate
