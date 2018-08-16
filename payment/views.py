@@ -8,6 +8,7 @@ from rest_framework.decorators import *
 from django.http import JsonResponse
 from django.urls import reverse
 from core.helpers import errorResponse
+from django.core.mail import send_mail
 
 from core.permissions import *
 from sales.models import *
@@ -227,7 +228,7 @@ def verifyOrder(order, user):
 
 
 def updateOrderStatus(order, transaction):
-	# print("----- updateOrderStatus ---------")
+
 	if transaction['status'] == 'A':
 		order.status = OrderStatus.EXPIRED.value
 		order.save()
@@ -238,6 +239,7 @@ def updateOrderStatus(order, transaction):
 	elif transaction['status'] == 'V':
 		if order.status == OrderStatus.NOT_PAID.value:
 			createOrderLineItemsAndFields(order)
+			sendConfirmationMail(order)
 		order.status = OrderStatus.PAID.value
 		order.save()
 		resp = {
@@ -262,7 +264,7 @@ def getFieldDefaultValue(default, order):
 	}[default]
 
 def createOrderLineItemsAndFields(order):
-	# print("----- createOrderLineItemsAndFields ---------")
+
 	# Create OrderLineItems
 	orderlines = order.orderlines.filter(quantity__gt=0).prefetch_related('item', 'orderlineitems').all()
 	for orderline in orderlines:
@@ -300,11 +302,14 @@ def orderErrorResponse(errors):
 
 
 
+def sendConfirmationMail(order):
+	# TODO : généraliser
+	subject = "Woolly - Place achetée"
+	message = "Bonjour,\n\nMerci d'avoir acheté votre place pour Baignoires dans l'Oise.\nPlus d'informations ici : http://assos.utc.fr/baignoirutc/"
+	from_email = "baignoirutc@assos.utc.fr"
+	recipient_list = [order.owner.email]
 
-
-
-
-
+	send_mail(subject, message, from_email, recipient_list)
 
 
 	# if order.status in OrderStatus.BUYABLE_STATUS_LIST.value:
