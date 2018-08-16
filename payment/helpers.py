@@ -5,7 +5,7 @@ from django.utils import timezone
 
 class OrderValidator:
 
-	def __init__(user, order):
+	def __init__(self, user, order):
 		self.user = user
 		self.order = order
 		self.sale = order.sale

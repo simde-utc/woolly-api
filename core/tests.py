@@ -1,7 +1,6 @@
 from django.urls import reverse, exceptions
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.test import APITestCase
 
 from copy import deepcopy
 from faker import Faker
@@ -46,7 +45,7 @@ def get_permissions_from_compact(compact):
 	return permissions
 
 def format_date(date):
-	return timezone.make_aware(date, timezone.get_current_timezone(), is_dst=False)
+	return date if timezone.is_aware(date) else timezone.make_aware(date, timezone.get_current_timezone(), is_dst=False)
 
 class FakeModelFactory(object):
 
@@ -86,7 +85,9 @@ class FakeModelFactory(object):
 				'first_name': 	kwargs.get('first_name', 	self.faker.first_name()),
 				'last_name': 	kwargs.get('last_name', 	self.faker.last_name()),
 				# 'birthdate': 	kwargs.get('birthdate', 	self.faker.date_of_birth()),
-				'usertype': 	kwargs.get('usertype', 		_get_related('usertype', UserType))
+				'usertype': 	kwargs.get('usertype', 		_get_related('usertype', UserType)),
+				'is_active': 	kwargs.get('is_active', 	True),
+				'is_admin': 	kwargs.get('is_admin', 		False),
 			}
 
 		if model == UserType:
@@ -149,7 +150,6 @@ class FakeModelFactory(object):
 				'quantity': 	kwargs.get('quantity', 		self.faker.random_number()),
 				'price': 		float(kwargs.get('price', 	self.faker.random_number()/10.)),
 				'nemopay_id': 	kwargs.get('nemopay_id', 	self.faker.random_number()),
-				'max_per_user': kwargs.get('max_per_user', 	self.faker.random_number()),
 				# 'fields':
 			}
 
