@@ -29,13 +29,34 @@ def check_order_ownership(request, view, obj):
 	if isinstance(obj, OrderLineItem):
 		return obj.orderline.order.owner == request.user
 	if isinstance(obj, OrderLineField):
-		return obj.orderitem.orderline.order.owner == request.user
+		return obj.orderlineitem.orderline.order.owner == request.user
 	return False
 
-# Used for Order, OrderLine, OrderLineItem, OrderLineField
+# Used for Order, OrderLine
 class IsOrderOwnerOrAdmin(CustomPermission):
 	require_authentication = True
-	allow_creation = True
+	pass_for_obj = True
 	allow_admin = True
+	allow_create = True
 	object_permission_functions = (check_order_ownership,)
 
+
+def allow_only_retrieve_for_non_admin(request, view):
+	return view.action == 'retrieve' or request.user.is_admin
+
+# Used for OrderLineItem
+class IsOrderOwnerReadOnlyOrAdmin(CustomPermission):
+	require_authentication = True
+	permission_functions = (allow_only_retrieve_for_non_admin,)
+	object_permission_functions = (check_order_ownership,)
+
+def no_delete(request, view, obj):
+	return not view.action == 'destroy'
+
+# Used for OrderLineField
+class IsOrderOwnerReadUpdateOrAdmin(CustomPermission):
+	require_authentication = True
+	pass_for_obj = True
+	allow_admin = True
+	object_permission_functions = (check_order_ownership, no_delete)
+	check_with_or = False

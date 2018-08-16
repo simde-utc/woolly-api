@@ -8,6 +8,7 @@ from core.helpers import errorResponse
 from core.permissions import *
 from .serializers import *
 from .permissions import *
+from .models import OrderStatus
 
 from authentication.auth import JWTAuthentication
 from core.utils import render_to_pdf, data_to_qrcode
@@ -27,18 +28,15 @@ class AssociationViewSet(views.ModelViewSet):
 	serializer_class = AssociationSerializer
 	permission_classes = (IsManagerOrReadOnly,)
 
-	"""
 	def get_queryset(self):
-		# queryset = self.queryset.filter(associationmembers__user=self.request.user_pk)
-		if 'associationmember_pk' in self.kwargs:
-			associationmember_pk = self.kwargs['associationmember_pk']
-			queryset = Association.objects.all().filter(associationmembers__pk=associationmember_pk)
+		queryset = self.queryset
 
+		# user-association-list
 		if 'user_pk' in self.kwargs:
 			user_pk = self.kwargs['user_pk']
-			queryset = Association.objects.all().filter(associationmembers__user=user_pk)
+			queryset = queryset.filter(members__pk=user_pk)
+
 		return queryset
-	"""
 
 class AssociationRelationshipView(views.RelationshipView):
 	"""
@@ -92,11 +90,6 @@ class SaleViewSet(views.ModelViewSet):
 	"""
 	serializer_class = SaleSerializer
 	permission_classes = (IsManagerOrReadOnly,)
-
-	def perform_create(self, serializer):
-		serializer.save(
-			association_id=self.kwargs['association_pk'],
-		)
 
 	def get_queryset(self):
 		queryset = Sale.objects.all()
@@ -152,6 +145,7 @@ class ItemViewSet(views.ModelViewSet):
 	serializer_class = ItemSerializer
 	permission_classes = (IsManagerOrReadOnly,)
 
+	"""
 	def perform_create(self, serializer):
 		# TODO ????
 		if 'sale_pk' in self.kwargs:
@@ -162,6 +156,7 @@ class ItemViewSet(views.ModelViewSet):
 			serializer.save(
 				sale_id=self.kwargs['orderline_pk']
 			)
+	"""
 
 	def get_queryset(self):
 		queryset = self.queryset.filter(is_active=True)
@@ -204,8 +199,8 @@ class OrderViewSet(views.ModelViewSet):
 			return None
 
 		# Admins see everything otherwise filter to see only those owned by the user
-		if not user.is_admin:
-			queryset = queryset.filter(owner=user)
+		# if not user.is_admin:
+		# 	queryset = queryset.filter(owner=user)
 
 		if 'user_pk' in self.kwargs:
 			user_pk = self.kwargs['user_pk']
@@ -229,7 +224,7 @@ class OrderViewSet(views.ModelViewSet):
 				'sale': request.data['sale'],
 				'owner': {
 					'id': request.user.id,
-					'type': 'users'
+					'type': 'user'
 				},
 				'orderlines': [],
 				'status': OrderStatus.ONGOING.value
@@ -241,15 +236,16 @@ class OrderViewSet(views.ModelViewSet):
 		headers = self.get_success_headers(serializer.data)
 		return Response(serializer.data, status=httpStatus, headers=headers)
 
-	def destroy(self, request, pk=None):
-		try:
+	def destroy(self, request, *args, **kwargs):
+		order = self.get_object()
+		if order.status in OrderStatus.CANCELLABLE_LIST.value:
 			# TODO Add time
-			order = Order.objects \
-				.filter(owner=request.user.id, status__in=OrderStatus.CANCELLABLE_LIST.value, pk=pk) \
-				.update(status=OrderStatus.CANCELLED.value)
-			return Response(None, status=status.HTTP_200_OK)
-		except Order.DoesNotExist as err:
-			return Response(None, status=status.HTTP_404_NOT_FOUND)
+			order.status = OrderStatus.CANCELLED.value
+			order.save()
+			return Response(None, status=status.HTTP_204_NO_CONTENT)
+		else:
+			msg = "La commande n'est pas annulable."
+			return errorResponse(msg, [msg], status.HTTP_406_NOT_ACCEPTABLE)
 
 class OrderRelationshipView(views.RelationshipView):
 	"""
@@ -275,8 +271,8 @@ class OrderLineViewSet(views.ModelViewSet):
 			return None
 
 		# Admins see everything otherwise filter to see only those owned by the user
-		if not user.is_admin:
-			queryset = queryset.filter(order__owner=user)
+		# if not user.is_admin:
+		# 	queryset = queryset.filter(order__owner=user)
 
 		if 'order_pk' in self.kwargs:
 			order_pk = self.kwargs['order_pk']
@@ -284,33 +280,46 @@ class OrderLineViewSet(views.ModelViewSet):
 
 		return queryset
 
-
-	def create(self, request):
+	def create(self, request, *args, **kwargs):
+		# Retrieve Order...
 		try:
 			order = Order.objects.get(pk=request.data['order']['id'])
+		# ...or fail
 		except Order.DoesNotExist as err:
 			msg = "Impossible de trouver la commande."
 			return errorResponse(msg, [msg], status.HTTP_404_NOT_FOUND)
+
+		# Check Order owner
+		user = request.user
+		if not (user.is_authenticated and user.is_admin or order.owner == user):
+			msg = "Vous n'avez pas la permission d'effectuer cette action."
+			return errorResponse(msg, [msg], status.HTTP_403_FORBIDDEN)
+
+		# Check if Order is open
 		if order.status != OrderStatus.ONGOING.value:
 			msg = "La commande n'accepte plus de changement."
 			return errorResponse(msg, [msg], status.HTTP_400_BAD_REQUEST)
 
+		# Try to retrieve a similar OrderLine...
 		try:
 			orderline = OrderLine.objects.get(order=request.data['order']['id'], item=request.data['item']['id'])
 			# TODO ajout de la vérification de la limite de temps
 			serializer = OrderLineSerializer(orderline, data={'quantity': request.data['quantity']}, partial=True)
-			# On delete les orderlines vides
+
+			# Delete empty OrderLines
 			if request.data['quantity'] <= 0:
 				orderline.delete()
 				return Response(serializer.initial_data, status=status.HTTP_205_RESET_CONTENT)
+		# ...or create a new one
 		except OrderLine.DoesNotExist as err:
 			if request.data['quantity'] > 0:
 				# Configure Order
 				serializer = self.get_serializer(data={
 					'order': request.data['order'],
 					'item': request.data['item'],
-					'quantity': request.data['quantity']
+					'quantity': request.data['quantity'],
 				})
+			# If no quantity, then no OrderLine
 			else:
 				return Response(request.data, status=status.HTTP_204_NO_CONTENT)
 		serializer.is_valid(raise_exception=True)
@@ -384,7 +393,7 @@ class ItemFieldRelationshipView(views.RelationshipView):
 class OrderLineItemViewSet(views.ModelViewSet):
 	queryset = OrderLineItem.objects.all()
 	serializer_class = OrderLineItemSerializer
-	permission_classes = (IsOrderOwnerOrAdmin,)
+	permission_classes = (IsOrderOwnerReadOnlyOrAdmin,)
 
 class OrderLineItemRelationshipView(views.RelationshipView):
 	"""
@@ -399,24 +408,7 @@ class OrderLineFieldViewSet(views.ModelViewSet):
 	"""
 	queryset = OrderLineField.objects.all()
 	serializer_class = OrderLineFieldSerializer
-	permission_classes = (IsOrderOwnerOrAdmin,)
-
-	def create(self, request):
-		pass
-
-	def update(self, request, pk=None, partial=False):
-		instance = self.queryset.get(pk=pk)
-		if instance.isEditable() == True:
-			serializer = OrderLineFieldSerializer(instance, data={'value': request.data['value']}, partial=True)
-			serializer.is_valid(raise_exception=True)
-			serializer.save()
-		else:
-			serializer = OrderLineFieldSerializer(instance)
-		return Response(serializer.data)
-
-
-	def partial_update(self, request, pk=None):
-		return self.update(request, pk, True)
+	permission_classes = (IsOrderOwnerReadUpdateOrAdmin,)
 
 	def get_queryset(self):
 		queryset = self.queryset
@@ -425,6 +417,17 @@ class OrderLineFieldViewSet(views.ModelViewSet):
 			queryset = queryset.filter(orderlineitem__pk=orderlineitem_pk)
 
 		return queryset
+
+	def update(self, request, *args, **kwargs):
+		partial = kwargs.pop('partial', False)
+		instance = self.get_object()
+		if instance.isEditable() == True:
+			serializer = OrderLineFieldSerializer(instance, data={'value': request.data['value']}, partial=True)
+			serializer.is_valid(raise_exception=True)
+			serializer.save()
+		else:
+			serializer = OrderLineFieldSerializer(instance)
+		return Response(serializer.data)
 
 class OrderLineFieldRelationshipView(views.RelationshipView):
 	"""

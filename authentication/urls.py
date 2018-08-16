@@ -2,24 +2,19 @@ from rest_framework.urlpatterns import format_suffix_patterns
 from django.views.decorators.csrf import csrf_exempt
 from django.conf.urls import url, include
 
-from woolly_api.settings import VIEWSET
-from .views import UserViewSet, UserRelationshipView, UserTypeViewSet, AuthView, JWTView
+from core.helpers import gen_url_set, merge_sets
+from .views import *
 
 
-# Configure Viewsets
-user_list = UserViewSet.as_view(VIEWSET['list'])
-user_detail = UserViewSet.as_view(VIEWSET['detail'])
-user_type_list = UserTypeViewSet.as_view(VIEWSET['list'])
-user_type_detail = UserTypeViewSet.as_view(VIEWSET['detail'])
+# JSON API Resource routes
+urlpatterns = merge_sets(
+	gen_url_set('user', UserViewSet, UserRelationshipView),
+	gen_url_set('usertype', UserTypeViewSet, UserTypeRelationshipView),
+	gen_url_set(['user', 'usertype'], UserTypeViewSet),
+)
 
-
-
-# API endpoints
-urlpatterns = {
-
-	# ============================================
-	# 	Authentification des utilisateurs
-	# ============================================
+# Addtionnal API endpoints for Authentication
+urlpatterns += [
 
 	# Get login URL to log through Portail des Assos
 	url(r'^auth/login$', AuthView.login, name = 'auth.login'),
@@ -37,36 +32,10 @@ urlpatterns = {
 	# Validate JWT : TODO
 	url(r'^auth/validate$', JWTView.validate_jwt, name = 'auth.validate'),
 
-
 	# Basic login/logout for Browsable API
 	url(r'^auth/basic/', include('rest_framework.urls', namespace = 'rest_framework') ),
 
-
-
-	# ============================================
-	# 	Utilisateurs
-	# ============================================
-
-	# Users
-	url(r'^users$',
-		user_list, name = "user-list"),
-	url(r'^users/(?P<pk>[0-9]+)$',
-		user_detail, name = 'user-detail'),
-	url(r'^users/(?P<pk>[^/.]+)/relationships/(?P<related_field>[^/.]+)$',
-		view = UserRelationshipView.as_view(), name = 'user-relationships'
-	),
-
-	# UsersTypes
-	url(r'^usertypes$',
-		user_type_list, name = "usertype-list"),
-	url(r'^usertypes/(?P<pk>[0-9]+)$',
-		user_type_detail, name = 'usertype-detail'),
-	url(r'^users/(?P<user_pk>[0-9]+)/usertypes$',
-		user_type_list, name = 'usertype-list'),
-	url(r'^users/(?P<user_pk>[0-9]+)/usertypes/(?P<pk>[0-9]+)$',
-		user_type_detail, name = 'usertype-detail'),
-
-}
+]
 
 
 urlpatterns = format_suffix_patterns(urlpatterns)

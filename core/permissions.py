@@ -5,8 +5,14 @@ class CustomPermission(permissions.BasePermission):
 	require_authentication = False
 	allow_admin = True
 	allow_read_only = False
-	allow_creation = False
+	allow_create = False
+	pass_for_obj = False
 
+	# Final default value
+	default = False
+	default_obj = False
+
+	# Customs permission check functions
 	permission_functions = []
 	object_permission_functions = []
 	check_with_or = True
@@ -19,9 +25,8 @@ class CustomPermission(permissions.BasePermission):
 
 	def has_permission(self, request, view):
 		# Is Authenticated option
-		if self.require_authentication and self._is_not_authenticated:
+		if self.require_authentication and self._is_not_authenticated(request, view):
 			return False
-
 		# Read Only option
 		if self.allow_read_only and request.method in permissions.SAFE_METHODS:
 			return True
@@ -37,9 +42,13 @@ class CustomPermission(permissions.BasePermission):
 
 		# Allow creation or not
 		if view.action == 'create':
-			return self.allow_creation
+			return self.allow_create
 
-		return True
+		# Return True to get to object level permissions
+		if self.pass_for_obj and view.action in ('retrieve', 'update', 'partial_update', 'destroy'):
+			return True
+
+		return self.default
 
 	def has_object_permission(self, request, view, obj):
 		# Allow admin option
@@ -55,7 +64,7 @@ class CustomPermission(permissions.BasePermission):
 			permission_gen = (func(request, view, obj) for func in self.object_permission_functions)
 			return self._check_functions(permission_gen)
 
-		return True
+		return self.default_obj
 
 
 

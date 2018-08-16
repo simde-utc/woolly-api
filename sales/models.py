@@ -21,8 +21,11 @@ class Association(models.Model):
 	def __str__(self):
 		return self.name
 
+	class Meta:
+		ordering = ('id',)
+
 	class JSONAPIMeta:
-		resource_name = "associations"
+		resource_name = "association"
 
 class AssociationMember(models.Model):
 	"""
@@ -37,10 +40,11 @@ class AssociationMember(models.Model):
 		return "%s, %s @ %s" % (self.user, self.role, self.association)
 
 	class Meta:
+		ordering = ('id',)
 		verbose_name = "Association Member"			
 
 	class JSONAPIMeta:
-		resource_name = "associationmembers"
+		resource_name = "associationmember"
 
 
 # ============================================
@@ -75,8 +79,11 @@ class Sale(models.Model):
 	def __str__(self):
 		return "%s par %s" % (self.name, self.association)
 
+	class Meta:
+		ordering = ('id',)
+
 	class JSONAPIMeta:
-		resource_name = "sales"
+		resource_name = "sale"
 
 
 # ============================================
@@ -96,10 +103,11 @@ class ItemGroup(models.Model):
 		return self.name
 
 	class Meta:
+		ordering = ('id',)
 		verbose_name = "Item Group"
 
 	class JSONAPIMeta:
-		resource_name = "itemgroups"
+		resource_name = "itemgroup"
 
 class Item(models.Model):
 	"""
@@ -134,8 +142,11 @@ class Item(models.Model):
 	def __str__(self):
 		return "%s (%s)" % (self.name, self.sale)
 
+	class Meta:
+		ordering = ('id',)
+
 	class JSONAPIMeta:
-		resource_name = "items"
+		resource_name = "item"
 
 
 # ============================================
@@ -156,7 +167,8 @@ class OrderStatus(Enum):
 
 	# Helpers, not real choices
 	CANCELLABLE_LIST = (NOT_PAID, AWAITING_VALIDATION)
-	NOT_CANCELLED_LIST = (AWAITING_VALIDATION, VALIDATED, NOT_PAID, PAID) 
+	# NOT_CANCELLED_LIST = (AWAITING_VALIDATION, VALIDATED, NOT_PAID, PAID) 
+	NOT_CANCELLED_LIST = (PAID, VALIDATED) 
 	BUYABLE_STATUS_LIST = (ONGOING, AWAITING_VALIDATION, NOT_PAID) 
 	VALIDATED_LIST = (VALIDATED, PAID)
 
@@ -182,10 +194,13 @@ class Order(models.Model):
 	tra_id = models.IntegerField(blank=True, null=True, default=None)
 
 	def __str__(self):
-		return "%d - %s by %s" % (self.id, self.sale, self.owner)
+		return "%d - %s ordered by %s" % (self.id, self.sale, self.owner)
+
+	class Meta:
+		ordering = ('id',)
 
 	class JSONAPIMeta:
-		resource_name = "orders"
+		resource_name = "order"
 
 
 class OrderLine(models.Model):
@@ -200,10 +215,11 @@ class OrderLine(models.Model):
 		return "%s - %dx %s (Order %s)" % (self.id, self.quantity, self.item.name, self.order)
 
 	class Meta:
+		ordering = ('id',)
 		verbose_name = "Order Line"
 
 	class JSONAPIMeta:
-		resource_name = "orderlines"
+		resource_name = "orderline"
 
 
 # ============================================
@@ -222,8 +238,11 @@ class Field(models.Model):
 	def __str__(self):
 		return "%s (%s)" % (self.name, self.type)
 
+	class Meta:
+		ordering = ('id',)
+
 	class JSONAPIMeta:
-		resource_name = "fields"
+		resource_name = "field"
 
 class ItemField(models.Model):
 	"""
@@ -242,10 +261,11 @@ class ItemField(models.Model):
 		return "%s - %s)" % (self.item, self.field)
 
 	class Meta:
+		ordering = ('id',)
 		verbose_name = "Item Field"
 
 	class JSONAPIMeta:
-		resource_name = "itemfields"
+		resource_name = "itemfield"
 
 
 class OrderLineItem(models.Model):
@@ -260,10 +280,11 @@ class OrderLineItem(models.Model):
 		return "%s - %s" % (self.id, self.orderline)
 
 	class Meta:
+		ordering = ('id',)
 		verbose_name = "OrderLine Item"
 
 	class JSONAPIMeta:
-		resource_name = "orderlineitems"
+		resource_name = "orderlineitem"
 
 class OrderLineField(models.Model):
 	"""
@@ -281,8 +302,9 @@ class OrderLineField(models.Model):
 		return "%s - %s = %s" % (self.orderlineitem.id, self.field.name, self.value)
 
 	class Meta:
+		ordering = ('id',)
 		verbose_name = "OrderLine Field"
 
 	class JSONAPIMeta:
-		resource_name = "orderlinefields"
+		resource_name = "orderlinefield"
 

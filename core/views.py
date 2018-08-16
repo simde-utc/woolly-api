@@ -6,8 +6,8 @@ from rest_framework.decorators import api_view
 @api_view(['GET'])
 def api_root(request, format=None):
 	"""
-		Defines the clickable links displayed on the server endpoint.
-		All the reachable endpoints don't appear here
+	Defines the clickable links displayed on the server endpoint.
+	All the reachable endpoints don't appear here
 	"""
 	return Response({
 		# Login & Users

@@ -21,16 +21,16 @@ class UserViewSet(views.ModelViewSet):
 		return redirect('auth.login')
 
 	# TODO : block self is_admin -> True
-	def update(self, request, *args, **kwargs):
-		pass
+	# def update(self, request, *args, **kwargs):
+		# pass
 
 	def get_queryset(self):
 		user = self.request.user
 		queryset = self.queryset
 
 		# Anonymous users see nothing
-		if not user.is_authenticated:
-			return None
+		# if not user.is_authenticated:
+		# 	return None
 
 		# if 'user_pk' in self.kwargs:
 		# 	association_pk = self.kwargs['user_pk']
@@ -38,28 +38,27 @@ class UserViewSet(views.ModelViewSet):
 
 		return queryset
 
+class UserRelationshipView(views.RelationshipView):
+	queryset = User.objects
+
+
 class UserTypeViewSet(views.ModelViewSet):
 	queryset = UserType.objects.all()
 	serializer_class = UserTypeSerializer
-	permission_classes = (AllowAny,)
+	permission_classes = (IsAdminOrReadOnly,)
 
 	def get_queryset(self):
-		# Visible by everyone by default
 		queryset = self.queryset
 
-		if 'itemspec_pk' in self.kwargs:
-			itemspec_pk = self.kwargs['itemspec_pk']
-			queryset = UserType.objects.all().filter(itemspecifications__pk=itemspec_pk)
-
+		# user-usertype-list route
 		if 'user_pk' in self.kwargs:
 			user_pk = self.kwargs['user_pk']
-			queryset = UserType.objects.all().filter(users__pk=user_pk)
+			queryset = queryset.filter(users__pk=user_pk) # TODO Not working
 
 		return queryset
 
-
-class UserRelationshipView(views.RelationshipView):
-	queryset = User.objects
+class UserTypeRelationshipView(views.RelationshipView):
+	queryset = UserType.objects
 
 
 # ========================================================

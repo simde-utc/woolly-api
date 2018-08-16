@@ -25,10 +25,11 @@ class UserType(models.Model):
 		return self.name
 
 	class Meta:
+		ordering = ('id',)
 		verbose_name = "User Type"
 
 	class JSONAPIMeta:
-		resource_name = "usertypes"
+		resource_name = "usertype"
 
 
 class UserManager(BaseUserManager):
@@ -108,7 +109,8 @@ class User(AbstractBaseUser):
 		super(User, self).save(*args, **kwargs)
 	"""
 
-	class JSONAPIMeta:
-		resource_name = "users"
+	class Meta:
+		ordering = ('id',)
 
-	# check set_unusable_password() for authentication against external source
+	class JSONAPIMeta:
+		resource_name = "user"
