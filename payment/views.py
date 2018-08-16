@@ -8,6 +8,7 @@ from rest_framework.decorators import *
 from django.http import JsonResponse
 from django.urls import reverse
 from core.helpers import errorResponse
+from django.core.mail import send_mail
 
 from core.permissions import *
 from sales.models import *
@@ -227,7 +228,7 @@ def verifyOrder(order, user):
 
 
 def updateOrderStatus(order, transaction):
-	# print("----- updateOrderStatus ---------")
+
 	if transaction['status'] == 'A':
 		order.status = OrderStatus.EXPIRED.value
 		order.save()
@@ -238,6 +239,7 @@ def updateOrderStatus(order, transaction):
 	elif transaction['status'] == 'V':
 		if order.status == OrderStatus.NOT_PAID.value:
 			createOrderLineItemsAndFields(order)
+			sendConfirmationMail(order)
 		order.status = OrderStatus.PAID.value
 		order.save()
 		resp = {
@@ -262,7 +264,7 @@ def getFieldDefaultValue(default, order):
 	}[default]
 
 def createOrderLineItemsAndFields(order):
-	# print("----- createOrderLineItemsAndFields ---------")
+
 	# Create OrderLineItems
 	orderlines = order.orderlines.filter(quantity__gt=0).prefetch_related('item', 'orderlineitems').all()
 	for orderline in orderlines:
@@ -300,11 +302,18 @@ def orderErrorResponse(errors):
 
 
 
-
-
-
-
-
+def sendConfirmationMail(order):
+	# TODO : généraliser
+	nb_places = reduce(lambda acc, orderline: acc + orderline.quantity, order.orderlines.all(), 0)
+	subject = "Confirmation Côtisation - Baignoires dans l'Oise"
+	message = "Bonjour " + order.owner.get_full_name() + ",\n\n" \
+			+ "Nous vous confirmons avoir cotisé pour " + str(nb_places) + " place(s) " \
+			+ "pour participer à la course de baignoires le dimanche 30 septembre.\n" \
+			+ "Vous êtes désormais officiellement inscrit comme participant à la course !\n\n" \
+			+ "Rendez vous le 30 septembre !!"
+	from_email = "baignoirutc@assos.utc.fr"
+	recipient_list = [order.owner.email]
+	send_mail(subject, message, from_email, recipient_list)
 
 
 	# if order.status in OrderStatus.BUYABLE_STATUS_LIST.value:
