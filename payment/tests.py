@@ -7,7 +7,7 @@ from .helpers import OrderValidator
 from authentication.models import *
 from sales.models import *
 
-from core.tests import FakeModelFactory
+from core.tests import FakeModelFactory, format_date
 from faker import Faker
 
 faker = Faker()
@@ -17,8 +17,8 @@ class OrderValidatorTestCase(APITestCase):
 
 	def setUp(self):
 		self.datetimes = {
-			'before': 	faker.date_time_this_year(before_now=True, 	after_now=False),
-			'after':  	faker.date_time_this_year(before_now=False, after_now=True),
+			'before': 	format_date(faker.date_time_this_year(before_now=True, 	after_now=False)),
+			'after':  	format_date(faker.date_time_this_year(before_now=False, after_now=True)),
 			'now': 		timezone.now(),
 		}
 		# Default models
@@ -26,9 +26,9 @@ class OrderValidatorTestCase(APITestCase):
 		self.user = modelFactory.create(User, usertype=self.usertype)
 
 		self.sale = modelFactory.create(Sale,
-			is_active = True,
-			begin_at = 	self.datetimes['before'],
-			end_at = 	self.datetimes['after'],
+			is_active 	= True,
+			begin_at 	= self.datetimes['before'],
+			end_at 		= self.datetimes['after'],
 			max_item_quantity = 400,
 			max_payment_date = self.datetimes['after']
 		)
@@ -54,17 +54,35 @@ class OrderValidatorTestCase(APITestCase):
 		self._test_validation(True)
 
 
-	def _test_validation(self, should_fail, msg=None):
+	def _test_validation(self, should_fail, messages=None):
 		validator = OrderValidator(self.user, self.order)
-		has_errors, message = validator.isValid()
-		self.assertEqual(has_errors, should_fail)
-		if msg is not None:
-			self.assertEqual(message, msg, "Le message obtenu est" + str(message))
+		has_errors, message_list = validator.isValid()
+		debug_msg = None if message_list is None else "Les erreurs obtenues sont : " + "\n - ".join(message_list)
+		self.assertEqual(has_errors, should_fail, debug_msg)
+		if messages is not None:
+			self.assertEqual(message_list, messages, debug_msg)
 
+
+	# =================================================
+	# 		Tests
+	# =================================================
 
 	def test_sale_active(self):
 		"""Inactive sales can't proceed orders"""
 		self.sale.is_active = False
+		self.sale.save()
+		self._test_validation(False)
+
+	def test_sale_is_ongoing(self):
+		"""Orders should be paid between sales beginning date and max payment date"""
+		print(self.order.get_status_display())
+		self.sale.begin_at = self.datetimes['after']
+		self.sale.max_payment_date = self.datetimes['after']
+		self.sale.save()
+		self._test_validation(False)
+
+		self.sale.begin_at = self.datetimes['before']
+		self.sale.max_payment_date = self.datetimes['before']
 		self.sale.save()
 		self._test_validation(False)
 
@@ -85,3 +103,4 @@ class OrderValidatorTestCase(APITestCase):
 		self._test_validation(False)
 		self.order.status = OrderStatus.CANCELLED.value
 		self._test_validation(False)
+
