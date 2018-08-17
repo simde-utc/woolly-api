@@ -253,7 +253,7 @@ LOGGING = {
 	},
 	'handlers': {
 		'console': {
-			'level': 'INFO',
+			'level': 'WARNING',
 			'filters': ['require_debug_true'],
 			'class': 'logging.StreamHandler',
 			# 'formatter': 'simple',
@@ -271,7 +271,7 @@ LOGGING = {
 	'loggers': {
 		'django': {
 			'handlers': ['console', 'file'],
-			'level': 'INFO',
+			'level': 'WARNING',
 			'propagate': True,
 		},
 	},
