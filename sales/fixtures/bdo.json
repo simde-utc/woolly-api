@@ -1,0 +1,78 @@
+[
+	{
+		"model": "sales.association",
+		"pk": 1,
+		"fields": {
+			"name": "Baignoires dans l'Oise",
+			"fun_id": 1
+		}
+	},
+	{
+		"model": "sales.sale",
+		"pk": 1,
+		"fields": {
+			"name": "Course de Baignoires dans l'Oise",
+			"description": "Les baignoires dans l’Oise, c’est pas n’importe quelle course ! Rien que pour vous régaler, le BDE organise un événement frappant cette année : une descente d’un kilomètre le long de notre magnifique et somptueuse rivière. En plus de la joie et de la bonne humeur, vous découvrirez une ribambelle d’animations sur notre village. Au menu : concerts, baignoires en tout genre, buvette et bien plus encore (suspense).",
+			"association": 1,
+			"is_active": true,
+			"public": true,
+			"created_at": "2018-08-17T17:30:51.555Z",
+			"begin_at": "2018-08-17T17:24:48Z",
+			"end_at": "2018-09-29T21:00:00Z",
+			"max_item_quantity": null,
+			"max_payment_date": "2018-09-29T21:00:00Z"
+		}
+	},
+	{
+		"model": "sales.item",
+		"pk": 1,
+		"fields": {
+			"name": "Cotisation",
+			"description": "On vous veux très (très) nombreux le 30 septembre prochain pour une course semée d'embûches et de défis.",
+			"sale": 1,
+			"group": null,
+			"is_active": true,
+			"quantity": 100,
+			"usertype": 4,
+			"price": 1.0,
+			"nemopay_id": "13149",
+			"max_per_user": 10
+		}
+	},
+	{
+		"model": "sales.field",
+		"pk": 1,
+		"fields": {
+			"name": "Prénom",
+			"type": "string",
+			"default": "owner.first_name"
+		}
+	},
+	{
+		"model": "sales.field",
+		"pk": 2,
+		"fields": {
+			"name": "Nom",
+			"type": "string",
+			"default": "owner.last_name"
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 1,
+		"fields": {
+			"field": 1,
+			"item": 1,
+			"editable": true
+		}
+	},
+	{
+		"model": "sales.itemfield",
+		"pk": 2,
+		"fields": {
+			"field": 2,
+			"item": 1,
+			"editable": true
+		}
+	}
+]
