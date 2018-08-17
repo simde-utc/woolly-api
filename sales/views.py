@@ -224,7 +224,7 @@ class OrderViewSet(views.ModelViewSet):
 				'sale': request.data['sale'],
 				'owner': {
 					'id': request.user.id,
-					'type': 'user'
+					'type': 'users'
 				},
 				'orderlines': [],
 				'status': OrderStatus.ONGOING.value
