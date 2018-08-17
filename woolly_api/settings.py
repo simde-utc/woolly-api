@@ -224,3 +224,55 @@ USE_L10N = True
 USE_TZ = True
 LANGUAGE_CODE = 'fr'
 TIME_ZONE = 'Europe/Paris'
+
+
+# --------------------------------------------------------------------------
+# 		Logging
+# --------------------------------------------------------------------------
+
+LOGGING = {
+	'version': 1,
+	'disable_existing_loggers': False,
+	'formatters': {
+		'verbose': {
+			'format': '[{asctime}] {levelname} in {filename}@{lineno} : {message}',
+			'style': '{',
+		},
+		'simple': {
+			'format': '[{asctime}] {levelname} : {message}',
+			'style': '{',
+		},
+	},
+	'filters': {
+		'require_debug_false': {
+			'()': 'django.utils.log.RequireDebugFalse',
+		},
+		'require_debug_true': {
+			'()': 'django.utils.log.RequireDebugTrue',
+		},
+	},
+	'handlers': {
+		'console': {
+			'level': 'INFO',
+			'filters': ['require_debug_true'],
+			'class': 'logging.StreamHandler',
+			# 'formatter': 'simple',
+		},
+		'file': {
+			'level': 'WARNING',
+			'filters': ['require_debug_false'],
+			'class': 'logging.handlers.RotatingFileHandler',
+			'filename': BASE_DIR + '/debug.log',
+			'maxBytes': 1024*1024*15, # 15MB
+			'backupCount': 5,
+			'formatter': 'verbose',
+		},
+	},
+	'loggers': {
+		'django': {
+			'handlers': ['console', 'file'],
+			'level': 'INFO',
+			'propagate': True,
+		},
+	},
+}
