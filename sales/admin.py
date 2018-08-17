@@ -63,9 +63,9 @@ class SaleAdmin(admin.ModelAdmin):
 	def get_readonly_fields(self, request, obj=None):
 		return custom_editable_fields(request, obj, ('association',))
 	fieldsets = (
-		(None, 			{ 'fields': ('name', 'description', 'association') }),
+		(None, 			{ 'fields': ('name', 'description', 'association', 'max_item_quantity') }),
 		('Visibility', 	{ 'fields': ('is_active', 'public') }),
-		('Timing', 		{ 'fields': ('begin_at', 'end_at') }),
+		('Timing', 		{ 'fields': ('begin_at', 'end_at', 'max_payment_date') }),
 	)
 
 	search_fields = ('name', 'association')
