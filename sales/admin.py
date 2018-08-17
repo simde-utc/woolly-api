@@ -84,7 +84,7 @@ class ItemAdmin(admin.ModelAdmin):
 	inlines = (ItemFieldInline,)
 	exclude = ('fields',)
 	fieldsets = (
-		(None, 				{ 'fields': ('name', 'description', 'sale', 'group') }),
+		(None, 				{ 'fields': ('name', 'description', 'price', 'sale', 'group') }),
 		('Accessibility', 	{ 'fields': ('is_active', 'quantity', 'max_per_user', 'usertype') }),
 		('Payment', 		{ 'fields': ('nemopay_id',) }),
 	)
