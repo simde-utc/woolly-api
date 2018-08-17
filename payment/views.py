@@ -8,7 +8,7 @@ from rest_framework.decorators import *
 from django.http import JsonResponse
 from django.urls import reverse
 from core.helpers import errorResponse
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage
 
 from core.permissions import *
 from sales.models import *
@@ -305,15 +305,20 @@ def orderErrorResponse(errors):
 def sendConfirmationMail(order):
 	# TODO : généraliser
 	nb_places = reduce(lambda acc, orderline: acc + orderline.quantity, order.orderlines.all(), 0)
-	subject = "Confirmation Côtisation - Baignoires dans l'Oise"
 	message = "Bonjour " + order.owner.get_full_name() + ",\n\n" \
 			+ "Nous vous confirmons avoir cotisé pour " + str(nb_places) + " place(s) " \
 			+ "pour participer à la course de baignoires le dimanche 30 septembre.\n" \
 			+ "Vous êtes désormais officiellement inscrit comme participant à la course !\n\n" \
 			+ "Rendez vous le 30 septembre !!"
-	from_email = "baignoirutc@assos.utc.fr"
-	recipient_list = [order.owner.email]
-	send_mail(subject, message, from_email, recipient_list)
+
+	email = EmailMessage(
+		subject = "Confirmation Côtisation - Baignoires dans l'Oise",
+		message = message,
+		from_email = "sales@woolly.etu-utc.fr", # "woolly@assos.utc.fr",
+		recipient_list = [order.owner.email],
+		reply_to = ["baignoirutc@assos.utc.fr"],
+	)
+	email.send()
 
 
 	# if order.status in OrderStatus.BUYABLE_STATUS_LIST.value:
