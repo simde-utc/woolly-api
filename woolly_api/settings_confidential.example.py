@@ -31,3 +31,22 @@ DATABASE = {
 		'sql_mode': 'traditional'
 	}
 }
+
+# SMTP server
+EMAIL = {
+	'host': 'localhost',
+	'port': 25,
+	'user': '',
+	'pwd':  '',
+	'tls':  False,
+	'ssl':  False,
+}
+# To send from a UTC email address : https://5000.utc.fr/front/knowbaseitem.form.php?id=59
+# EMAIL = {
+# 	'host': 'smtps.utc.fr',
+# 	'port': 465,
+# 	'user': 'user@AD',
+# 	'pwd':  '',
+# 	'tls':  False,
+# 	'ssl':  True,
+# }

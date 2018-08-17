@@ -185,6 +185,14 @@ AUTH_PASSWORD_VALIDATORS = [
 	{'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
 ]
 
+# Mails
+EMAIL_HOST = confidentials.EMAIL.get('host', 'localhost')
+EMAIL_PORT = confidentials.EMAIL.get('port', 25)
+EMAIL_HOST_USER = confidentials.EMAIL.get('user', '')
+EMAIL_HOST_PASSWORD = confidentials.EMAIL.get('pwd', '')
+EMAIL_USE_SSL = confidentials.EMAIL.get('ssl', False)
+EMAIL_USE_TLS = confidentials.EMAIL.get('tls', False)
+
 # Paths
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 def ABS_DIR(rel):
