@@ -101,7 +101,7 @@ class FakeModelFactory(object):
 		if model == Association:
 			return {
 				'name':		kwargs.get('name', 		self.faker.company()),
-				'fun_id':	kwargs.get('fun_id', 	self.faker.random_number()),
+				'fun_id':	kwargs.get('fun_id', 	self.faker.random_digit()),
 			}
 
 		# if model == AssociationMember:
