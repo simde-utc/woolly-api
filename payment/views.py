@@ -313,9 +313,9 @@ def sendConfirmationMail(order):
 
 	email = EmailMessage(
 		subject = "Confirmation Côtisation - Baignoires dans l'Oise",
-		message = message,
+		body = message,
 		from_email = "sales@woolly.etu-utc.fr", # "woolly@assos.utc.fr",
-		recipient_list = [order.owner.email],
+		to = [order.owner.email],
 		reply_to = ["baignoirutc@assos.utc.fr"],
 	)
 	email.send()
