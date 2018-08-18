@@ -215,7 +215,7 @@ TIME_ZONE = 'Europe/Paris'
 STATIC_URL = '/static/'
 STATIC_ROOT = make_path('static/')
 # STATICFILES_DIRS = (
-# 	make_path('static/'),
+# 	make_path('assets/'),
 # )
 
 TEMPLATES = [

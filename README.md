@@ -57,6 +57,10 @@ python manage.py migrate
 python manage.py loaddata usertypes
 ```
 
+You also need to generate all static files :
+```sh
+python manage.py collectstatic
+```
 
 Finally, you can launch the server.
 ```sh

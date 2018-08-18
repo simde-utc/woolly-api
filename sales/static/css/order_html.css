@@ -1,0 +1,65 @@
+@page {
+	/*background-image: url("/static/sales/images/billet.png");*/
+	size: a4 portrait;
+}
+
+body {
+	color: #000000;
+	background-color: #ffffff;
+	font-family: sans-serif;
+}
+p {
+	margin: 0;
+}
+
+.ticket {
+	padding: 2em;
+	width: 100%;
+}
+.ticket tr {
+	vertical-align: top;
+}
+.ticket.multiple {
+	border-bottom: 1px solid #aaa;
+}
+
+/* ===== Left part ====== */
+
+.info {
+	width: 100%;
+}
+
+.item {
+	font-size: 3em;
+}
+.sale {
+	font-size: 1.5em;
+	font-weight: 100;
+	color: #555;
+}
+
+.details {
+	margin-top: 1.5em;
+	list-style-type: none;
+	padding-left: 1em;
+	font-size: 1em;
+}
+.details > li {
+	margin-bottom: .6em;
+}
+
+/* ===== Right part ====== */
+
+.qr {
+	/* Collé à droite */
+	display: block;
+	margin-left: auto;
+	/* Marge pour scanner proprement */
+	/*padding: 10px;*/
+	background-color: #ffffff;
+}
+.code {
+	font-family: monospace;
+	text-align: center;
+	font-size: 1em;
+}

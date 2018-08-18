@@ -1,0 +1,71 @@
+/* ===== Général ===== */
+@page {
+	/*background-image: url("/static/sales/images/billet.png");*/
+	size: a4 portrait;
+}
+body {
+	color: #000000;
+	background-color: #ffffff;
+	font-family: sans-serif;
+}
+p {
+	margin: 0;
+	padding: 0;
+}
+
+.ticket {
+	padding: 40px 30px;
+	width: 100%;
+}
+.ticket tr {
+	vertical-align: top;
+}
+.ticket.multiple {
+	border-bottom: 1px solid #aaa;
+}
+
+/* ===== Left part ====== */
+
+.info {
+	width: 100%;
+	vertical-align: top;
+}
+
+.item {
+	font-size: 36px;
+	padding-bottom: -10px;
+}
+.sale {
+	font-size: 20px;
+	font-weight: 100;
+	color: #555;
+}
+
+.details {
+	padding-top: 10px;
+	padding-left: 10px;
+	list-style-type: none;
+	font-size: 14px;
+}
+.details p {
+	padding-top: 10px;
+}
+
+/* ===== Right part ====== */
+
+.qr-div {
+	text-align: right;
+}
+.qr {
+	/* Collé à droite */
+	display: block;
+	margin-left: auto;
+	/* Marge pour scanner proprement */
+	padding: 10px;
+	background-color: #ffffff;
+}
+.code {
+	font-family: monospace;
+	font-size: 10px;
+	text-align: center;
+}
