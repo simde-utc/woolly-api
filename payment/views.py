@@ -308,7 +308,8 @@ def sendConfirmationMail(order):
 	message = "Bonjour " + order.owner.get_full_name() + ",\n\n" \
 			+ "Nous vous confirmons avoir cotisé pour " + str(nb_places) + " place(s) " \
 			+ "pour participer à la course de baignoires le dimanche 30 septembre.\n" \
-			+ "Vous êtes désormais officiellement inscrit comme participant à la course !\n\n" \
+			+ "Vous êtes désormais officiellement inscrit comme participant à la course !\n" \
+			+ "Téléchargez vos billets ici : http://assos.utc.fr/baignoirutc/billetterie/commandes/" + str(order.pk) + "\n\n" \
 			+ "Rendez vous le 30 septembre !!"
 
 	email = EmailMessage(
