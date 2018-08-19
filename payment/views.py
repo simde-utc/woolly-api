@@ -178,7 +178,7 @@ def verifyOrder(order, user):
 
 	# Fetch all orders of the sale
 	saleOrders = Order.objects \
-					.filter(sale__pk=order.sale.pk, status__in=OrderStatus.NOT_CANCELLED_LIST.value) \
+					.filter(sale__pk=order.sale.pk, status__in=OrderStatus.BOOKED_LIST.value) \
 					.exclude(pk=order.pk) \
 					.prefetch_related('orderlines', 'orderlines__item')
 	# Count quantity bought by sale

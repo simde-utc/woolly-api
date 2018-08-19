@@ -132,7 +132,7 @@ class Item(models.Model):
 	def quantity_left(self):
 		if self.quantity == None:
 			return None
-		allOrders = self.sale.orders.filter(orderlines__item__pk=self.pk, status__in=OrderStatus.NOT_CANCELLED_LIST.value) \
+		allOrders = self.sale.orders.filter(orderlines__item__pk=self.pk, status__in=OrderStatus.BOOKED_LIST.value) \
 						.prefetch_related('orderlines').all()
 		allItemsBought = reduce(lambda acc, order: acc + \
 				reduce(lambda acc2, orderline: acc2 + orderline.quantity, order.orderlines.all(), 0), \
@@ -165,12 +165,14 @@ class OrderStatus(Enum):
 	EXPIRED = 5
 	CANCELLED = 6
 
-	# Helpers, not real choices
-	CANCELLABLE_LIST = (NOT_PAID, AWAITING_VALIDATION)
-	# NOT_CANCELLED_LIST = (AWAITING_VALIDATION, VALIDATED, NOT_PAID, PAID) 
-	NOT_CANCELLED_LIST = (PAID, VALIDATED) 
+	# ====== Helpers, not real choices ====
+
+	# Orders which can be cancelled
 	BUYABLE_STATUS_LIST = (ONGOING, AWAITING_VALIDATION, NOT_PAID) 
+	# Orders whose items are booked temporary or not 
+	BOOKED_LIST = (AWAITING_VALIDATION, VALIDATED, NOT_PAID, PAID)
 	VALIDATED_LIST = (VALIDATED, PAID)
+	CANCELLABLE_LIST = (NOT_PAID, AWAITING_VALIDATION)
 	CANCELLED_LIST = (EXPIRED, CANCELLED)
 
 	# Used for Django choices, return only choices whose value is int

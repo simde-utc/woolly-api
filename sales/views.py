@@ -239,6 +239,7 @@ class OrderViewSet(views.ModelViewSet):
 
 	def destroy(self, request, *args, **kwargs):
 		order = self.get_object()
+		# TODO Check service status !!!
 		if order.status in OrderStatus.CANCELLABLE_LIST.value:
 			# TODO Add time
 			order.status = OrderStatus.CANCELLED.value
