@@ -10,61 +10,61 @@ from .views import *
 # JSON API Resource routes
 urlpatterns = merge_sets(
 	# User
-	gen_url_set(['user', 'association'], AssociationViewSet),
-	gen_url_set(['user', 'order'], OrderViewSet),
+	gen_url_set(['users', 'associations'], AssociationViewSet),
+	gen_url_set(['users', 'orders'], OrderViewSet),
 
 	# Association
-	gen_url_set('association', AssociationViewSet, AssociationRelationshipView),
-	gen_url_set(['association', 'sale'], SaleViewSet),
+	gen_url_set('associations', AssociationViewSet, AssociationRelationshipView),
+	gen_url_set(['associations', 'sales'], SaleViewSet),
 	# AssociationMember ????????????????????
-	gen_url_set('associationmember', AssociationMemberViewSet, AssociationMemberRelationshipView),
-	gen_url_set(['associationmember', 'association'], AssociationViewSet),
-	gen_url_set(['association', 'associationmember'], AssociationMemberViewSet),
+	gen_url_set('associationmembers', AssociationMemberViewSet, AssociationMemberRelationshipView),
+	gen_url_set(['associationmembers', 'associations'], AssociationViewSet),
+	gen_url_set(['associations', 'associationmembers'], AssociationMemberViewSet),
 	# Sale
-	gen_url_set('sale', SaleViewSet, SaleRelationshipView),
-	gen_url_set(['sale', 'association'], AssociationViewSet),
-	gen_url_set(['sale', 'item'], ItemViewSet),
-	gen_url_set(['sale', 'itemgroup'], ItemGroupViewSet),
-	gen_url_set(['sale', 'order'], OrderViewSet),
+	gen_url_set('sales', SaleViewSet, SaleRelationshipView),
+	gen_url_set(['sales', 'associations'], AssociationViewSet),
+	gen_url_set(['sales', 'items'], ItemViewSet),
+	gen_url_set(['sales', 'itemgroups'], ItemGroupViewSet),
+	gen_url_set(['sales', 'orders'], OrderViewSet),
 
 	# ItemGroup
-	gen_url_set('itemgroup', ItemGroupViewSet, ItemGroupRelationshipView),
-	gen_url_set(['itemgroup', 'item'], ItemViewSet),
+	gen_url_set('itemgroups', ItemGroupViewSet, ItemGroupRelationshipView),
+	gen_url_set(['itemgroups', 'items'], ItemViewSet),
 	# Item
-	gen_url_set('item', ItemViewSet, ItemRelationshipView),
-	gen_url_set(['item', 'field'], FieldViewSet),
-	gen_url_set(['item', 'sale'], SaleViewSet),
-	gen_url_set(['item', 'itemgroup'], ItemGroupViewSet),
-	gen_url_set(['item', 'usertype'], UserTypeViewSet),
-	gen_url_set(['item', 'itemfield'], ItemFieldViewSet, ItemFieldRelationshipView),
+	gen_url_set('items', ItemViewSet, ItemRelationshipView),
+	gen_url_set(['items', 'fields'], FieldViewSet),
+	gen_url_set(['items', 'sales'], SaleViewSet),
+	gen_url_set(['items', 'itemgroups'], ItemGroupViewSet),
+	gen_url_set(['items', 'usertypes'], UserTypeViewSet),
+	gen_url_set(['items', 'itemfields'], ItemFieldViewSet, ItemFieldRelationshipView),
 
 	# Order
-	gen_url_set('order', OrderViewSet, OrderRelationshipView),
-	gen_url_set(['order', 'sale'], SaleViewSet),
-	gen_url_set(['order', 'user'], UserViewSet),
-	gen_url_set(['order', 'orderline'], OrderLineViewSet),
+	gen_url_set('orders', OrderViewSet, OrderRelationshipView),
+	gen_url_set(['orders', 'sales'], SaleViewSet),
+	gen_url_set(['orders', 'users'], UserViewSet),
+	gen_url_set(['orders', 'orderlines'], OrderLineViewSet),
 	# OrderLine
-	gen_url_set('orderline', OrderLineViewSet, OrderLineRelationshipView),
-	gen_url_set(['orderline', 'item'], ItemViewSet),
-	gen_url_set(['orderline', 'order'], OrderViewSet),
-	gen_url_set(['orderline', 'orderlineitem'], OrderLineItemViewSet),
+	gen_url_set('orderlines', OrderLineViewSet, OrderLineRelationshipView),
+	gen_url_set(['orderlines', 'items'], ItemViewSet),
+	gen_url_set(['orderlines', 'orders'], OrderViewSet),
+	gen_url_set(['orderlines', 'orderlineitems'], OrderLineItemViewSet),
 	# OrderLineItem ????
-	gen_url_set('orderlineitem', OrderLineItemViewSet, OrderLineItemRelationshipView),
-	gen_url_set(['orderlineitem', 'orderline'], OrderLineViewSet),	
-	gen_url_set(['orderlineitem', 'orderlinefield'], OrderLineFieldViewSet),	
+	gen_url_set('orderlineitems', OrderLineItemViewSet, OrderLineItemRelationshipView),
+	gen_url_set(['orderlineitems', 'orderlines'], OrderLineViewSet),	
+	gen_url_set(['orderlineitems', 'orderlinefields'], OrderLineFieldViewSet),	
 
 	# Field
-	gen_url_set('field', FieldViewSet, FieldRelationshipView),
-	gen_url_set(['field', 'itemfield'], ItemFieldViewSet),
+	gen_url_set('fields', FieldViewSet, FieldRelationshipView),
+	gen_url_set(['fields', 'itemfields'], ItemFieldViewSet),
 	# OrderLineField ?????????????????????
-	gen_url_set('orderlinefield', OrderLineFieldViewSet, OrderLineFieldRelationshipView),
-	gen_url_set(['orderlinefield', 'field'], FieldViewSet),	
+	gen_url_set('orderlinefields', OrderLineFieldViewSet, OrderLineFieldRelationshipView),
+	gen_url_set(['orderlinefields', 'fields'], FieldViewSet),	
 	# gen_url_set(['orderlinefield', 'orderline'], OrderLineViewSet),	
-	gen_url_set(['orderlinefield', 'orderlineitem'], OrderLineItemViewSet),	
+	gen_url_set(['orderlinefields', 'orderlineitems'], OrderLineItemViewSet),	
 	# ItemField ??????????????????????
-	gen_url_set('itemfield', ItemFieldViewSet, ItemFieldRelationshipView),
-	gen_url_set(['itemfield', 'item'], ItemViewSet),
-	gen_url_set(['itemfield', 'field'], FieldViewSet),
+	gen_url_set('itemfields', ItemFieldViewSet, ItemFieldRelationshipView),
+	gen_url_set(['itemfields', 'items'], ItemViewSet),
+	gen_url_set(['itemfields', 'fields'], FieldViewSet),
 )
 
 # Addtionnal API endpoints for Authentication

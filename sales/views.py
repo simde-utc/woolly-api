@@ -12,6 +12,7 @@ from .models import OrderStatus
 
 from authentication.auth import JWTAuthentication
 from core.utils import render_to_pdf, data_to_qrcode
+from django.shortcuts import render
 from io import BytesIO
 import base64
 
@@ -224,7 +225,7 @@ class OrderViewSet(views.ModelViewSet):
 				'sale': request.data['sale'],
 				'owner': {
 					'id': request.user.id,
-					'type': 'user'
+					'type': 'users'
 				},
 				'orderlines': [],
 				'status': OrderStatus.ONGOING.value
@@ -439,11 +440,10 @@ class OrderLineFieldRelationshipView(views.RelationshipView):
 # ============================================
 # 	Billet
 # ============================================
-
 class GeneratePdf(View):
 
 	def get(self, request, *args, **kwargs):
-		# Force JWT from ?code=...
+		# Authenticate by forcing JWT from ?code=...
 		request.META['HTTP_AUTHORIZATION'] = "Bearer " + request.GET.get('code', '')
 		jwtAuth = JWTAuthentication()
 		authUser = jwtAuth.authenticate(request)
@@ -452,49 +452,56 @@ class GeneratePdf(View):
 			return errorResponse("Valid Code Required", [], httpStatus = status.HTTP_401_UNAUTHORIZED)
 		request.user = authUser[0]
 
-		if 'order_pk' in self.kwargs:
-			order_pk = self.kwargs['order_pk']
-			try:
-				order = Order.objects.all() \
-							.filter(owner__pk=request.user.pk, status__in=OrderStatus.VALIDATED_LIST.value) \
-							.prefetch_related('orderlines', 'orderlines__orderlineitems', 'orderlines__item',
-								'orderlines__orderlineitems__orderlinefields', 'orderlines__orderlineitems__orderlinefields__field') \
-							.get(pk=order_pk)
-			except Order.DoesNotExist as e:
-				return errorResponse(str(e), [], httpStatus = status.HTTP_404_NOT_FOUND)
+		# Get order
+		order_pk = self.kwargs.get('order_pk', None)
+		try:
+			order = Order.objects.all() \
+						.filter(owner__pk=request.user.pk, status__in=OrderStatus.VALIDATED_LIST.value) \
+						.prefetch_related('orderlines', 'orderlines__orderlineitems', 'orderlines__item',
+							'orderlines__orderlineitems__orderlinefields', 'orderlines__orderlineitems__orderlinefields__field') \
+						.get(pk=order_pk)
+		except Order.DoesNotExist as e:
+			return errorResponse('La commande est introuvable', [], httpStatus = status.HTTP_404_NOT_FOUND)
 
-			tickets = list()
-			for orderline in order.orderlines.all():
-				for orderlineitem in orderline.orderlineitems.all():
-					# Process QRCode
-					qr_buffer = BytesIO()
-					code = data_to_qrcode(orderlineitem.id)
-					code.save(qr_buffer)
-					qr_code = base64.b64encode(qr_buffer.getvalue()).decode("utf-8")
+		# Process tickets
+		tickets = list()
+		for orderline in order.orderlines.all():
+			for orderlineitem in orderline.orderlineitems.all():
+				# Process QRCode
+				qr_buffer = BytesIO()
+				code = data_to_qrcode(orderlineitem.id)
+				code.save(qr_buffer)
+				qr_code = base64.b64encode(qr_buffer.getvalue()).decode("utf-8")
 
-					# Add Nom et Prénom to orderline
-					for orderlinefield in orderlineitem.orderlinefields.all():
-						if orderlinefield.field.name == 'Nom':
-							first_name = orderlinefield.value
-							continue
-						if orderlinefield.field.name == 'Prénom':
-							last_name = orderlinefield.value
-					
-					# Add a ticket with this data
-					tickets.append({
-						'nom': first_name,
-						'prenom': last_name,
-						'qr_code': qr_code,
-						'item': orderline.item
-					})
-			data = {
-				'tickets': tickets,
-				'order': order
-			}
-			pdf = render_to_pdf('pdf/template_billet.html', data)
-			# return HttpResponse(pdf, content_type='application/pdf')
+				# Add Nom et Prénom to orderline
+				for orderlinefield in orderlineitem.orderlinefields.all():
+					if orderlinefield.field.name == 'Nom':
+						first_name = orderlinefield.value
+						continue
+					if orderlinefield.field.name == 'Prénom':
+						last_name = orderlinefield.value
+				
+				# Add a ticket with this data
+				tickets.append({
+					'nom': first_name,
+					'prenom': last_name,
+					'qr_code': qr_code,
+					'item': orderline.item,
+					'uuid': orderlineitem.id,
+				})
+		data = {
+			'tickets': tickets,
+			'order': order
+		}
+
+		# Render template
+		template = 'pdf/template_order.html'
+		if request.GET.get('type', 'pdf') == 'html':
+			response = render(request, template, data)
+		else:
+			pdf = render_to_pdf(template, data)
 			response = HttpResponse(pdf, content_type='application/pdf')
-			response['Content-Disposition'] = 'attachment;filename="billet_' + order.sale.association.name + '_' + order_pk + '.pdf"'
-			return response
-		return errorResponse("Valid Order Required", [], httpStatus = status.HTTP_404_NOT_FOUND)
-
+			if request.GET.get('action', 'download') != 'view':
+				response['Content-Disposition'] = 'attachment;filename="commande_' + order.sale.name + '_' + order_pk + '.pdf"'
+				
+		return response

@@ -13,8 +13,10 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 import os
 from woolly_api import settings_confidential as confidentials
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+# Build paths inside the project like this: use make_path helper or os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+def make_path(rel):
+	return os.path.join(BASE_DIR, rel.replace('/', os.path.sep))
 
 # --------------------------------------------------------------------------
 # 		Services Configuration
@@ -157,6 +159,10 @@ INSTALLED_APPS = [
 	'payment',
 ]
 
+# Urls & WSGI
+ROOT_URLCONF = 'woolly_api.urls'
+WSGI_APPLICATION = 'woolly_api.wsgi.application'
+
 MIDDLEWARE = [
 	'django.contrib.sessions.middleware.SessionMiddleware',
 	'django.middleware.security.SecurityMiddleware',
@@ -171,9 +177,8 @@ MIDDLEWARE = [
 # Authentication
 AUTH_USER_MODEL = 'authentication.User'
 
-# To access web admin panel
 AUTHENTICATION_BACKENDS = (
-	'django.contrib.auth.backends.ModelBackend',
+	'django.contrib.auth.backends.ModelBackend',		# Only to access web admin panel
 	# 'authentication.auth.AdminSiteBackend',
 )
 
@@ -185,26 +190,40 @@ AUTH_PASSWORD_VALIDATORS = [
 	{'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
 ]
 
-# Paths
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-def ABS_DIR(rel):
-	return os.path.join(BASE_DIR, rel.replace('/', os.path.sep))
+# Mails
+EMAIL_HOST = confidentials.EMAIL.get('host', 'localhost')
+EMAIL_PORT = confidentials.EMAIL.get('port', 25)
+EMAIL_HOST_USER = confidentials.EMAIL.get('user', '')
+EMAIL_HOST_PASSWORD = confidentials.EMAIL.get('pwd', '')
+EMAIL_USE_SSL = confidentials.EMAIL.get('ssl', False)
+EMAIL_USE_TLS = confidentials.EMAIL.get('tls', False)
+
+
+# Internationalization
+# https://docs.djangoproject.com/en/1.11/topics/i18n/
+USE_I18N = True
+USE_L10N = True
+USE_TZ = True
+LANGUAGE_CODE = 'fr'
+TIME_ZONE = 'Europe/Paris'
+
+
+# --------------------------------------------------------------------------
+# 		Static Files & Templates
+# --------------------------------------------------------------------------
 
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR + '/static/'
-STATICFILES_DIRS = (
-	BASE_DIR + '/assets/',
-)
-ROOT_URLCONF = 'woolly_api.urls'
-WSGI_APPLICATION = 'woolly_api.wsgi.application'
-
+STATIC_ROOT = make_path('static/')
+# STATICFILES_DIRS = (
+# 	make_path('assets/'),
+# )
 
 TEMPLATES = [
 	{
 		'BACKEND': 'django.template.backends.django.DjangoTemplates',
-		'DIRS': [
-			BASE_DIR + '/templates/'
-		],
+		'DIRS': (
+			make_path('templates/'),
+		),
 		'APP_DIRS': True,
 		'OPTIONS': {
 			'context_processors': [
@@ -217,10 +236,54 @@ TEMPLATES = [
 	},
 ]
 
-# Internationalization
-# https://docs.djangoproject.com/en/1.11/topics/i18n/
-USE_I18N = True
-USE_L10N = True
-USE_TZ = True
-LANGUAGE_CODE = 'fr'
-TIME_ZONE = 'Europe/Paris'
+
+# --------------------------------------------------------------------------
+# 		Logging
+# --------------------------------------------------------------------------
+
+LOGGING = {
+	'version': 1,
+	'disable_existing_loggers': False,
+	'formatters': {
+		'verbose': {
+			'format': '[{asctime}] {levelname} in {filename}@{lineno} : {message}',
+			'style': '{',
+		},
+		'simple': {
+			'format': '[{asctime}] {levelname} : {message}',
+			'style': '{',
+		},
+	},
+	'filters': {
+		'require_debug_false': {
+			'()': 'django.utils.log.RequireDebugFalse',
+		},
+		'require_debug_true': {
+			'()': 'django.utils.log.RequireDebugTrue',
+		},
+	},
+	'handlers': {
+		'console': {
+			'level': 'WARNING',
+			'filters': ['require_debug_true'],
+			'class': 'logging.StreamHandler',
+			# 'formatter': 'simple',
+		},
+		'file': {
+			'level': 'WARNING',
+			'filters': ['require_debug_false'],
+			'class': 'logging.handlers.RotatingFileHandler',
+			'filename': make_path('debug.log'),
+			'maxBytes': 1024*1024*15, # 15MB
+			'backupCount': 5,
+			'formatter': 'verbose',
+		},
+	},
+	'loggers': {
+		'django': {
+			'handlers': ['console', 'file'],
+			'level': 'WARNING',
+			'propagate': True,
+		},
+	},
+}

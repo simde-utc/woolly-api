@@ -10,11 +10,11 @@ class UserTypeSerializer(serializers.ModelSerializer):
 		fields = ('id', 'name')
 
 
-class UserSerializer(serializers.HyperlinkedModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
 
-	usertype = get_ResourceRelatedField('user', 'usertype', read_only=True, required=False)
-	associations = get_ResourceRelatedField('user', 'association', queryset=AssociationMember.objects, required=False)
-	orders = get_ResourceRelatedField('user', 'order', queryset=Order.objects, many=True, required=False)
+	usertype = get_ResourceRelatedField('users', 'usertypes', read_only=True, required=False)
+	associations = get_ResourceRelatedField('users', 'associations', queryset=AssociationMember.objects, required=False)
+	orders = get_ResourceRelatedField('users', 'orders', queryset=Order.objects, many=True, required=False)
 
 	class Meta:
 		model = User

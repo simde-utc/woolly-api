@@ -13,7 +13,6 @@ You will need [Python version 3](https://www.python.org/downloads/) and [pip (a 
 
 Then we will set up the virtual environment with `virtualenv`.
 ```sh
-# Install package
 pip install virtualenv
 ```
 
@@ -27,7 +26,7 @@ On Windows :
 virtualenv "venv"
 ```
 
-To activate the virtual environment use :
+Now activate the virtual environment. You have to do this everytime you want to work with Woolly and don't see the `(venv)` on the left of your terminal prompt.
 ```sh
 # On Linux :
 source venv/bin/activate
@@ -47,13 +46,21 @@ pip install -r requirements.txt
 Now ask a responsible person for the `settings_confidential.py` file containing the foreign APIs identification keys. The file is to be placed next to the `settings.py` file. There is a placeholder file called `settings_confidential.example.py`, you can copy and fill it. 
 
 
-Create your database named `woolly`
+Create your database named `woolly`, set charset to UTF-8 with :
+```sql
+ALTER DATABASE `woolly` CHARACTER SET utf8;
+```
+
 Then you need to migrate, and initialize the database :
 ```sh
 python manage.py migrate
 python manage.py loaddata usertypes
 ```
 
+You also need to generate all static files :
+```sh
+python manage.py collectstatic
+```
 
 Finally, you can launch the server.
 ```sh
@@ -67,18 +74,18 @@ You can find (the documentation of the API here)[./documentation/api.md].
 
 ## Deployment
 
-Check this deployment checklist : https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
+Check this deployment checklist : https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
 
-Deploy server using : https://docs.djangoproject.com/en/1.11/howto/deployment/wsgi/
+Deploy server using : https://docs.djangoproject.com/en/2.1/howto/deployment/wsgi/
 
+Here, on deployment with use Apache to run the server.
+Install `mod_wsgi` : `sudo apt-get install libapache2-mod-wsgi-py3`
+Restart apache for mod_wsgi to be effective : `sudo systemctl restart apache2`
 
-Actually, on deployment with use Apache to run the server.
-In an Apache config file (like `/etc/apache2/apache2.conf.`), replace `BASE_FOLDER` with the path to where you installed Woolly :
-```
+In an Apache config file (like `/etc/apache2/apache2.conf`), replace `BASE_FOLDER` with the path to where you installed Woolly :
+```ini
 ServerName YOUR_SERVER_NAME
 WSGIScriptAlias / BASE_FOLDER/woolly_api/wsgi.py
-WSGIPythonHome BASE_FOLDER/venv 
-WSGIPythonPath BASE_FOLDER
 WSGIDaemonProcess woolly-api python-home=BASE_FOLDER/venv python-path=BASE_FOLDER 
 WSGIProcessGroup woolly-api
 WSGIPassAuthorization On

@@ -27,19 +27,16 @@ def gen_url_set(path, viewset, relationship_viewset=None):
 	"""
 	@brief      Helper to generate JSON API friendly url pattern set
 	
-	@param      resource_name         The string representing the resource in the url
+	@param      resource_name         The string representing the resource in the url (plural)
 	@param      viewset               The resource ModelViewSet
 	@param      relationship_viewset  The resource RelationshipView
 	
 	@return     A list of url pattern
 	"""
 
-	# Pluralize the resource name for the url
-	pluralize = lambda name: name + 's' if type(name) is str else name[1]
-
 	# ===== Build base url
 	if type(path) is str:				# Simple version
-		base_url = r'^' + pluralize(path)
+		base_url = r'^' + path
 		base_name = path
 	else:								# Nested version
 		base_url = r'^'
@@ -47,11 +44,11 @@ def gen_url_set(path, viewset, relationship_viewset=None):
 
 		for step in path[:-1]:
 			# Build base url route & name
-			base_url += pluralize(step) + r'/(?P<' + step + r'_pk>[^/.]+)/'
+			base_url += step + r'/(?P<' + step + r'_pk>[^/.]+)/'
 			base_name += step + '-'
 
 		resource_name = path[-1]
-		base_url += pluralize(resource_name)
+		base_url += resource_name
 		base_name += resource_name
 
 	# ===== Build url patterns
