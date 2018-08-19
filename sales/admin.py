@@ -1,5 +1,6 @@
-from django.contrib import admin
+from django.utils.safestring import mark_safe
 from django.db.models import Count
+from django.contrib import admin
 from .models import *
 from core.helpers import custom_editable_fields
 
@@ -98,9 +99,28 @@ class ItemAdmin(admin.ModelAdmin):
 # ============================================
 
 class OrderAdmin(admin.ModelAdmin):
-	list_display = ('id', 'sale', 'owner', 'status', 'created_at')
-	list_filter = ('status', 'sale', 'owner')
+	list_display = ('id', 'sale', 'owner', 'get_status', 'get_uuids', 'created_at')
+	list_filter = ('status', 'sale__name')
 	list_editable = tuple()
+
+	
+	def get_uuids(self, order):
+		return mark_safe("<br>".join(str(orderlineitem.id) \
+			for orderline in order.orderlines.all() \
+			for orderlineitem in orderline.orderlineitems.all()
+		))
+	get_uuids.short_description = 'UUIDs'
+	get_uuids.admin_order_field = 'uuids'
+
+	def get_status(self, order):
+		if order.status in OrderStatus.VALIDATED_LIST.value:
+			color = "green"
+		elif order.status in OrderStatus.CANCELLED_LIST.value:
+			color = "red"
+		else:
+			color = "black"
+		return mark_safe("<span style='color: %s;'>%s</span>" % (color, order.get_status_display()))
+
 
 	def get_readonly_fields(self, request, obj=None):
 		return custom_editable_fields(request, obj, ('sale', 'owner'))
@@ -109,7 +129,7 @@ class OrderAdmin(admin.ModelAdmin):
 		('Payment', 		{ 'fields': ('tra_id',) }),
 	)
 
-	search_fields = ('sale', 'owner')
+	search_fields = ('sale__name', 'owner__email', 'orderlines__orderlineitems__id')
 	ordering = ('sale', 'owner', 'created_at')
 
 class OrderLineAdmin(admin.ModelAdmin):

@@ -171,6 +171,7 @@ class OrderStatus(Enum):
 	NOT_CANCELLED_LIST = (PAID, VALIDATED) 
 	BUYABLE_STATUS_LIST = (ONGOING, AWAITING_VALIDATION, NOT_PAID) 
 	VALIDATED_LIST = (VALIDATED, PAID)
+	CANCELLED_LIST = (EXPIRED, CANCELLED)
 
 	# Used for Django choices, return only choices whose value is int
 	@classmethod
