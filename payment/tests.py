@@ -21,6 +21,7 @@ class OrderValidatorTestCase(APITestCase):
 			'after':  	format_date(faker.date_time_this_year(before_now=False, after_now=True)),
 			'now': 		timezone.now(),
 		}
+
 		# Default models
 		self.usertype = modelFactory.create(UserType)
 		self.user = modelFactory.create(User, usertype=self.usertype)
@@ -51,16 +52,17 @@ class OrderValidatorTestCase(APITestCase):
 		)
 
 		self.orderline = modelFactory.create(OrderLine, item=self.item, order=self.order, quantity=2)
-		self._test_validation(True)
 
+		# Test if everything is fine
+		self._test_validation(True)
 
 	def _test_validation(self, should_fail, messages=None, *args, **kwargs):
 		# TODO Try to lower that
 		with self.assertNumQueries(6):
 			validator = OrderValidator(self.order)
-			has_errors, message_list = validator.isValid(processAll=kwargs.get('processAll', True))
+			has_errors, message_list = validator.isValid(processAll = kwargs.get('processAll', True))
 
-		debug_msg = None if message_list is None else "Les erreurs obtenues sont : " + "\n - ".join(message_list)
+		debug_msg = "Les erreurs obtenues sont : " + "\n - ".join(message_list) if message_list else None
 		self.assertEqual(has_errors, should_fail, debug_msg)
 		if messages is not None:
 			self.assertEqual(message_list, messages, debug_msg)
@@ -75,7 +77,6 @@ class OrderValidatorTestCase(APITestCase):
 		self.sale.is_active = False
 		self.sale.save()
 		self._test_validation(False)
-
 
 	def test_sale_is_ongoing(self):
 		"""Orders should be paid between sales beginning date and max payment date"""
@@ -106,4 +107,47 @@ class OrderValidatorTestCase(APITestCase):
 		self._test_validation(False)
 		self.order.status = OrderStatus.CANCELLED.value
 		self._test_validation(False)
+
+	def test_sale_quantities(self):
+		"""Sales quantities must be respected"""
+		upperLevel = self.orderline.quantity - 1
+
+		# Normal Sale max_item_quantity
+		self.sale.max_item_quantity = upperLevel
+		self.sale.save()
+		self._test_validation(False)
+
+		# TODO : with other users
+
+	def test_item_quantities(self):
+		"""Items quantities must be respected"""
+		upperLevel = self.orderline.quantity - 1
+
+		# Normal Item quantity
+		self.item.quantity = upperLevel
+		self.item.save()
+		self._test_validation(False)
+		# Normal Item max_per_user
+		self.item.max_per_user = upperLevel
+		self.item.save()
+		self._test_validation(False)
+
+		# TODO : with other users
+
+	def test_itemgroup_quantities(self):
+		"""ItemGroups quantities must be respected"""
+		upperLevel = self.orderline.quantity - 1
+ 
+		# Normal Itemgroup quantity
+		self.itemgroup.quantity = upperLevel
+		self.itemgroup.save()
+		self._test_validation(False)
+		# Normal Itemgroup max_per_user
+		self.itemgroup.max_per_user = upperLevel
+		self.itemgroup.save()
+		self._test_validation(False)
+
+		# TODO : with other users
+
+
 

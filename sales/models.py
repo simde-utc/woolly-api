@@ -119,13 +119,13 @@ class Item(models.Model):
 	sale 		= models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
 	group 		= models.ForeignKey(ItemGroup, blank=True, null=True, default=None, on_delete=models.SET_NULL, related_name='items')
 	
-	# Specification
+	# Specifications
 	is_active 	= models.BooleanField(default=True)
 	quantity 	= models.IntegerField(blank=True, null=True)		# Null quand pas de restrinction sur l'item
+	max_per_user = models.IntegerField(blank=True, null=True)		# TODO V2 : moteur de contraintes
 	usertype 	= models.ForeignKey(UserType, on_delete=models.PROTECT)			# UserType ?
 	price 		= models.FloatField()
 	nemopay_id 	= models.CharField(max_length=30, blank=True, null=True)		# TODO V2 : abstraire payment
-	max_per_user = models.IntegerField(blank=True, null=True)		# TODO V2 : moteur de contraintes
 
 	fields 	= models.ManyToManyField('Field', through='ItemField', through_fields=('item','field')) #, related_name='fields')
 

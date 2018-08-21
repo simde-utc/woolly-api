@@ -38,7 +38,7 @@ class OrderValidator:
 	# 			Check functions
 	# ===============================================
 
-	def _checkSale(self):
+	def _checkSale(self, *args, **kwargs):
 		"""Check general settings on the sale"""
 
 		# Check if sale is active
@@ -55,7 +55,7 @@ class OrderValidator:
 			self.errors.append("Le paiement n'est plus possible.")
 
 
-	def _checkOrder(self):
+	def _checkOrder(self, *args, **kwargs):
 		"""Check general settings on the order"""
 
 		# Check if order is still buyable
@@ -71,7 +71,7 @@ class OrderValidator:
 			self.errors.append("Vous avez déjà une commande en cours pour cette vente.")
 
 
-	def _checkQuantities(self):
+	def _checkQuantities(self, *args, **kwargs):
 		"""Fetch, Process and Verify Quantities"""
 
 		###############################################
