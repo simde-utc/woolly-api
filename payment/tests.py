@@ -54,11 +54,12 @@ class OrderValidatorTestCase(APITestCase):
 		self._test_validation(True)
 
 
-	def _test_validation(self, should_fail, messages=None):
+	def _test_validation(self, should_fail, messages=None, *args, **kwargs):
 		# TODO Try to lower that
-		with self.assertNumQueries(5):
+		with self.assertNumQueries(6):
 			validator = OrderValidator(self.order)
-		has_errors, message_list = validator.isValid()
+			has_errors, message_list = validator.isValid(processAll=kwargs.get('processAll', True))
+
 		debug_msg = None if message_list is None else "Les erreurs obtenues sont : " + "\n - ".join(message_list)
 		self.assertEqual(has_errors, should_fail, debug_msg)
 		if messages is not None:
@@ -76,9 +77,8 @@ class OrderValidatorTestCase(APITestCase):
 		self._test_validation(False)
 
 
-	def xxxtest_sale_is_ongoing(self):
+	def test_sale_is_ongoing(self):
 		"""Orders should be paid between sales beginning date and max payment date"""
-		print(self.order.get_status_display())
 		self.sale.begin_at = self.datetimes['after']
 		self.sale.max_payment_date = self.datetimes['after']
 		self.sale.save()
@@ -89,7 +89,7 @@ class OrderValidatorTestCase(APITestCase):
 		self.sale.save()
 		self._test_validation(False)
 
-	def xxxtest_not_buyable_order(self):
+	def test_not_buyable_order(self):
 		"""Orders that don't have the right status can't be bought"""
 		self.order.status = OrderStatus.ONGOING.value
 		self._test_validation(True)
