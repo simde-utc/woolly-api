@@ -25,6 +25,10 @@ def find_or_create_user(user_infos):
 		user = User.objects.get(email = user_infos['email'])
 	except User.DoesNotExist:
 		user = create_user(user_infos)
+		if 'error' in user:
+			print(user_infos)
+			print(user)
+			raise User.DoesNotExist("Erreur lors de la création de l'utilisateur")
 
 	# Mise à jour des attributs de l'user si besoin
 	madeChanges = False
@@ -68,10 +72,11 @@ def create_user(user_infos):
 	})
 	if not serializer.is_valid():
 		# TODO : Exceptions
-		print("ERROORRRRS")
+		print("================== ERROORRRRS ==================")
 		print(serializer.errors)
 		return {
 			'error': 'Invalid serialization',
 			'errors': serializer.errors
 		}
 	user = serializer.save()
+	return user
