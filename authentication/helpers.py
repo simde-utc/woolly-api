@@ -25,7 +25,7 @@ def find_or_create_user(user_infos):
 		user = User.objects.get(email = user_infos['email'])
 	except User.DoesNotExist:
 		user = create_user(user_infos)
-		if 'error' in user:
+		if type(user) is dict and 'error' in user:
 			print(user_infos)
 			print(user)
 			raise User.DoesNotExist("Erreur lors de la création de l'utilisateur")
