@@ -56,14 +56,18 @@ class OrderValidatorTestCase(APITestCase):
 		# Test if everything is fine
 		self._test_validation(True)
 
-	def _test_validation(self, should_fail, messages=None, *args, **kwargs):
+	def _test_validation(self, should_pass, messages=None, *args, **kwargs):
+		options = {
+			'validateOnInit': True,
+			'processAll': kwargs.get('processAll', True),
+		}
 		# TODO Try to lower that
 		with self.assertNumQueries(6):
-			validator = OrderValidator(self.order)
-			has_errors, message_list = validator.isValid(processAll = kwargs.get('processAll', True))
+			validator = OrderValidator(self.order, **options)
 
-		debug_msg = "Les erreurs obtenues sont : " + "\n - ".join(message_list) if message_list else None
-		self.assertEqual(has_errors, should_fail, debug_msg)
+		error_list = validator.get_errors()
+		debug_msg = "Les erreurs obtenues sont : \n - " + "\n - ".join(error_list) if error_list else None
+		self.assertEqual(validator.is_valid(), should_pass, debug_msg)
 		if messages is not None:
 			self.assertEqual(message_list, messages, debug_msg)
 
@@ -80,11 +84,13 @@ class OrderValidatorTestCase(APITestCase):
 
 	def test_sale_is_ongoing(self):
 		"""Orders should be paid between sales beginning date and max payment date"""
+		# Cannot pay before sale
 		self.sale.begin_at = self.datetimes['after']
 		self.sale.max_payment_date = self.datetimes['after']
 		self.sale.save()
 		self._test_validation(False)
 
+		# Cannot pay after sale
 		self.sale.begin_at = self.datetimes['before']
 		self.sale.max_payment_date = self.datetimes['before']
 		self.sale.save()

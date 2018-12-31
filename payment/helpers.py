@@ -13,9 +13,10 @@ class OrderValidator:
 		self.user = self.order.owner
 		self.sale = self.order.sale
 		self.errors = []
+		if kwargs.get('validateOnInit', True):
+			self.validate(*args, **kwargs)
 
-
-	def isValid(self, *args, **kwargs):
+	def validate(self, *args, **kwargs):
 		"""
 		Vérifie la validité d'un order
 		"""
@@ -31,8 +32,13 @@ class OrderValidator:
 		if not processAll and self.errors: return (False, self.errors)
 
 		# Final check
-		return (False, self.errors) if self.errors else (True, None)
+		return (True, self.errors)
 
+	def is_valid(self):
+		return len(self.errors) == 0
+
+	def get_errors(self):
+		return self.errors
 
 	# ===============================================
 	# 			Check functions
@@ -74,9 +80,7 @@ class OrderValidator:
 	def _checkQuantities(self, *args, **kwargs):
 		"""Fetch, Process and Verify Quantities"""
 
-		###############################################
-		# 		Part I - Fetch resources
-		###############################################
+		# ======= Part I - Fetch resources
 		# TODO : optimize (orderlinefield.orderlineitem.orderline.order.sale.association)
 
 		sale_items = self.sale.items.all()
@@ -89,9 +93,7 @@ class OrderValidator:
 		user_orderlines = sale_orderlines.filter(order__owner__pk=self.user.pk)
 
 
-		###############################################
-		# 		Part II - Process quantities
-		###############################################
+		# ======= Part II - Process quantities
 
 		def quantityBuilder(orderlines):
 			def reducerFunc(acc, orderline):
@@ -108,9 +110,7 @@ class OrderValidator:
 		user_total_qt,  user_qt_per_item,  user_qt_per_group  = quantityBuilder(user_orderlines)
 
 
-		###############################################
-		# 		Part III - Verification
-		###############################################
+		# ======= Part III - Verification
 
 		def isQuantity(quantity):
 			return type(quantity) is int and quantity > 0

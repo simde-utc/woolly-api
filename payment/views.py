@@ -54,10 +54,9 @@ def pay(request, pk):
 		return Response({'message': str(e)}, status=status.HTTP_404_NOT_FOUND)
 
 	# 2. Verify Order
-	validator = OrderValidator(order)
-	has_errors, message_list = validator.isValid()
-	if has_errors:
-		return orderErrorResponse(message_list)
+	validator = OrderValidator(order, validateOnInit=True)
+	if not validator.is_valid():
+		return orderErrorResponse(validator.get_errors())
 
 	# 3. Process orderlines
 	orderlines = order.orderlines.filter(quantity__gt=0).prefetch_related('item')
