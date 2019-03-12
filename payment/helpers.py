@@ -83,13 +83,14 @@ class OrderValidator:
 		# ======= Part I - Fetch resources
 		# TODO : optimize (orderlinefield.orderlineitem.orderline.order.sale.association)
 
-		sale_items = self.sale.items.all()
+		# sale_items = self.sale.items.prefetch_related('group').all()
 		order_orderlines = self.order.orderlines.prefetch_related('item').all()
 		# All orders which book items except the one we are processing
 		sale_orderlines = OrderLine.objects \
 							.filter(order__sale__pk=self.sale.pk, order__status__in=OrderStatus.BOOKED_LIST.value) \
 							.exclude(order__pk=self.order.pk) \
 							.prefetch_related('item', 'item__group')
+		# Orders that the user already booked
 		user_orderlines = sale_orderlines.filter(order__owner__pk=self.user.pk)
 
 

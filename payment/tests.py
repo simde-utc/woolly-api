@@ -16,54 +16,88 @@ modelFactory = FakeModelFactory()
 class OrderValidatorTestCase(APITestCase):
 
 	def setUp(self):
+		now    = timezone.now()
+		delay1 = timezone.timedelta(days=1)
+		delay2 = timezone.timedelta(weeks=1)
 		self.datetimes = {
-			'before': 	format_date(faker.date_time_this_year(before_now=True, 	after_now=False)),
-			'after':  	format_date(faker.date_time_this_year(before_now=False, after_now=True)),
-			'now': 		timezone.now(),
+			'before2': 	now - delay2,
+			'before': 	now - delay1,
+			'now': 			now,
+			'after': 		now + delay1,
+			'after2': 	now + delay2,
 		}
 
 		# Default models
-		self.usertype = modelFactory.create(UserType)
-		self.user = modelFactory.create(User, usertype=self.usertype)
-
 		self.sale = modelFactory.create(Sale,
-			is_active 	= True,
+			is_active = True,
 			begin_at 	= self.datetimes['before'],
 			end_at 		= self.datetimes['after'],
 			max_item_quantity = 400,
-			max_payment_date = self.datetimes['after']
-		)
-		self.itemgroup = modelFactory.create(ItemGroup, quantity=400, max_per_user=5)
-		self.item = modelFactory.create(Item,
-			sale = 	self.sale,
-			group = self.itemgroup,
-			usertype = self.usertype,
-			is_active = True,
-			quantity = 300,
-			max_per_user = 7,
-		)
-		
-		self.order = modelFactory.create(Order,
-			owner = self.user,
-			sale = self.sale,
-			created_at = self.datetimes['now'],
-			updated_at = self.datetimes['now'],
-			status = OrderStatus.ONGOING.value,
+			max_payment_date 	= self.datetimes['after'],
 		)
 
-		self.orderline = modelFactory.create(OrderLine, item=self.item, order=self.order, quantity=2)
+		self.usertypes = [
+			modelFactory.create(UserType),
+			modelFactory.create(UserType),
+		]
+		self.usertype = self.usertypes[0]
+
+		self.users = [
+			modelFactory.create(User, usertype=self.usertypes[0]),	# normal
+			modelFactory.create(User, usertype=self.usertypes[0]),	# other
+			modelFactory.create(User, usertype=self.usertypes[1]),	# different usertype
+		]
+		self.user = self.users[0]
+
+		self.itemgroup = modelFactory.create(ItemGroup, quantity=400, max_per_user=5)
+		self.items = [
+			modelFactory.create(Item,
+				sale = 	self.sale,
+				group = self.itemgroup,
+				usertype = self.usertypes[0],
+				is_active = True,
+				quantity = 300,
+				max_per_user = 7,
+			),
+			modelFactory.create(Item,
+				sale = 	self.sale,
+				group = self.itemgroup,
+				usertype = self.usertypes[1],
+				is_active = True,
+				quantity = 300,
+				max_per_user = 7,
+			),
+		]
+		self.item = self.items[0]
+
+		self.order, self.orderline = self._create_order(self.user, self.item)
 
 		# Test if everything is fine
 		self._test_validation(True)
 
-	def _test_validation(self, should_pass, messages=None, *args, **kwargs):
+	def _create_order(self, user, item=None, status=OrderStatus.ONGOING.value):
+		item = self.items[0] if item is None else item
+
+		order = modelFactory.create(Order,
+			owner = user,
+			sale = self.sale,
+			created_at = self.datetimes['now'],
+			updated_at = self.datetimes['now'],
+			status = status,
+		)
+		orderline = modelFactory.create(OrderLine, item=item, order=order, quantity=2)
+		return order, orderline
+
+
+	def _test_validation(self, should_pass, order=None, messages=None, *args, **kwargs):
+		if order is None: order = self.order
 		options = {
 			'validateOnInit': True,
 			'processAll': kwargs.get('processAll', True),
 		}
 		# TODO Try to lower that
-		with self.assertNumQueries(6):
-			validator = OrderValidator(self.order, **options)
+		# with self.assertNumQueries(6):
+		validator = OrderValidator(order, **options)
 
 		error_list = validator.get_errors()
 		debug_msg = "Les erreurs obtenues sont : \n - " + "\n - ".join(error_list) if error_list else None
@@ -76,13 +110,13 @@ class OrderValidatorTestCase(APITestCase):
 	# 		Tests
 	# =================================================
 
-	def test_sale_active(self):
+	def dddddtest_sale_active(self):
 		"""Inactive sales can't proceed orders"""
 		self.sale.is_active = False
 		self.sale.save()
 		self._test_validation(False)
 
-	def test_sale_is_ongoing(self):
+	def dddddtest_sale_is_ongoing(self):
 		"""Orders should be paid between sales beginning date and max payment date"""
 		# Cannot pay before sale
 		self.sale.begin_at = self.datetimes['after']
@@ -96,7 +130,7 @@ class OrderValidatorTestCase(APITestCase):
 		self.sale.save()
 		self._test_validation(False)
 
-	def test_not_buyable_order(self):
+	def dddddtest_not_buyable_order(self):
 		"""Orders that don't have the right status can't be bought"""
 		self.order.status = OrderStatus.ONGOING.value
 		self._test_validation(True)
@@ -114,44 +148,84 @@ class OrderValidatorTestCase(APITestCase):
 		self.order.status = OrderStatus.CANCELLED.value
 		self._test_validation(False)
 
-	def test_sale_quantities(self):
-		"""Sales quantities must be respected"""
-		upperLevel = self.orderline.quantity - 1
-
-		# Normal Sale max_item_quantity
-		self.sale.max_item_quantity = upperLevel
+	def test_sale_max_quantities(self):
+		"""Sales max quantities must be respected"""
+		# Over Sale max_item_quantity
+		self.sale.max_item_quantity = self.orderline.quantity - 1
 		self.sale.save()
 		self._test_validation(False)
+		# Limit Sale max_item_quantity
+		self.sale.max_item_quantity = self.orderline.quantity
+		self.sale.save()
+		self._test_validation(True)
 
-		# TODO : with other users
+		# Other users booked orders
+		order1, orderline1 = self._create_order(self.users[1], status=OrderStatus.NOT_PAID.value)
+		order2, orderline2 = self._create_order(self.users[2], status=OrderStatus.NOT_PAID.value)
+		orders = (self.order, order1, order2)
+		orderlines = (self.orderline, orderline1, orderline2)
 
-	def test_item_quantities(self):
+		upperLimit = reduce(lambda sum, orderline: sum + orderline.quantity, orderlines, 0)
+
+		# import pdb; pdb.set_trace()
+
+		# Over Sale max_item_quantity
+		self.sale.max_item_quantity = upperLimit - 1
+		self.sale.save()
+		for order in orders:
+			self._test_validation(False, order)
+		# Limit Sale max_item_quantity
+		self.sale.max_item_quantity = upperLimit
+		self.sale.save()
+		for order in orders:
+			self._test_validation(True, order)
+
+
+	def dddddtest_item_quantities(self):
 		"""Items quantities must be respected"""
-		upperLevel = self.orderline.quantity - 1
+		upperLimit = self.orderline.quantity
 
-		# Normal Item quantity
-		self.item.quantity = upperLevel
+		# Over Item max_per_user
+		self.item.max_per_user = upperLimit - 1
 		self.item.save()
 		self._test_validation(False)
-		# Normal Item max_per_user
-		self.item.max_per_user = upperLevel
+		# Limit Item max_per_user
+		self.item.max_per_user = upperLimit
+		self.item.save()
+		self._test_validation(True)
+
+		# Over Item quantity
+		self.item.quantity = upperLimit - 1
 		self.item.save()
 		self._test_validation(False)
+		# Limit Item quantity
+		self.item.quantity = upperLimit
+		self.item.save()
+		self._test_validation(True)
 
 		# TODO : with other users
 
-	def test_itemgroup_quantities(self):
+	def dddddtest_itemgroup_quantities(self):
 		"""ItemGroups quantities must be respected"""
-		upperLevel = self.orderline.quantity - 1
+		upperLimit = self.orderline.quantity
  
-		# Normal Itemgroup quantity
-		self.itemgroup.quantity = upperLevel
+		# Over Itemgroup quantity
+		self.itemgroup.quantity = upperLimit - 1
 		self.itemgroup.save()
 		self._test_validation(False)
-		# Normal Itemgroup max_per_user
-		self.itemgroup.max_per_user = upperLevel
+		# Limit Itemgroup quantity
+		self.itemgroup.quantity = upperLimit
+		self.itemgroup.save()
+		self._test_validation(True)
+
+		# Over Itemgroup max_per_user
+		self.itemgroup.max_per_user = upperLimit - 1
 		self.itemgroup.save()
 		self._test_validation(False)
+		# Limit Itemgroup max_per_user
+		self.itemgroup.max_per_user = upperLimit
+		self.itemgroup.save()
+		self._test_validation(True)
 
 		# TODO : with other users
 
