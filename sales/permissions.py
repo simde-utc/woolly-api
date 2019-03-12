@@ -1,55 +1,62 @@
 from rest_framework import permissions
-from .models import Order, OrderLine, OrderLineItem, OrderLineField
+from core.permissions import CustomPermission
+from .models import *
 
 
-class IsOwner(permissions.BasePermission):
-	"""Custom permission class to allow only order owners to edit them."""
-	def has_object_permission(self, request, view, obj):
-		"""Return True if permission is granted to the order owner."""
 
-		if isinstance(obj, Order):
-			return obj.owner == request.user
-		if isinstance(obj, OrderLine):
-			return obj.order.owner == request.user
-		if isinstance(obj, OrderLineItem):
-			return obj.orderline.order.owner == request.user
-		if isinstance(obj, OrderLineField):
-			return obj.orderitem.orderline.order.owner == request.user
+def object_check_manager(request, view, obj):
+	user = request.user
+	# TODO
+	return user.is_authenticated and user.is_admin
 
-		return obj.user == request.user
+# Used for Association, Sale, ItemGroup, Item, ItemField
+class IsManagerOrReadOnly(CustomPermission):
+	allow_read_only = True
+	object_permission_functions = (object_check_manager,)
+
+# Used for AssociationMember
+class IsManager(CustomPermission):
+	require_authentication = True
+	allow_admin = True
+	object_permission_functions = (object_check_manager,)
 
 
-class IsOwnerOrReadOnly(permissions.BasePermission):
-	"""
-	Object-level permission to only allow owners of an object to edit it.
-	Assumes the model instance has an `owner` attribute.
-	"""
-	def has_object_permission(self, request, view, obj):
-		if request.method in permissions.SAFE_METHODS:
-			return True
+def check_order_ownership(request, view, obj):
+	if isinstance(obj, Order):
+		return obj.owner == request.user
+	if isinstance(obj, OrderLine):
+		return obj.order.owner == request.user
+	if isinstance(obj, OrderLineItem):
+		return obj.orderline.order.owner == request.user
+	if isinstance(obj, OrderLineField):
+		return obj.orderlineitem.orderline.order.owner == request.user
+	return False
 
-		if isinstance(obj, Order):
-			return obj.owner == request.user
-		if isinstance(obj, OrderLine):
-			return obj.order.owner == request.user
-		if isinstance(obj, OrderLineItem):
-			return obj.orderline.order.owner == request.user
-		if isinstance(obj, OrderLineField):
-			return obj.orderitem.orderline.order.owner == request.user
+# Used for Order, OrderLine
+class IsOrderOwnerOrAdmin(CustomPermission):
+	require_authentication = True
+	pass_for_obj = True
+	allow_admin = True
+	allow_create = True
+	object_permission_functions = (check_order_ownership,)
 
-		return obj.user == request.user
 
-class IsManager(permissions.BasePermission):
-	"""Only assos' manager have the permission to modify"""
-	def has_permission(self, request, view):
-		# TODO
-		return request.user.is_authenticated and request.user.is_admin
+def allow_only_retrieve_for_non_admin(request, view):
+	return view.action == 'retrieve' or request.user.is_admin
 
-class IsManagerOrReadOnly(permissions.BasePermission):
-	"""Only assos' manager have the permission to modify, anyone can read"""
-	def has_permission(self, request, view):
-		if request.method in permissions.SAFE_METHODS:
-			return True
-		# TODO
-		return request.user.is_authenticated and request.user.is_admin
+# Used for OrderLineItem
+class IsOrderOwnerReadOnlyOrAdmin(CustomPermission):
+	require_authentication = True
+	permission_functions = (allow_only_retrieve_for_non_admin,)
+	object_permission_functions = (check_order_ownership,)
 
+def no_delete(request, view, obj):
+	return not view.action == 'destroy'
+
+# Used for OrderLineField
+class IsOrderOwnerReadUpdateOrAdmin(CustomPermission):
+	require_authentication = True
+	pass_for_obj = True
+	allow_admin = True
+	object_permission_functions = (check_order_ownership, no_delete)
+	check_with_or = False

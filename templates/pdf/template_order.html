@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title>Commande Woolly</title>
+	<link rel="stylesheet" href="{% static 'css/order_pdf.css' %}">
+</head>
+
+<body>
+	{% for ticket in tickets %}
+	<table class="ticket multiple">
+		<tr>
+			<td class="info" width="65%" style="vertical-align: top;">
+				<p class="item">{{ ticket.item.name }}</p>
+				<p class="sale">{{ order.sale.name }}</p>
+
+				<div class="details">
+					<p class="price">Prix : {{ ticket.item.price }}€</p>
+					<p class="name">{{ ticket.nom }} {{ ticket.prenom }}</p>
+				</div>
+			</td>
+			<td width="35%" style="vertical-align: top;" align="right">
+				<img class="qr" src="data:image/png;base64, {{ ticket.qr_code }}"/>
+				<p class="code">{{ ticket.uuid }}</p>
+			</td>
+		</tr>
+	</table>
+	{% endfor %}
+</body>
+</html>

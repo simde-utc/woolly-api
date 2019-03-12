@@ -13,8 +13,10 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 import os
 from woolly_api import settings_confidential as confidentials
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+# Build paths inside the project like this: use make_path helper or os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+def make_path(rel):
+	return os.path.join(BASE_DIR, rel.replace('/', os.path.sep))
 
 # --------------------------------------------------------------------------
 # 		Services Configuration
@@ -37,12 +39,12 @@ OAUTH = {
 		'client_id': 		confidentials.PORTAL['id'],
 		'client_secret': 	confidentials.PORTAL['key'],
 		'redirect_uri': 	confidentials.PORTAL['callback'],
-		'base_url': 		'https://portail-assos.alwaysdata.net/api/v1/',
-		'authorize_url': 	'https://portail-assos.alwaysdata.net/oauth/authorize',
-		'access_token_url': 'https://portail-assos.alwaysdata.net/oauth/token',
-		'login_url': 		'https://portail-assos.alwaysdata.net/login',
-		'logout_url': 		'https://portail-assos.alwaysdata.net/logout',
-		'scope': 			'user-get-info user-get-roles user-get-assos-joined-now'
+		'base_url': 		'https://assos.utc.fr/api/v1/',
+		'authorize_url': 	'https://assos.utc.fr/oauth/authorize',
+		'access_token_url': 'https://assos.utc.fr/oauth/token',
+		'login_url': 		'https://assos.utc.fr/login',
+		'logout_url': 		'https://assos.utc.fr/logout',
+		'scope': 			'user-get-info user-get-roles user-get-assos-members-joined-now'
 	}
 }
 
@@ -55,9 +57,11 @@ DEBUG = confidentials.DEBUG
 ALLOWED_HOSTS = confidentials.ALLOWED_HOSTS
 
 # CSRF_COOKIE_SECURE = True
-# SESSION_COOKIE_SECURE = True
 # SECURE_BROWSER_XSS_FILTER = True
 # SECURE_SSL_REDIRECT = True
+
+SESSION_COOKIE_SECURE = confidentials.HTTPS_ENABLED
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
 # CORS headers config
 CORS_ORIGIN_ALLOW_ALL = True
@@ -74,53 +78,45 @@ CORS_ALLOW_METHODS = (
 CORS_ALLOW_CREDENTIALS = True
 CSRF_COOKIE_HTTPONLY = True  # Useful ??
 CSRF_USE_SESSIONS = False  # Useful ??
-CSRF_TRUSTED_ORIGINS = (
-	"localhost"
-)
+CSRF_TRUSTED_ORIGINS = confidentials.ALLOWED_HOSTS
 
-# --------------------------------------------------------------------------
-# 		CAS Configuration => A virer ?
-# --------------------------------------------------------------------------
-
-"""
-CAS_SERVER_URL = 'https://cas.utc.fr/cas/'
-CAS_LOGOUT_COMPLETELY = True
-CAS_PROVIDE_URL_TO_LOGOUT = True
-CAS_AUTO_CREATE_USER = True
-CAS_RESPONSE_CALLBACKS = (
-	'authentication.backends.loggedCas',
-)
-"""
 
 # --------------------------------------------------------------------------
 # 		Django REST Configuration
 # --------------------------------------------------------------------------
 
 REST_FRAMEWORK = {
+	'PAGE_SIZE': 10,
 	'DEFAULT_AUTHENTICATION_CLASSES': (
 		'rest_framework.authentication.SessionAuthentication',
 		'authentication.auth.JWTAuthentication'
 	),
-	'DEFAULT_PAGINATION_CLASS': 'rest_framework_json_api.pagination.PageNumberPagination',
-	'PAGE_SIZE': 10,
+	'DEFAULT_PAGINATION_CLASS': 'rest_framework_json_api.pagination.JsonApiPageNumberPagination',
+	# 'DEFAULT_PAGINATION_CLASS': 'rest_framework_json_api.pagination.PageNumberPagination',
 	'DEFAULT_PARSER_CLASSES': (
 		'rest_framework_json_api.parsers.JSONParser',
 		'rest_framework.parsers.FormParser',
 		'rest_framework.parsers.MultiPartParser'
 	),
 	'DEFAULT_RENDERER_CLASSES': (
-		'rest_framework.renderers.BrowsableAPIRenderer',
 		'rest_framework_json_api.renderers.JSONRenderer',
+		# 'rest_framework.renderers.BrowsableAPIRenderer',
+		'core.utils.BrowsableAPIRendererWithoutForms',		# For performance testing
+		'rest_framework.renderers.JSONRenderer',
 	),
 	'DEFAULT_METADATA_CLASS': 'rest_framework_json_api.metadata.JSONAPIMetadata',
 	'EXCEPTION_HANDLER': 'rest_framework_json_api.exceptions.exception_handler',
+	'TEST_REQUEST_RENDERER_CLASSES': (
+		'rest_framework_json_api.renderers.JSONRenderer',
+		'rest_framework.renderers.MultiPartRenderer',
+		'rest_framework.renderers.JSONRenderer',
+		'rest_framework.renderers.TemplateHTMLRenderer'
+	),
+	'TEST_REQUEST_DEFAULT_FORMAT': 'vnd.api+json',
 }
+
 VIEWSET = {
 	'list': {
-		# 'get': 'list',
-		'post': 'create'
-	},
-	'list_safe': {
 		'get': 'list',
 		'post': 'create'
 	},
@@ -128,7 +124,7 @@ VIEWSET = {
 		'get': 'retrieve',
 		'put': 'update',
 		'patch': 'partial_update',
-		# 'delete': 'destroy'
+		'delete': 'destroy'
 	}
 }
 
@@ -141,45 +137,51 @@ DATABASES = {
 	'default': confidentials.DATABASE,
 	'sqlite': {
 		'ENGINE': 'django.db.backends.sqlite3',
-		'NAME': 'db',
+		'NAME': 'db.sqlite3',
 	}
 }
 
 INSTALLED_APPS = [
+	# Django
+	'django.contrib.sessions',
+	'django.contrib.staticfiles',
 	'django.contrib.admin',
 	'django.contrib.auth',
 	'django.contrib.contenttypes',
-	'django.contrib.sessions',
 	'django.contrib.messages',
-	'django.contrib.staticfiles',
+	# Django REST
 	'rest_framework',
 	'corsheaders',
-	# 'cas',
+	# Woolly
 	'core',
 	'authentication',
 	'sales',
 	'payment',
 ]
 
+# Urls & WSGI
+ROOT_URLCONF = 'woolly_api.urls'
+WSGI_APPLICATION = 'woolly_api.wsgi.application'
+
 MIDDLEWARE = [
-	'django.middleware.security.SecurityMiddleware',
 	'django.contrib.sessions.middleware.SessionMiddleware',
+	'django.middleware.security.SecurityMiddleware',
 	'corsheaders.middleware.CorsMiddleware',
 	'django.middleware.common.CommonMiddleware',
+	'django.middleware.clickjacking.XFrameOptionsMiddleware',
+	'django.middleware.csrf.CsrfViewMiddleware',
 	'django.contrib.auth.middleware.AuthenticationMiddleware',
 	'django.contrib.messages.middleware.MessageMiddleware',
-	'django.middleware.clickjacking.XFrameOptionsMiddleware',
-	# 'cas.middleware.CASMiddleware',
-	'django.middleware.csrf.CsrfViewMiddleware',
 ]
 
-# Useful ?
+# Authentication
+AUTH_USER_MODEL = 'authentication.User'
+
+# Only to access web admin panel
 AUTHENTICATION_BACKENDS = (
 	# 'django.contrib.auth.backends.ModelBackend',
-	# 'authentication.backends.UpdatedCASBackend',
+	'authentication.auth.AdminSiteBackend',
 )
-
-AUTH_USER_MODEL = 'authentication.User'
 
 # Password validation : https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
 AUTH_PASSWORD_VALIDATORS = [
@@ -189,38 +191,14 @@ AUTH_PASSWORD_VALIDATORS = [
 	{'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
 ]
 
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+# Mails
+EMAIL_HOST = confidentials.EMAIL.get('host', 'localhost')
+EMAIL_PORT = confidentials.EMAIL.get('port', 25)
+EMAIL_HOST_USER = confidentials.EMAIL.get('user', '')
+EMAIL_HOST_PASSWORD = confidentials.EMAIL.get('pwd', '')
+EMAIL_USE_SSL = confidentials.EMAIL.get('ssl', False)
+EMAIL_USE_TLS = confidentials.EMAIL.get('tls', False)
 
-
-def ABS_DIR(rel):
-	return os.path.join(BASE_DIR, rel.replace('/', os.path.sep))
-
-
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR + '/static/'
-STATICFILES_DIRS = (
-	BASE_DIR + '/assets/',
-)
-ROOT_URLCONF = 'woolly_api.urls'
-WSGI_APPLICATION = 'woolly_api.wsgi.application'
-
-TEMPLATES = [
-	{
-		'BACKEND': 'django.template.backends.django.DjangoTemplates',
-		'DIRS': [
-			BASE_DIR + '/templates/'
-		],
-		'APP_DIRS': True,
-		'OPTIONS': {
-			'context_processors': [
-				'django.template.context_processors.debug',
-				'django.template.context_processors.request',
-				'django.contrib.auth.context_processors.auth',
-				'django.contrib.messages.context_processors.messages',
-			],
-		},
-	},
-]
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
@@ -229,3 +207,84 @@ USE_L10N = True
 USE_TZ = True
 LANGUAGE_CODE = 'fr'
 TIME_ZONE = 'Europe/Paris'
+
+
+# --------------------------------------------------------------------------
+# 		Static Files & Templates
+# --------------------------------------------------------------------------
+
+STATIC_URL = '/static/'
+STATIC_ROOT = make_path('static/')
+# STATICFILES_DIRS = (
+# 	make_path('assets/'),
+# )
+
+TEMPLATES = [
+	{
+		'BACKEND': 'django.template.backends.django.DjangoTemplates',
+		'DIRS': (
+			make_path('templates/'),
+		),
+		'APP_DIRS': True,
+		'OPTIONS': {
+			'context_processors': [
+				'django.contrib.auth.context_processors.auth',
+				'django.contrib.messages.context_processors.messages',
+				'django.template.context_processors.debug',
+				'django.template.context_processors.request',
+			],
+		},
+	},
+]
+
+
+# --------------------------------------------------------------------------
+# 		Logging
+# --------------------------------------------------------------------------
+
+LOGGING = {
+	'version': 1,
+	'disable_existing_loggers': False,
+	'formatters': {
+		'verbose': {
+			'format': '[{asctime}] {levelname} in {filename}@{lineno} : {message}',
+			'style': '{',
+		},
+		'simple': {
+			'format': '[{asctime}] {levelname} : {message}',
+			'style': '{',
+		},
+	},
+	'filters': {
+		'require_debug_false': {
+			'()': 'django.utils.log.RequireDebugFalse',
+		},
+		'require_debug_true': {
+			'()': 'django.utils.log.RequireDebugTrue',
+		},
+	},
+	'handlers': {
+		'console': {
+			'level': 'WARNING',
+			'filters': ['require_debug_true'],
+			'class': 'logging.StreamHandler',
+			# 'formatter': 'simple',
+		},
+		'file': {
+			'level': 'WARNING',
+			'filters': ['require_debug_false'],
+			'class': 'logging.handlers.RotatingFileHandler',
+			'filename': make_path('debug.log'),
+			'maxBytes': 1024*1024*15, # 15MB
+			'backupCount': 5,
+			'formatter': 'verbose',
+		},
+	},
+	'loggers': {
+		'django': {
+			'handlers': ['console', 'file'],
+			'level': 'WARNING',
+			'propagate': True,
+		},
+	},
+}

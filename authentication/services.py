@@ -6,83 +6,11 @@ from authlib.specs.rfc7519 import JWT, JWTError
 from authlib.client import OAuth2Session, OAuthException
 import time
 
-from woolly_api.settings import JWT_SECRET_KEY, JWT_TTL, OAUTH as OAuthConfig
+from woolly_api.settings import DEBUG, JWT_SECRET_KEY, JWT_TTL, OAUTH as OAuthConfig
+from .helpers import get_jwt_from_request, find_or_create_user
 from .models import User, UserType
 from .serializers import UserSerializer
 
-
-
-# ========================================================
-# 		Helpers
-# ========================================================
-
-def get_jwt_from_request(request):
-	"""
-	Helper to get JWT from request
-	Return None if no JWT
-	"""
-	jwt = request.META.get('HTTP_AUTHORIZATION', None)	# Traité automatiquement par Django
-	if not jwt or jwt == '':
-		return None
-	return jwt[7:]		# substring : Bearer ...
-
-def find_or_create_user(user_infos):
-	"""
-	Helper to fetch or create user in Woolly database from user_infos (email)
-	"""
-	try:
-		# Try to find user
-		user = User.objects.get(email = user_infos['email'])		# TODO replace
-	except User.DoesNotExist:
-		# Create user
-		# TODO : birthdate, login
-		serializer = UserSerializer(data = {
-			'email': user_infos['email'],
-			'first_name': user_infos['firstname'],
-			'last_name': user_infos['lastname'],
-			# 'login': user_infos['login'],
-			# 'associations': '',
-			# 'birthdate': ''
-		})
-		if not serializer.is_valid():
-			# TODO : Exceptions
-			print("ERROORRRRS")
-			print(serializer.errors)
-			return {
-				'error': 'Invalid serialization',
-				'errors': serializer.errors
-			}
-		user = serializer.save()
-
-	# Process new informations
-	madeChanges = False
-
-	# Process UserType relation
-	userType = UserType.EXTERIEUR
-	if user_infos['is_cas'] == True:
-		userType = UserType.NON_COTISANT			
-	if user_infos['is_contributorBde'] == True:
-		userType = UserType.COTISANT			
-
-	# Mise à jour si besoin
-	if user.usertype.name != userType:
-		try:
-			user.usertype = UserType.objects.get(name=userType)
-		except UserType.DoesNotExist:
-			raise UserType.DoesNotExist("Met à jour les users_types avec UserType.init_values() !!!")
-		madeChanges = True
-	if user.is_admin != user_infos['is_admin']:
-		user.is_admin = user_infos['is_admin']
-		madeChanges = True
-	if madeChanges:
-		user.save()
-
-	return user
-
-
-# ========================================================
-# 		Services
-# ========================================================
 
 class JWTClient(JWT):
 	"""
@@ -160,6 +88,21 @@ class JWTClient(JWT):
 		"""
 		Return JWT to the client after it logged in and got a random code to the session
 		"""
+		# WARNING : Backdoor in Debug mode for easier testing
+		if DEBUG == True and code[:8] == 'DEBUG - ':
+			print("\n##########################################")
+			print("   WARNING --- The JWT backdoor is used   ")
+			print("##########################################\n")
+
+			# Create fake session
+			user_id = int(code[8:])
+			session = SessionStore()
+			session['portal_token'] = None
+			session['user_id'] = user_id
+			session.create()
+
+			return self.create_jwt(user_id, session.session_key)
+
 		# Retrieve session_key from random code
 		session_key = cache.get(code)
 		cache.delete(code)
@@ -236,7 +179,7 @@ class OAuthAPI:
 			oauthToken = self.oauthClient.fetch_access_token(OAuthConfig[self.provider]['access_token_url'], code=code)
 
 			# Retrieve user infos from the Portal
-			auth_user_infos = self.fetch_resource('user/?allTypes=true&allDetails=true') # TODO restreindre
+			auth_user_infos = self.fetch_resource('user/?types=*') # TODO restreindre
 
 			# Find or create User
 			user = find_or_create_user(auth_user_infos)

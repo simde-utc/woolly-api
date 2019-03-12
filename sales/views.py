@@ -1,19 +1,21 @@
-from io import BytesIO
-
-import base64
 from django.views import View
 from rest_framework_json_api import views
 from rest_framework.response import Response
 from rest_framework import status
 from django.http import HttpResponse
 
+from core.helpers import errorResponse
 from core.permissions import *
 from .serializers import *
 from .permissions import *
-from core.utils import render_to_pdf, data_to_qrcode
-# TODO export core
-from core.helpers import errorResponse
+from .models import OrderStatus
+
 from authentication.auth import JWTAuthentication
+from core.utils import render_to_pdf, data_to_qrcode
+from django.shortcuts import render
+from io import BytesIO
+import base64
+
 
 # ============================================
 # 	Association
@@ -27,18 +29,15 @@ class AssociationViewSet(views.ModelViewSet):
 	serializer_class = AssociationSerializer
 	permission_classes = (IsManagerOrReadOnly,)
 
-	"""
 	def get_queryset(self):
-		# queryset = self.queryset.filter(associationmembers__user=self.request.user_pk)
-		if 'associationmember_pk' in self.kwargs:
-			associationmember_pk = self.kwargs['associationmember_pk']
-			queryset = Association.objects.all().filter(associationmembers__pk=associationmember_pk)
+		queryset = self.queryset
 
+		# user-association-list
 		if 'user_pk' in self.kwargs:
 			user_pk = self.kwargs['user_pk']
-			queryset = Association.objects.all().filter(associationmembers__user=user_pk)
+			queryset = queryset.filter(members__pk=user_pk)
+
 		return queryset
-	"""
 
 class AssociationRelationshipView(views.RelationshipView):
 	"""
@@ -52,7 +51,7 @@ class AssociationMemberViewSet(views.ModelViewSet):
 	"""
 	queryset = AssociationMember.objects.all()
 	serializer_class = AssociationMemberSerializer
-	permission_classes = (IsAdmin,)	# TODO V2 : bloquer pour l'instant
+	permission_classes = (IsManager,)
 
 	"""
 	def perform_create(self, serializer):
@@ -93,18 +92,12 @@ class SaleViewSet(views.ModelViewSet):
 	serializer_class = SaleSerializer
 	permission_classes = (IsManagerOrReadOnly,)
 
-	def perform_create(self, serializer):
-		serializer.save(
-			association_id=self.kwargs['association_pk'],
-			# paymentmethod_id=self.kwargs['paymentmethod_pk']
-		)
-
 	def get_queryset(self):
 		queryset = Sale.objects.all()
 					# .filter(items__itemspecifications__user_type__name=self.request.user.usertype.name)
 					# TODO filtrer par date ?
 
-		queryset = queryset.filter(is_active=True)
+		queryset = queryset.filter(is_active=True, public=True)
 		# TODO V2 : filtering
 		# filters = ('active', )
 		# filterQuery = self.request.query_params.get('filterQuery', None)
@@ -153,17 +146,21 @@ class ItemViewSet(views.ModelViewSet):
 	serializer_class = ItemSerializer
 	permission_classes = (IsManagerOrReadOnly,)
 
+	"""
 	def perform_create(self, serializer):
-		if 'orderline_pk' in self.kwargs:
+		# TODO ????
+		if 'sale_pk' in self.kwargs:
 			serializer.save(
 				sale_id=self.kwargs['sale_pk']
-			),
+			)
+		elif 'orderline_pk' in self.kwargs:
 			serializer.save(
 				sale_id=self.kwargs['orderline_pk']
 			)
+	"""
 
 	def get_queryset(self):
-		queryset = self.queryset.filter()
+		queryset = self.queryset.filter(is_active=True)
 
 		if 'sale_pk' in self.kwargs:
 			sale_pk = self.kwargs['sale_pk']
@@ -192,11 +189,19 @@ class OrderViewSet(views.ModelViewSet):
 	"""
 	queryset = Order.objects.all()
 	serializer_class = OrderSerializer
-	permission_classes = (IsOwner,)
+	permission_classes = (IsOrderOwnerOrAdmin,)
 
 	def get_queryset(self):
-		# queryset = self.queryset.filter(owner=self.request.user)
+		user = self.request.user
 		queryset = self.queryset
+
+		# Anonymous users see nothing
+		if not user.is_authenticated:
+			return None
+
+		# Admins see everything otherwise filter to see only those owned by the user
+		# if not user.is_admin:
+		# 	queryset = queryset.filter(owner=user)
 
 		if 'user_pk' in self.kwargs:
 			user_pk = self.kwargs['user_pk']
@@ -232,15 +237,16 @@ class OrderViewSet(views.ModelViewSet):
 		headers = self.get_success_headers(serializer.data)
 		return Response(serializer.data, status=httpStatus, headers=headers)
 
-	def destroy(self, request, pk=None):
-		try:
+	def destroy(self, request, *args, **kwargs):
+		order = self.get_object()
+		if order.status in OrderStatus.CANCELLABLE_LIST.value:
 			# TODO Add time
-			order = Order.objects \
-				.filter(owner=request.user.id, status__in=OrderStatus.CANCELLABLE_LIST.value, pk=pk) \
-				.update(status=OrderStatus.CANCELLED.value)
-			return Response(None, status=status.HTTP_200_OK)
-		except Order.DoesNotExist as err:
-			return Response(None, status=status.HTTP_404_NOT_FOUND)
+			order.status = OrderStatus.CANCELLED.value
+			order.save()
+			return Response(None, status=status.HTTP_204_NO_CONTENT)
+		else:
+			msg = "La commande n'est pas annulable."
+			return errorResponse(msg, [msg], status.HTTP_406_NOT_ACCEPTABLE)
 
 class OrderRelationshipView(views.RelationshipView):
 	"""
@@ -255,34 +261,66 @@ class OrderLineViewSet(views.ModelViewSet):
 	"""
 	queryset = OrderLine.objects.all()
 	serializer_class = OrderLineSerializer
-	permission_classes = (IsOwner,)
+	permission_classes = (IsOrderOwnerOrAdmin,)
 
-	def create(self, request):
+	def get_queryset(self):
+		user = self.request.user
+		queryset = self.queryset
+
+		# Anonymous users see nothing
+		if not user.is_authenticated:
+			return None
+
+		# Admins see everything otherwise filter to see only those owned by the user
+		# if not user.is_admin:
+		# 	queryset = queryset.filter(order__owner=user)
+
+		if 'order_pk' in self.kwargs:
+			order_pk = self.kwargs['order_pk']
+			queryset = OrderLine.objects.all().filter(order__pk=order_pk)
+
+		return queryset
+
+	def create(self, request, *args, **kwargs):
+		# Retrieve Order...
 		try:
 			order = Order.objects.get(pk=request.data['order']['id'])
+		# ...or fail
 		except Order.DoesNotExist as err:
 			msg = "Impossible de trouver la commande."
 			return errorResponse(msg, [msg], status.HTTP_404_NOT_FOUND)
+
+		# Check Order owner
+		user = request.user
+		if not (user.is_authenticated and user.is_admin or order.owner == user):
+			msg = "Vous n'avez pas la permission d'effectuer cette action."
+			return errorResponse(msg, [msg], status.HTTP_403_FORBIDDEN)
+
+		# Check if Order is open
 		if order.status != OrderStatus.ONGOING.value:
 			msg = "La commande n'accepte plus de changement."
 			return errorResponse(msg, [msg], status.HTTP_400_BAD_REQUEST)
 
+		# Try to retrieve a similar OrderLine...
 		try:
 			orderline = OrderLine.objects.get(order=request.data['order']['id'], item=request.data['item']['id'])
 			# TODO ajout de la vérification de la limite de temps
 			serializer = OrderLineSerializer(orderline, data={'quantity': request.data['quantity']}, partial=True)
-			# On delete les orderlines vides
+
+			# Delete empty OrderLines
 			if request.data['quantity'] <= 0:
 				orderline.delete()
 				return Response(serializer.initial_data, status=status.HTTP_205_RESET_CONTENT)
+		# ...or create a new one
 		except OrderLine.DoesNotExist as err:
 			if request.data['quantity'] > 0:
 				# Configure Order
 				serializer = self.get_serializer(data={
 					'order': request.data['order'],
 					'item': request.data['item'],
-					'quantity': request.data['quantity']
+					'quantity': request.data['quantity'],
 				})
+			# If no quantity, then no OrderLine
 			else:
 				return Response(request.data, status=status.HTTP_204_NO_CONTENT)
 		serializer.is_valid(raise_exception=True)
@@ -307,14 +345,6 @@ class OrderLineViewSet(views.ModelViewSet):
 		return requests.get('http://localhost:8000/payutc/createTransaction?mail='+login+'&funId='+funId+"&orderlineId="+str(orderlineId),data=data)
 		# def perform_create(self, serializer):
 		# 	serializer.save()
-
-	def get_queryset(self):
-		queryset = self.queryset.filter(order__owner=self.request.user)
-		if 'order_pk' in self.kwargs:
-			order_pk = self.kwargs['order_pk']
-			queryset = OrderLine.objects.all().filter(order__pk=order_pk)
-
-		return queryset
 	"""
 
 class OrderLineRelationshipView(views.RelationshipView):
@@ -349,7 +379,7 @@ class ItemFieldViewSet(views.ModelViewSet):
 	"""
 	queryset = ItemField.objects.all()
 	serializer_class = ItemFieldSerializer
-	permission_classes = (IsAdminOrReadOnly,)
+	permission_classes = (IsManagerOrReadOnly,)
 
 class ItemFieldRelationshipView(views.RelationshipView):
 	"""
@@ -364,7 +394,7 @@ class ItemFieldRelationshipView(views.RelationshipView):
 class OrderLineItemViewSet(views.ModelViewSet):
 	queryset = OrderLineItem.objects.all()
 	serializer_class = OrderLineItemSerializer
-	permission_classes = (IsOwner,)
+	permission_classes = (IsOrderOwnerReadOnlyOrAdmin,)
 
 class OrderLineItemRelationshipView(views.RelationshipView):
 	"""
@@ -379,24 +409,7 @@ class OrderLineFieldViewSet(views.ModelViewSet):
 	"""
 	queryset = OrderLineField.objects.all()
 	serializer_class = OrderLineFieldSerializer
-	permission_classes = (IsOwner,)
-
-	def create(self, request):
-		pass
-
-	def update(self, request, pk=None, partial=False):
-		instance = self.queryset.get(pk=pk)
-		if instance.isEditable() == True:
-			serializer = OrderLineFieldSerializer(instance, data={'value': request.data['value']}, partial=True)
-			serializer.is_valid(raise_exception=True)
-			serializer.save()
-		else:
-			serializer = OrderLineFieldSerializer(instance)
-		return Response(serializer.data)
-
-
-	def partial_update(self, request, pk=None):
-		return self.update(request, pk, True)
+	permission_classes = (IsOrderOwnerReadUpdateOrAdmin,)
 
 	def get_queryset(self):
 		queryset = self.queryset
@@ -405,6 +418,17 @@ class OrderLineFieldViewSet(views.ModelViewSet):
 			queryset = queryset.filter(orderlineitem__pk=orderlineitem_pk)
 
 		return queryset
+
+	def update(self, request, *args, **kwargs):
+		partial = kwargs.pop('partial', False)
+		instance = self.get_object()
+		if instance.isEditable() == True:
+			serializer = OrderLineFieldSerializer(instance, data={'value': request.data['value']}, partial=True)
+			serializer.is_valid(raise_exception=True)
+			serializer.save()
+		else:
+			serializer = OrderLineFieldSerializer(instance)
+		return Response(serializer.data)
 
 class OrderLineFieldRelationshipView(views.RelationshipView):
 	"""
@@ -416,11 +440,10 @@ class OrderLineFieldRelationshipView(views.RelationshipView):
 # ============================================
 # 	Billet
 # ============================================
-
 class GeneratePdf(View):
 
 	def get(self, request, *args, **kwargs):
-		# Force JWT from ?code=...
+		# Authenticate by forcing JWT from ?code=...
 		request.META['HTTP_AUTHORIZATION'] = "Bearer " + request.GET.get('code', '')
 		jwtAuth = JWTAuthentication()
 		authUser = jwtAuth.authenticate(request)
@@ -429,49 +452,56 @@ class GeneratePdf(View):
 			return errorResponse("Valid Code Required", [], httpStatus = status.HTTP_401_UNAUTHORIZED)
 		request.user = authUser[0]
 
-		if 'order_pk' in self.kwargs:
-			order_pk = self.kwargs['order_pk']
-			try:
-				order = Order.objects.all() \
-							.filter(owner__pk=request.user.pk, status__in=OrderStatus.VALIDATED_LIST.value) \
-							.prefetch_related('orderlines', 'orderlines__orderlineitems', 'orderlines__item',
-								'orderlines__orderlineitems__orderlinefields', 'orderlines__orderlineitems__orderlinefields__field') \
-							.get(pk=order_pk)
-			except Order.DoesNotExist as e:
-				return errorResponse(str(e), [], httpStatus = status.HTTP_404_NOT_FOUND)
+		# Get order
+		order_pk = self.kwargs.get('order_pk', None)
+		try:
+			order = Order.objects.all() \
+						.filter(owner__pk=request.user.pk, status__in=OrderStatus.VALIDATED_LIST.value) \
+						.prefetch_related('orderlines', 'orderlines__orderlineitems', 'orderlines__item',
+							'orderlines__orderlineitems__orderlinefields', 'orderlines__orderlineitems__orderlinefields__field') \
+						.get(pk=order_pk)
+		except Order.DoesNotExist as e:
+			return errorResponse('La commande est introuvable', [], httpStatus = status.HTTP_404_NOT_FOUND)
 
-			tickets = list()
-			for orderline in order.orderlines.all():
-				for orderlineitem in orderline.orderlineitems.all():
-					# Process QRCode
-					qr_buffer = BytesIO()
-					code = data_to_qrcode(orderlineitem.id)
-					code.save(qr_buffer)
-					qr_code = base64.b64encode(qr_buffer.getvalue()).decode("utf-8")
+		# Process tickets
+		tickets = list()
+		for orderline in order.orderlines.all():
+			for orderlineitem in orderline.orderlineitems.all():
+				# Process QRCode
+				qr_buffer = BytesIO()
+				code = data_to_qrcode(orderlineitem.id)
+				code.save(qr_buffer)
+				qr_code = base64.b64encode(qr_buffer.getvalue()).decode("utf-8")
 
-					# Add Nom et Prénom to orderline
-					for orderlinefield in orderlineitem.orderlinefields.all():
-						if orderlinefield.field.name == 'Nom':
-							first_name = orderlinefield.value
-							continue
-						if orderlinefield.field.name == 'Prénom':
-							last_name = orderlinefield.value
-					
-					# Add a ticket with this data
-					tickets.append({
-						'nom': first_name,
-						'prenom': last_name,
-						'qr_code': qr_code,
-						'item': orderline.item
-					})
-			data = {
-				'tickets': tickets,
-				'order': order
-			}
-			pdf = render_to_pdf('pdf/template_billet.html', data)
-			# return HttpResponse(pdf, content_type='application/pdf')
+				# Add Nom et Prénom to orderline
+				for orderlinefield in orderlineitem.orderlinefields.all():
+					if orderlinefield.field.name == 'Nom':
+						first_name = orderlinefield.value
+						continue
+					if orderlinefield.field.name == 'Prénom':
+						last_name = orderlinefield.value
+				
+				# Add a ticket with this data
+				tickets.append({
+					'nom': first_name,
+					'prenom': last_name,
+					'qr_code': qr_code,
+					'item': orderline.item,
+					'uuid': orderlineitem.id,
+				})
+		data = {
+			'tickets': tickets,
+			'order': order
+		}
+
+		# Render template
+		template = 'pdf/template_order.html'
+		if request.GET.get('type', 'pdf') == 'html':
+			response = render(request, template, data)
+		else:
+			pdf = render_to_pdf(template, data)
 			response = HttpResponse(pdf, content_type='application/pdf')
-			response['Content-Disposition'] = 'attachment;filename="billet_' + order.sale.association.name + '_' + order_pk + '.pdf"'
-			return response
-		return errorResponse("Valid Order Required", [], httpStatus = status.HTTP_404_NOT_FOUND)
-
+			if request.GET.get('action', 'download') != 'view':
+				response['Content-Disposition'] = 'attachment;filename="commande_' + order.sale.name + '_' + order_pk + '.pdf"'
+				
+		return response
