@@ -7,10 +7,11 @@ from rest_framework import exceptions
 from .services import JWTClient
 from .helpers import get_jwt_from_request
 
+UserModel = get_user_model()
 
 class JWTAuthentication(authentication.BaseAuthentication):
 	"""
-	Authenticate User frow JWT
+	Authenticate User frow JWT, used in the API
 	"""
 	def authenticate(self, request):
 		"""
@@ -18,7 +19,7 @@ class JWTAuthentication(authentication.BaseAuthentication):
 		"""
 		# Get JWT from request header
 		jwt = get_jwt_from_request(request)
-		if jwt == None:
+		if jwt is None:
 			return None
 
 		# Get user id
@@ -32,7 +33,6 @@ class JWTAuthentication(authentication.BaseAuthentication):
 			return None
 
 		# Try logging user
-		UserModel = get_user_model()
 		try:
 			user = UserModel.objects.get(id=user_id)
 		except UserModel.DoesNotExist:
@@ -41,8 +41,11 @@ class JWTAuthentication(authentication.BaseAuthentication):
 
 
 class AdminSiteBackend(ModelBackend):
-	def authenticate(self, request, username = None, password = None):
-		UserModel = get_user_model()
+	"""
+	Authenticate User from email - password, used in the admin site
+	"""
+
+	def authenticate(self, request, username=None, password=None):
 		# Try to fetch user
 		try:
 			user = UserModel.objects.get(**{ UserModel.USERNAME_FIELD: username })
@@ -63,7 +66,6 @@ class AdminSiteBackend(ModelBackend):
 		return user
 
 	def get_user(self, user_id):
-		UserModel = get_user_model()
 		try:
 			return UserModel.objects.get(id=user_id)
 		except UserModel.DoesNotExist:

@@ -35,9 +35,9 @@ def find_or_create_user(user_infos):
 
 	# UserType
 	userType = UserType.EXTERIEUR
-	if user_infos['is_cas'] == True:
+	if user_infos['types']['cas'] == True:
 		userType = UserType.NON_COTISANT
-	if user_infos['is_contributorBde'] == True:
+	if user_infos['types']['contributorBde'] == True:
 		userType = UserType.COTISANT
 
 	if user.usertype.name != userType:
@@ -48,8 +48,8 @@ def find_or_create_user(user_infos):
 		madeChanges = True
 
 	# Admin
-	if user.is_admin != user_infos['is_admin']:
-		user.is_admin = user_infos['is_admin']
+	if user.is_admin != user_infos['types']['admin']:
+		user.is_admin = user_infos['types']['admin']
 		madeChanges = True
 
 	# Sauvegarde si besoin

@@ -39,12 +39,12 @@ OAUTH = {
 		'client_id': 		confidentials.PORTAL['id'],
 		'client_secret': 	confidentials.PORTAL['key'],
 		'redirect_uri': 	confidentials.PORTAL['callback'],
-		'base_url': 		'https://portail-assos.alwaysdata.net/api/v1/',
-		'authorize_url': 	'https://portail-assos.alwaysdata.net/oauth/authorize',
-		'access_token_url': 'https://portail-assos.alwaysdata.net/oauth/token',
-		'login_url': 		'https://portail-assos.alwaysdata.net/login',
-		'logout_url': 		'https://portail-assos.alwaysdata.net/logout',
-		'scope': 			'user-get-info user-get-roles user-get-assos-joined-now'
+		'base_url': 		'https://assos.utc.fr/api/v1/',
+		'authorize_url': 	'https://assos.utc.fr/oauth/authorize',
+		'access_token_url': 'https://assos.utc.fr/oauth/token',
+		'login_url': 		'https://assos.utc.fr/login',
+		'logout_url': 		'https://assos.utc.fr/logout',
+		'scope': 			'user-get-info user-get-roles user-get-assos-members-joined-now'
 	}
 }
 
@@ -177,9 +177,10 @@ MIDDLEWARE = [
 # Authentication
 AUTH_USER_MODEL = 'authentication.User'
 
+# Only to access web admin panel
 AUTHENTICATION_BACKENDS = (
-	'django.contrib.auth.backends.ModelBackend',		# Only to access web admin panel
-	# 'authentication.auth.AdminSiteBackend',
+	# 'django.contrib.auth.backends.ModelBackend',
+	'authentication.auth.AdminSiteBackend',
 )
 
 # Password validation : https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators

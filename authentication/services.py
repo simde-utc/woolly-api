@@ -179,7 +179,7 @@ class OAuthAPI:
 			oauthToken = self.oauthClient.fetch_access_token(OAuthConfig[self.provider]['access_token_url'], code=code)
 
 			# Retrieve user infos from the Portal
-			auth_user_infos = self.fetch_resource('user/?allTypes=true&allDetails=true') # TODO restreindre
+			auth_user_infos = self.fetch_resource('user/?types=*') # TODO restreindre
 
 			# Find or create User
 			user = find_or_create_user(auth_user_infos)
