@@ -152,6 +152,7 @@ INSTALLED_APPS = [
 	# Django REST
 	'rest_framework',
 	'corsheaders',
+	'django_extensions',
 	# Woolly
 	'core',
 	'authentication',
