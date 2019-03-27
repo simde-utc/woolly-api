@@ -86,33 +86,40 @@ CSRF_TRUSTED_ORIGINS = confidentials.ALLOWED_HOSTS
 # --------------------------------------------------------------------------
 
 REST_FRAMEWORK = {
-	'PAGE_SIZE': 10,
 	'DEFAULT_AUTHENTICATION_CLASSES': (
 		'rest_framework.authentication.SessionAuthentication',
 		'authentication.auth.JWTAuthentication'
 	),
-	'DEFAULT_PAGINATION_CLASS': 'rest_framework_json_api.pagination.JsonApiPageNumberPagination',
+
+	'PAGE_SIZE': 10,
+	'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+	# 'DEFAULT_PAGINATION_CLASS': 'rest_framework_json_api.pagination.JsonApiPageNumberPagination',
 	# 'DEFAULT_PAGINATION_CLASS': 'rest_framework_json_api.pagination.PageNumberPagination',
+
 	'DEFAULT_PARSER_CLASSES': (
-		'rest_framework_json_api.parsers.JSONParser',
+		'rest_framework.parsers.JSONParser',								# Simple JSON
+		# 'rest_framework_json_api.parsers.JSONParser',			# JSON API Format
 		'rest_framework.parsers.FormParser',
 		'rest_framework.parsers.MultiPartParser'
 	),
 	'DEFAULT_RENDERER_CLASSES': (
-		'rest_framework_json_api.renderers.JSONRenderer',
-		# 'rest_framework.renderers.BrowsableAPIRenderer',
-		'core.utils.BrowsableAPIRendererWithoutForms',		# For performance testing
-		'rest_framework.renderers.JSONRenderer',
+		'rest_framework.renderers.JSONRenderer',						# Simple JSON
+		# 'rest_framework_json_api.renderers.JSONRenderer',	# JSON API Format
+		# 'rest_framework.renderers.BrowsableAPIRenderer',	
+		'core.utils.BrowsableAPIRendererWithoutForms',			# For performance testing
 	),
-	'DEFAULT_METADATA_CLASS': 'rest_framework_json_api.metadata.JSONAPIMetadata',
-	'EXCEPTION_HANDLER': 'rest_framework_json_api.exceptions.exception_handler',
+	
+	# JSON API Format
+	# 'DEFAULT_METADATA_CLASS': 'rest_framework_json_api.metadata.JSONAPIMetadata',
+	# 'EXCEPTION_HANDLER': 'rest_framework_json_api.exceptions.exception_handler',
+
+	# 'TEST_REQUEST_DEFAULT_FORMAT': 'vnd.api+json',
 	'TEST_REQUEST_RENDERER_CLASSES': (
-		'rest_framework_json_api.renderers.JSONRenderer',
+		# 'rest_framework_json_api.renderers.JSONRenderer',
 		'rest_framework.renderers.MultiPartRenderer',
 		'rest_framework.renderers.JSONRenderer',
 		'rest_framework.renderers.TemplateHTMLRenderer'
 	),
-	'TEST_REQUEST_DEFAULT_FORMAT': 'vnd.api+json',
 }
 
 VIEWSET = {
