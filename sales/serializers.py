@@ -1,10 +1,9 @@
 from authentication.serializers import UserSerializer, UserTypeSerializer
 from authentication.models import User, UserType
+from core.serializers import ModelSerializer
 from rest_framework import serializers
 from .models import *
 
-# from core.serializers import ModelSerializer, RelatedField
-ModelSerializer = serializers.ModelSerializer
 RelatedField = serializers.PrimaryKeyRelatedField
 
 # ============================================
