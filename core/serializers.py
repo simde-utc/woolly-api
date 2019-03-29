@@ -28,6 +28,7 @@ class ModelSerializer(serializers.ModelSerializer):
 		if not include_list:
 			return fields
 
+		fields = fields.copy()
 		# Update all included fields
 		for include_name in include_list:
 			included_serializer = self.included_serializers.get(include_name)
