@@ -4,40 +4,26 @@ from django.utils.translation import gettext as _
 from django.forms import ValidationError
 from rest_framework import authentication
 from rest_framework import exceptions
-from .services import JWTClient
 from .helpers import get_jwt_from_request
 
 UserModel = get_user_model()
+
 
 class JWTAuthentication(authentication.BaseAuthentication):
 	"""
 	Authenticate User frow JWT, used in the API
 	"""
+
 	def authenticate(self, request):
 		"""
 		Return the user from the JWT sent in the request
 		"""
-		# Get JWT from request header
-		jwt = get_jwt_from_request(request)
-		if jwt is None:
-			return None
+		if request.session.has('user_id'):
+			request.user = UserModel.objects.find(request.session.get('user_id'))
 
-		# Get user id
-		jwtClient = JWTClient()
-		try:
-			claims = jwtClient.get_claims(jwt)
-			user_id = claims['data']['user_id']
-		except:
+			return (request.user, None)
+		else:
 			return None
-		if user_id == None:
-			return None
-
-		# Try logging user
-		try:
-			user = UserModel.objects.get(id=user_id)
-		except UserModel.DoesNotExist:
-			raise exceptions.AuthenticationFailed("User does not exist.")
-		return (user, None)
 
 
 class AdminSiteBackend(ModelBackend):
@@ -48,7 +34,7 @@ class AdminSiteBackend(ModelBackend):
 	def authenticate(self, request, username=None, password=None):
 		# Try to fetch user
 		try:
-			user = UserModel.objects.get(**{ UserModel.USERNAME_FIELD: username })
+			user = UserModel.objects.get(**{UserModel.USERNAME_FIELD: username})
 		except UserModel.DoesNotExist:
 			return None
 

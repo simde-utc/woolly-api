@@ -15,12 +15,15 @@ from woolly_api import settings_confidential as confidentials
 
 # Build paths inside the project like this: use make_path helper or os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 def make_path(rel):
 	return os.path.join(BASE_DIR, rel.replace('/', os.path.sep))
 
 # --------------------------------------------------------------------------
 # 		Services Configuration
 # --------------------------------------------------------------------------
+
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = confidentials.SECRET_KEY
@@ -89,7 +92,6 @@ REST_FRAMEWORK = {
 	'PAGE_SIZE': 10,
 	'DEFAULT_AUTHENTICATION_CLASSES': (
 		'rest_framework.authentication.SessionAuthentication',
-		'authentication.auth.JWTAuthentication'
 	),
 	'DEFAULT_PAGINATION_CLASS': 'rest_framework_json_api.pagination.JsonApiPageNumberPagination',
 	# 'DEFAULT_PAGINATION_CLASS': 'rest_framework_json_api.pagination.PageNumberPagination',
@@ -276,7 +278,7 @@ LOGGING = {
 			'filters': ['require_debug_false'],
 			'class': 'logging.handlers.RotatingFileHandler',
 			'filename': make_path('debug.log'),
-			'maxBytes': 1024*1024*15, # 15MB
+			'maxBytes': 1024*1024*15,  # 15MB
 			'backupCount': 5,
 			'formatter': 'verbose',
 		},
