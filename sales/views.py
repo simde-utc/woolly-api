@@ -10,7 +10,7 @@ from .serializers import *
 from .permissions import *
 from .models import OrderStatus
 
-from authentication.auth import JWTAuthentication
+from authentication.auth import APIAuthentication
 from core.utils import render_to_pdf, data_to_qrcode
 from django.shortcuts import render
 from io import BytesIO
@@ -371,10 +371,8 @@ class OrderLineFieldViewSet(ModelViewSet):
 class GeneratePdf(View):
 
 	def get(self, request, *args, **kwargs):
-		# Authenticate by forcing JWT from ?code=...
-		request.META['HTTP_AUTHORIZATION'] = "Bearer " + request.GET.get('code', '')
-		jwtAuth = JWTAuthentication()
-		authUser = jwtAuth.authenticate(request)
+		# Authenticate
+		authUser = APIAuthentication().authenticate(request)
 
 		if authUser is None:
 			return errorResponse("Valid Code Required", [], httpStatus = status.HTTP_401_UNAUTHORIZED)

@@ -1,14 +1,13 @@
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from rest_framework_json_api import views
-from authlib.specs.rfc7519 import JWTError
 
 from rest_framework.permissions import AllowAny
 from .permissions import *
 
 from .serializers import UserSerializer, UserTypeSerializer
 from .models import UserType, User
-from .services import OAuthAPI, JWTClient, get_jwt_from_request
+from .services import OAuthAPI
 
 
 class UserViewSet(views.ModelViewSet):
@@ -38,6 +37,7 @@ class UserViewSet(views.ModelViewSet):
 
 		return queryset
 
+
 class UserRelationshipView(views.RelationshipView):
 	queryset = User.objects
 
@@ -53,21 +53,21 @@ class UserTypeViewSet(views.ModelViewSet):
 		# user-usertype-list route
 		if 'user_pk' in self.kwargs:
 			user_pk = self.kwargs['user_pk']
-			queryset = queryset.filter(users__pk=user_pk) # TODO Not working
+			queryset = queryset.filter(users__pk=user_pk)  # TODO Not working
 
 		return queryset
+
 
 class UserTypeRelationshipView(views.RelationshipView):
 	queryset = UserType.objects
 
 
 # ========================================================
-# 		Auth & JWT Management
+# 		Auth Management
 # ========================================================
 
 class AuthView:
 	oauth = OAuthAPI()
-	jwtClient = JWTClient()
 
 	@classmethod
 	def login(cls, request):
@@ -81,13 +81,12 @@ class AuthView:
 	@classmethod
 	def login_callback(cls, request):
 		"""
-		# Get user from API, find or create it in Woolly, store the OAuth token, 
-		create and return a user JWT or an error
-		Get user from API, find or create it in Woolly, store the OAuth token, 
-		create and redirect to the front with a code to get a JWT
+		# Get user from API, find or create it in Woolly, store the OAuth token,
+		create and return a session or an error
+		Get user from API, find or create it in Woolly, store the OAuth token,
+		and redirect to the front with a session
 		"""
-		resp = cls.oauth.callback_and_create_session(request);
-		print(resp)
+		resp = cls.oauth.callback_and_create_session(request)
 		# !! Can return dict errors
 		if 'error' in resp:
 			return JsonResponse(resp)
@@ -103,37 +102,7 @@ class AuthView:
 
 	@classmethod
 	def logout(cls, request):
-		jwt = get_jwt_from_request(request)
-		logout_url = cls.oauth.logout(jwt)
 		return JsonResponse({
 			'logout': True,
-			'logout_url': logout_url
+			'logout_url': cls.oauth.logout()
 		})
-
-
-class JWTView:
-	jwtClient = JWTClient()
-
-	@classmethod
-	def get_jwt(cls, request):
-		"""
-		Get first JWT after login from random session code
-		"""
-		code = request.GET.get('code', '')
-		return JsonResponse(cls.jwtClient.get_jwt_after_login(code))
-
-	# TODO NOT FINISHED : revoke
-	@classmethod
-	def refresh_jwt(cls, request):
-		jwt = get_jwt_from_request(request)
-		return JsonResponse(cls.jwtClient.refresh_jwt(jwt))
-
-	@classmethod
-	def validate_jwt(cls, request):
-		jwt = get_jwt_from_request(request)
-		try:
-			cls.jwtClient.validate(jwt)
-			valid = True
-		except JWTError as error:
-			valid = False
-		return JsonResponse({ 'valid': valid })

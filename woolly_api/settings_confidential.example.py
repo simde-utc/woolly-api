@@ -7,7 +7,6 @@ ALLOWED_HOSTS = (
 HTTPS_ENABLED = True
 
 # Secret Keys
-JWT_SECRET_KEY = ''
 SECRET_KEY = ''
 GINGER_KEY = ''
 PAYUTC_KEY = ''

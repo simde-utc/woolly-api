@@ -15,6 +15,8 @@ from woolly_api import settings_confidential as confidentials
 
 # Build paths inside the project like this: use make_path helper or os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 def make_path(rel):
 	return os.path.join(BASE_DIR, rel.replace('/', os.path.sep))
 
@@ -22,10 +24,9 @@ def make_path(rel):
 # 		Services Configuration
 # --------------------------------------------------------------------------
 
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = confidentials.SECRET_KEY
-JWT_SECRET_KEY = confidentials.JWT_SECRET_KEY
-JWT_TTL = 3600
 
 # Payutc & Ginger config
 PAYUTC_KEY = confidentials.PAYUTC_KEY
@@ -78,7 +79,7 @@ CORS_ALLOW_METHODS = (
 CORS_ALLOW_CREDENTIALS = True
 CSRF_COOKIE_HTTPONLY = True  # Useful ??
 CSRF_USE_SESSIONS = False  # Useful ??
-CSRF_TRUSTED_ORIGINS = confidentials.ALLOWED_HOSTS
+CSRF_TRUSTED_ORIGINS = ALLOWED_HOSTS
 
 
 # --------------------------------------------------------------------------
@@ -88,7 +89,7 @@ CSRF_TRUSTED_ORIGINS = confidentials.ALLOWED_HOSTS
 REST_FRAMEWORK = {
 	'DEFAULT_AUTHENTICATION_CLASSES': (
 		'rest_framework.authentication.SessionAuthentication',
-		'authentication.auth.JWTAuthentication'
+		'authentication.auth.APIAuthentication',
 	),
 
 	'PAGE_SIZE': 10,
@@ -156,6 +157,7 @@ INSTALLED_APPS = [
 	'django.contrib.auth',
 	'django.contrib.contenttypes',
 	'django.contrib.messages',
+	'django_extensions',
 	# Django REST
 	'rest_framework',
 	'corsheaders',
@@ -282,7 +284,7 @@ LOGGING = {
 			'filters': ['require_debug_false'],
 			'class': 'logging.handlers.RotatingFileHandler',
 			'filename': make_path('debug.log'),
-			'maxBytes': 1024*1024*15, # 15MB
+			'maxBytes': 1024*1024*15,  # 15MB
 			'backupCount': 5,
 			'formatter': 'verbose',
 		},
