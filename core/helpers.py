@@ -4,6 +4,14 @@ from rest_framework import status
 from rest_framework_json_api.relations import ResourceRelatedField
 from woolly_api.settings import VIEWSET
 from django.conf.urls import re_path
+from importlib import import_module
+
+def import_class(module: str, class_name: str=None):
+	"""Import a class from a specified module"""
+	if class_name is None:
+		module, class_name = module.rsplit('.', 1)
+	return getattr(import_module(module), class_name)
+
 
 def errorResponse(message, errors = tuple(), httpStatus = status.HTTP_400_BAD_REQUEST):
 	resp = {

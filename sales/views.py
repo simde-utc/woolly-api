@@ -1,7 +1,7 @@
 from django.views import View
 from rest_framework_json_api import views
+from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework import status
 from django.http import HttpResponse
 
 from core.helpers import errorResponse
@@ -16,12 +16,14 @@ from django.shortcuts import render
 from io import BytesIO
 import base64
 
+# from core.views import ModelViewSet
+ModelViewSet = viewsets.ModelViewSet
 
 # ============================================
 # 	Association
 # ============================================
 
-class AssociationViewSet(views.ModelViewSet):
+class AssociationViewSet(ModelViewSet):
 	"""
 	Defines the behavior of the association view
 	"""
@@ -39,13 +41,7 @@ class AssociationViewSet(views.ModelViewSet):
 
 		return queryset
 
-class AssociationRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the associations related links
-	"""
-	queryset = Association.objects
-
-class AssociationMemberViewSet(views.ModelViewSet):
+class AssociationMemberViewSet(ModelViewSet):
 	"""
 	Defines the behavior link to the association member view
 	"""
@@ -74,26 +70,20 @@ class AssociationMemberViewSet(views.ModelViewSet):
 		return queryset
 	"""
 
-class AssociationMemberRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the association members related links
-	"""
-	queryset = AssociationMember.objects
-
-
 # ============================================
 # 	Sale
 # ============================================
 
-class SaleViewSet(views.ModelViewSet):
+class SaleViewSet(ModelViewSet):
 	"""
 	Defines the behavior of the sale view
 	"""
+	queryset = Sale.objects.all()
 	serializer_class = SaleSerializer
 	permission_classes = (IsManagerOrReadOnly,)
 
 	def get_queryset(self):
-		queryset = Sale.objects.all()
+		queryset = self.queryset
 					# .filter(items__itemspecifications__user_type__name=self.request.user.usertype.name)
 					# TODO filtrer par date ?
 
@@ -107,23 +97,15 @@ class SaleViewSet(views.ModelViewSet):
 
 		# Association detail route
 		if 'association_pk' in self.kwargs:
-			association_pk = self.kwargs['association_pk']
-			queryset = queryset.filter(association__pk=association_pk)
+			queryset = queryset.filter(association__pk=self.kwargs['association_pk'])
 
 		return queryset
-
-class SaleRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the sales related links
-	"""
-	queryset = Sale.objects
-
 
 # ============================================
 # 	Item
 # ============================================
 
-class ItemGroupViewSet(views.ModelViewSet):
+class ItemGroupViewSet(ModelViewSet):
 	"""
 	Defines the behavior of the itemGroup interactions
 	"""
@@ -131,14 +113,7 @@ class ItemGroupViewSet(views.ModelViewSet):
 	serializer_class = ItemGroupSerializer
 	permission_classes = (IsManagerOrReadOnly,)
 
-class ItemGroupRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the itemGroups related links
-	"""
-	queryset = ItemGroup.objects
-
-
-class ItemViewSet(views.ModelViewSet):
+class ItemViewSet(ModelViewSet):
 	"""
 	Defines the behavior of the item interactions
 	"""
@@ -172,18 +147,11 @@ class ItemViewSet(views.ModelViewSet):
 
 		return queryset
 
-class ItemRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the items related links
-	"""
-	queryset = Item.objects
-
-
 # ============================================
 # 	Order & OrderLine
 # ============================================
 
-class OrderViewSet(views.ModelViewSet):
+class OrderViewSet(ModelViewSet):
 	"""
 	Defines the behavior of the order CRUD
 	"""
@@ -248,14 +216,7 @@ class OrderViewSet(views.ModelViewSet):
 			msg = "La commande n'est pas annulable."
 			return errorResponse(msg, [msg], status.HTTP_406_NOT_ACCEPTABLE)
 
-class OrderRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the orders related links
-	"""
-	queryset = Order.objects
-
-
-class OrderLineViewSet(views.ModelViewSet):
+class OrderLineViewSet(ModelViewSet):
 	"""
 	Defines the behavior of the Orderline view
 	"""
@@ -347,18 +308,11 @@ class OrderLineViewSet(views.ModelViewSet):
 		# 	serializer.save()
 	"""
 
-class OrderLineRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the orderlines related links
-	"""
-	queryset = OrderLine.objects
-
-
 # ============================================
 # 	Field & ItemField
 # ============================================
 
-class FieldViewSet(views.ModelViewSet):
+class FieldViewSet(ModelViewSet):
 	"""
 	Defines the view which display the items of an orderline
 	"""
@@ -366,14 +320,7 @@ class FieldViewSet(views.ModelViewSet):
 	serializer_class = FieldSerializer
 	permission_classes = (IsAdminOrReadOnly,)
 
-class FieldRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the orderlines related links
-	"""
-	queryset = Field.objects
-
-
-class ItemFieldViewSet(views.ModelViewSet):
+class ItemFieldViewSet(ModelViewSet):
 	"""
 	Defines the view which display the items of an orderline
 	"""
@@ -381,29 +328,16 @@ class ItemFieldViewSet(views.ModelViewSet):
 	serializer_class = ItemFieldSerializer
 	permission_classes = (IsManagerOrReadOnly,)
 
-class ItemFieldRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the orderlines related links
-	"""
-	queryset = ItemField.objects
-
 # ============================================
 # 	OrderLineItem & OrderLineField
 # ============================================
 
-class OrderLineItemViewSet(views.ModelViewSet):
+class OrderLineItemViewSet(ModelViewSet):
 	queryset = OrderLineItem.objects.all()
 	serializer_class = OrderLineItemSerializer
 	permission_classes = (IsOrderOwnerReadOnlyOrAdmin,)
 
-class OrderLineItemRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the orderlines related links
-	"""
-	queryset = OrderLineItem.objects
-
-
-class OrderLineFieldViewSet(views.ModelViewSet):
+class OrderLineFieldViewSet(ModelViewSet):
 	"""
 	Defines the view which display the items of an orderline
 	"""
@@ -430,16 +364,10 @@ class OrderLineFieldViewSet(views.ModelViewSet):
 			serializer = OrderLineFieldSerializer(instance)
 		return Response(serializer.data)
 
-class OrderLineFieldRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the orderlines related links
-	"""
-	queryset = OrderLineField.objects
-
-
 # ============================================
 # 	Billet
 # ============================================
+
 class GeneratePdf(View):
 
 	def get(self, request, *args, **kwargs):
