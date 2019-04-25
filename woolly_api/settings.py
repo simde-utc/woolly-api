@@ -27,8 +27,6 @@ def make_path(rel):
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = confidentials.SECRET_KEY
-JWT_SECRET_KEY = confidentials.JWT_SECRET_KEY
-JWT_TTL = 3600
 
 # Payutc & Ginger config
 PAYUTC_KEY = confidentials.PAYUTC_KEY
@@ -151,10 +149,10 @@ INSTALLED_APPS = [
 	'django.contrib.auth',
 	'django.contrib.contenttypes',
 	'django.contrib.messages',
+	'django_extensions',
 	# Django REST
 	'rest_framework',
 	'corsheaders',
-	'django_extensions',
 	# Woolly
 	'core',
 	'authentication',

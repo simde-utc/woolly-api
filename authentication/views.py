@@ -1,14 +1,13 @@
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from rest_framework_json_api import views
-from authlib.specs.rfc7519 import JWTError
 
 from rest_framework.permissions import AllowAny
 from .permissions import *
 
 from .serializers import UserSerializer, UserTypeSerializer
 from .models import UserType, User
-from .services import OAuthAPI, get_jwt_from_request
+from .services import OAuthAPI
 
 
 class UserViewSet(views.ModelViewSet):
@@ -64,7 +63,7 @@ class UserTypeRelationshipView(views.RelationshipView):
 
 
 # ========================================================
-# 		Auth & JWT Management
+# 		Auth Management
 # ========================================================
 
 class AuthView:
@@ -83,9 +82,9 @@ class AuthView:
 	def login_callback(cls, request):
 		"""
 		# Get user from API, find or create it in Woolly, store the OAuth token,
-		create and return a user JWT or an error
+		create and return a session or an error
 		Get user from API, find or create it in Woolly, store the OAuth token,
-		create and redirect to the front with a code to get a JWT
+		and redirect to the front with a session
 		"""
 		resp = cls.oauth.callback_and_create_session(request)
 		print(resp)
@@ -104,9 +103,7 @@ class AuthView:
 
 	@classmethod
 	def logout(cls, request):
-		jwt = get_jwt_from_request(request)
-		logout_url = cls.oauth.logout(jwt)
 		return JsonResponse({
 			'logout': True,
-			'logout_url': logout_url
+			'logout_url': cls.oauth.logout()
 		})

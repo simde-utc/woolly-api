@@ -2,12 +2,11 @@ from django.contrib.sessions.backends.db import SessionStore
 from django.utils.crypto import get_random_string
 from django.core.cache import cache
 
-from authlib.specs.rfc7519 import JWT, JWTError
 from authlib.client import OAuth2Session, OAuthException
 import time
 
-from woolly_api.settings import DEBUG, JWT_SECRET_KEY, JWT_TTL, OAUTH as OAuthConfig
-from .helpers import get_jwt_from_request, find_or_create_user
+from woolly_api.settings import DEBUG, OAUTH as OAuthConfig
+from .helpers import find_or_create_user
 from .models import User, UserType
 from .serializers import UserSerializer
 
@@ -26,7 +25,7 @@ class OAuthAPI:
 
 	def __init__(self):
 		"""
-		OAuth2 and JWT Client initialisation
+		OAuth2 Client initialisation
 		"""
 		config = OAuthConfig[self.provider]
 		self.oauthClient = OAuth2Session(**config)
@@ -44,7 +43,7 @@ class OAuthAPI:
 
 	def callback_and_create_session(self, request):
 		"""
-		Get token, user informations, store these and return a JWT
+		Get token, user informations, store these and redirect
 		"""
 		try:
 			# Get code and state from request
@@ -79,7 +78,7 @@ class OAuthAPI:
 				'message': str(error)
 			}
 
-	def logout(self, jwt):
+	def logout(self):
 		"""
 		Logout the user from Woolly and redirect to the provider's logout
 		"""

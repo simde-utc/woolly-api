@@ -2,9 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
 from django.utils.translation import gettext as _
 from django.forms import ValidationError
-from rest_framework import authentication
-from rest_framework import exceptions
-from .helpers import get_jwt_from_request
+from rest_framework import authentication, exceptions
 
 UserModel = get_user_model()
 
