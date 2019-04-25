@@ -60,6 +60,7 @@ class OAuthAPI:
 			# Find or create User
 			user = find_or_create_user(auth_user_infos)
 
+			# Create session
 			request.session['user_id'] = user.pk
 			request.session['portal_token'] = oauthToken
 

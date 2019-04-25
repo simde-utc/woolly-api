@@ -2,23 +2,23 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
 from django.utils.translation import gettext as _
 from django.forms import ValidationError
-from rest_framework import authentication, exceptions
+from rest_framework.authentication import BaseAuthentication
 
 UserModel = get_user_model()
 
 
-class JWTAuthentication(authentication.BaseAuthentication):
+class APIAuthentication(BaseAuthentication):
 	"""
-	Authenticate User frow JWT, used in the API
+	Authenticate User frow request, used in the API
 	"""
 
 	def authenticate(self, request):
 		"""
 		Return the user from the JWT sent in the request
 		"""
-		if request.session.has('user_id'):
-			request.user = UserModel.objects.find(request.session.get('user_id'))
-
+		user_id = request.session.get('user_id')
+		if user_id:
+			request.user = UserModel.objects.get(pk=user_id)
 			return (request.user, None)
 		else:
 			return None

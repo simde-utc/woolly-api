@@ -79,7 +79,7 @@ CORS_ALLOW_METHODS = (
 CORS_ALLOW_CREDENTIALS = True
 CSRF_COOKIE_HTTPONLY = True  # Useful ??
 CSRF_USE_SESSIONS = False  # Useful ??
-CSRF_TRUSTED_ORIGINS = confidentials.ALLOWED_HOSTS
+CSRF_TRUSTED_ORIGINS = ALLOWED_HOSTS
 
 
 # --------------------------------------------------------------------------
@@ -89,6 +89,7 @@ CSRF_TRUSTED_ORIGINS = confidentials.ALLOWED_HOSTS
 REST_FRAMEWORK = {
 	'DEFAULT_AUTHENTICATION_CLASSES': (
 		'rest_framework.authentication.SessionAuthentication',
+		'authentication.auth.APIAuthentication',
 	),
 
 	'PAGE_SIZE': 10,

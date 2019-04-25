@@ -87,7 +87,6 @@ class AuthView:
 		and redirect to the front with a session
 		"""
 		resp = cls.oauth.callback_and_create_session(request)
-		print(resp)
 		# !! Can return dict errors
 		if 'error' in resp:
 			return JsonResponse(resp)
