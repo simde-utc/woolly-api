@@ -5,6 +5,7 @@ from rest_framework_json_api import views
 from rest_framework.permissions import AllowAny
 from .permissions import *
 
+from .auth import APIAuthentication
 from .serializers import UserSerializer, UserTypeSerializer
 from .models import UserType, User
 from .services import OAuthAPI
@@ -94,6 +95,7 @@ class AuthView:
 
 	@classmethod
 	def me(cls, request):
+		APIAuthentication().authenticate(request)
 		me = request.user
 		return JsonResponse({
 			'authenticated': me.is_authenticated,
