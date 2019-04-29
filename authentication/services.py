@@ -79,11 +79,12 @@ class OAuthAPI:
 				'message': str(error)
 			}
 
-	def logout(self):
+	def logout(self, request, redirection=None):
 		"""
 		Logout the user from Woolly and redirect to the provider's logout
 		"""
 		# Delete session
+		request.session.flush()
 
 		# Redirect to logout
 		return OAuthConfig[self.provider]['logout_url']

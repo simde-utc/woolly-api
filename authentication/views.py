@@ -104,7 +104,6 @@ class AuthView:
 
 	@classmethod
 	def logout(cls, request):
-		return JsonResponse({
-			'logout': True,
-			'logout_url': cls.oauth.logout()
-		})
+		redirection = request.GET.get('redirect', None)
+		url = cls.oauth.logout(request, redirection)
+		return redirect(url)
