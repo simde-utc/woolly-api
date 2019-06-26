@@ -9,3 +9,4 @@ requests==2.20.0
 Authlib==0.6
 Faker==0.8.15
 django-extensions==2.1.6
+tqdm
