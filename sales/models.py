@@ -134,9 +134,8 @@ class Item(models.Model):
 			return None
 		allOrders = self.sale.orders.filter(orderlines__item__pk=self.pk, status__in=OrderStatus.NOT_CANCELLED_LIST.value) \
 						.prefetch_related('orderlines').all()
-		allItemsBought = reduce(lambda acc, order: acc + \
-				reduce(lambda acc2, orderline: acc2 + orderline.quantity, order.orderlines.all(), 0), \
-			allOrders, 0)
+		allItemsBought = sum(orderline.quantity for order in allOrders
+																						for orderline in order.orderlines.filter(item=self).all())
 		return self.quantity - allItemsBought
 
 	def __str__(self):
@@ -160,7 +159,7 @@ class OrderStatus(Enum):
 	ONGOING = 0
 	AWAITING_VALIDATION = 1
 	VALIDATED = 2
-	NOT_PAID = 3
+	NOT_PAID = 3 # TODO AWAITING_PAYMENT
 	PAID = 4
 	EXPIRED = 5
 	CANCELLED = 6
@@ -169,7 +168,7 @@ class OrderStatus(Enum):
 	CANCELLABLE_LIST = (NOT_PAID, AWAITING_VALIDATION)
 	# NOT_CANCELLED_LIST = (AWAITING_VALIDATION, VALIDATED, NOT_PAID, PAID) 
 	NOT_CANCELLED_LIST = (PAID, VALIDATED) 
-	BUYABLE_STATUS_LIST = (ONGOING, AWAITING_VALIDATION, NOT_PAID) 
+	BUYABLE_STATUS_LIST = (ONGOING, AWAITING_VALIDATION, NOT_PAID)  # TODO PENDING_LIST
 	VALIDATED_LIST = (VALIDATED, PAID)
 	CANCELLED_LIST = (EXPIRED, CANCELLED)
 
@@ -195,7 +194,7 @@ class Order(models.Model):
 	tra_id = models.IntegerField(blank=True, null=True, default=None)
 
 	def __str__(self):
-		return "%d - %s ordered by %s" % (self.id, self.sale, self.owner)
+		return "%d %s - %s ordered by %s" % (self.id, OrderStatus(self.status).name, self.sale, self.owner)
 
 	class Meta:
 		ordering = ('id',)
