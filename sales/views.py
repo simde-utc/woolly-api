@@ -87,7 +87,12 @@ class SaleViewSet(ModelViewSet):
 					# .filter(items__itemspecifications__user_type__name=self.request.user.usertype.name)
 					# TODO filtrer par date ?
 
-		queryset = queryset.filter(is_active=True, public=True)
+		# queryset = queryset.filter(is_active=True, public=True)
+		if not self.request.GET.get('include_inactive', False):
+			queryset = queryset.filter(is_active=True)
+		if 'pk' not in self.kwargs:
+			queryset = queryset.filter(public=True)
+
 		# TODO V2 : filtering
 		# filters = ('active', )
 		# filterQuery = self.request.query_params.get('filterQuery', None)
@@ -352,6 +357,10 @@ class OrderLineFieldViewSet(ModelViewSet):
 			queryset = queryset.filter(orderlineitem__pk=orderlineitem_pk)
 
 		return queryset
+
+	def partial_update(self, request, *args, **kwargs):
+		kwargs['partial'] = True
+		return self.update(request, *args, **kwargs)
 
 	def update(self, request, *args, **kwargs):
 		partial = kwargs.pop('partial', False)
