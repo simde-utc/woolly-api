@@ -25,10 +25,36 @@ def full_process(sale_pk: int=None, backup_after: bool=False):
 		dump_sale_excel(sale_pk)
 
 def _export_name(prefix: str, sale_pk: int=None):
-	return path.join(BASE_EXPORTS,
-									 "{}_{}_{}.xlsx".format(prefix,
-																					('all' if sale_pk is None else sale_pk),
-																					str(timezone.now())[:19]))
+	dt = str(timezone.now())[:19].replace(':', '-')
+	_id = ('all' if sale_pk is None else sale_pk)
+	return path.join(BASE_EXPORTS, "{}_{}_{}.xlsx".format(prefix, _id, dt))
+
+def dump_cat_excel(sale_pk: int=None):
+	orders = Order.objects.prefetch_related('owner', 'orderlines', 'orderlines__orderlineitems',
+																					'orderlines__orderlineitems__orderlinefields',
+																					'orderlines__orderlineitems__orderlinefields__field') \
+												.filter(status=OrderStatus.PAID.value)
+	if sale_pk is not None:
+		orders = orders.filter(sale_id=sale_pk)
+
+	def _proccess_order(order):
+		data_list = []
+		for orderline in order.orderlines.all():
+			for orderlineitem in orderline.orderlineitems.all():
+				data = { orderlinefield.field.name: orderlinefield.value
+									for orderlinefield in orderlineitem.orderlinefields.all() }
+				data.update({
+					'UUID': orderlineitem.id,
+					'Email Acheteur': order.owner.email,
+					'Item':	orderline.item.name,
+				})
+				data_list.append(data)
+		return data_list
+
+	results = pd.DataFrame([ data for order in tqdm(orders.all(), desc='Processing orders...')
+															 for data in _proccess_order(order) ])
+	results.to_excel(_export_name("dump_cat", sale_pk))
+	print("Dumped sale.")
 
 
 def dump_sale_excel(sale_pk: int=None):
