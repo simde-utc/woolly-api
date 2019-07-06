@@ -20,6 +20,10 @@ from woolly_api.settings import PAYUTC_KEY, PAYUTC_TRANSACTION_BASE_URL
 from authentication.auth import APIAuthentication
 
 
+# TODO Check if quantities exists first
+# orderline.item.group.max_per_user 
+
+
 # TODO
 class PaymentView:
 	pass
@@ -103,6 +107,7 @@ def pay_callback(request, pk):
 	transaction = payutc.getTransactionInfo({ 'tra_id': order.tra_id, 'fun_id': order.sale.association.fun_id })
 	if 'error' in transaction:
 		print(transaction)
+		# TODO parse error
 		return errorResponse(transaction['error']['message'])
 
 	return updateOrderStatus(order, transaction)
@@ -256,17 +261,16 @@ def updateOrderStatus(order, transaction):
 
 # OrderLine
 def getFieldDefaultValue(default, order):
-	if default is None:
-		return None
 	return {
 		'owner.first_name': order.owner.first_name,
 		'owner.last_name': order.owner.last_name,
-	}[default]
+	}.get(default, default)
 
 def createOrderLineItemsAndFields(order):
 
 	# Create OrderLineItems
 	orderlines = order.orderlines.filter(quantity__gt=0).prefetch_related('item', 'orderlineitems').all()
+	total = 0
 	for orderline in orderlines:
 		qte = orderline.quantity - len(orderline.orderlineitems.all())
 		while qte > 0:
@@ -294,7 +298,10 @@ def createOrderLineItemsAndFields(order):
 				})
 				orderlinefield.is_valid(raise_exception=True)
 				orderlinefield.save()
+			total += 1
 			qte -= 1
+			
+	return total
 
 
 def orderErrorResponse(errors):
@@ -303,21 +310,22 @@ def orderErrorResponse(errors):
 
 
 def sendConfirmationMail(order):
-	# TODO : généraliser
-	nb_places = reduce(lambda acc, orderline: acc + orderline.quantity, order.orderlines.all(), 0)
+	# TODO : généraliser + markdown
+
+	link_order = "http://assos.utc.fr/picasso/degustations/commandes/" + str(order.pk)
 	message = "Bonjour " + order.owner.get_full_name() + ",\n\n" \
-			+ "Nous vous confirmons avoir cotisé pour " + str(nb_places) + " place(s) " \
-			+ "pour participer à la course de baignoires le dimanche 30 septembre.\n" \
-			+ "Vous êtes désormais officiellement inscrit comme participant à la course !\n" \
-			+ "Téléchargez vos billets ici : http://assos.utc.fr/baignoirutc/billetterie/commandes/" + str(order.pk) + "\n\n" \
-			+ "Rendez vous le 30 septembre !!"
+					+ "Votre commande n°" + str(order.pk) + " vient d'être confirmée.\n" \
+					+ "Vous avez commandé:\n" \
+					+ "".join([ " - " + str(ol.quantity) + " " + ol.item.name + "\n" for ol in order.orderlines.all() ]) \
+					+ "Vous pouvez télécharger vos billets ici : " + link_order + "\n\n" \
+					+ "Merci d'avoir utiliser Woolly"
 
 	email = EmailMessage(
-		subject = "Confirmation Côtisation - Baignoires dans l'Oise",
-		body = message,
-		from_email = "sales@woolly.etu-utc.fr", # "woolly@assos.utc.fr",
-		to = [order.owner.email],
-		reply_to = ["baignoirutc@assos.utc.fr"],
+		subject="Woolly - Confirmation de commande",
+		body=message,
+		from_email="woolly@assos.utc.fr",
+		to=[order.owner.email],
+		reply_to=["woolly@assos.utc.fr"],
 	)
 	email.send()
 
