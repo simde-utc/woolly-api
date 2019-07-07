@@ -1,7 +1,6 @@
 from django.db import models
 from authentication.models import User, UserType
 from enum import Enum
-from functools import reduce
 import uuid
 from core.helpers import custom_editable_fields
 
@@ -24,9 +23,6 @@ class Association(models.Model):
 	class Meta:
 		ordering = ('id',)
 
-	class JSONAPIMeta:
-		resource_name = "associations"
-
 class AssociationMember(models.Model):
 	"""
 	Links an User to an Association
@@ -42,9 +38,6 @@ class AssociationMember(models.Model):
 	class Meta:
 		ordering = ('id',)
 		verbose_name = "Association Member"			
-
-	class JSONAPIMeta:
-		resource_name = "associationmembers"
 
 
 # ============================================
@@ -82,9 +75,6 @@ class Sale(models.Model):
 	class Meta:
 		ordering = ('id',)
 
-	class JSONAPIMeta:
-		resource_name = "sales"
-
 
 # ============================================
 # 	Item
@@ -105,9 +95,6 @@ class ItemGroup(models.Model):
 	class Meta:
 		ordering = ('id',)
 		verbose_name = "Item Group"
-
-	class JSONAPIMeta:
-		resource_name = "itemgroups"
 
 class Item(models.Model):
 	"""
@@ -144,9 +131,6 @@ class Item(models.Model):
 	class Meta:
 		ordering = ('id',)
 
-	class JSONAPIMeta:
-		resource_name = "items"
-
 
 # ============================================
 # 	Order
@@ -181,15 +165,15 @@ class Order(models.Model):
 	"""
 	Defines the Order object
 	"""
-	owner 	= models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders') #, editable=False)
-	sale 	= models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='orders') #, editable=False)
+	owner 	= models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders', editable=False)
+	sale 		= models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='orders', editable=False)
 
 	created_at = models.DateTimeField(auto_now_add=True, editable=False)
 	updated_at = models.DateTimeField(auto_now=True)
 
 	status = models.PositiveSmallIntegerField(
-		choices = OrderStatus.choices(),	# Choices is a list of Tuple
-		default = OrderStatus.ONGOING.value
+		choices=OrderStatus.choices(),	# Choices is a list of Tuple
+		default=OrderStatus.ONGOING.value,
 	)
 	tra_id = models.IntegerField(blank=True, null=True, default=None)
 
@@ -198,9 +182,6 @@ class Order(models.Model):
 
 	class Meta:
 		ordering = ('id',)
-
-	class JSONAPIMeta:
-		resource_name = "orders"
 
 
 class OrderLine(models.Model):
@@ -217,9 +198,6 @@ class OrderLine(models.Model):
 	class Meta:
 		ordering = ('id',)
 		verbose_name = "Order Line"
-
-	class JSONAPIMeta:
-		resource_name = "orderlines"
 
 
 # ============================================
@@ -241,9 +219,6 @@ class Field(models.Model):
 	class Meta:
 		ordering = ('id',)
 
-	class JSONAPIMeta:
-		resource_name = "fields"
-
 class ItemField(models.Model):
 	"""
 	Links an Item to a Field with additionnal options
@@ -264,9 +239,6 @@ class ItemField(models.Model):
 		ordering = ('id',)
 		verbose_name = "Item Field"
 
-	class JSONAPIMeta:
-		resource_name = "itemfields"
-
 
 class OrderLineItem(models.Model):
 	"""
@@ -282,9 +254,6 @@ class OrderLineItem(models.Model):
 	class Meta:
 		ordering = ('id',)
 		verbose_name = "OrderLine Item"
-
-	class JSONAPIMeta:
-		resource_name = "orderlineitems"
 
 class OrderLineField(models.Model):
 	"""
@@ -304,7 +273,4 @@ class OrderLineField(models.Model):
 	class Meta:
 		ordering = ('id',)
 		verbose_name = "OrderLine Field"
-
-	class JSONAPIMeta:
-		resource_name = "orderlinefields"
 

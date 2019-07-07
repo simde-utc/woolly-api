@@ -1,6 +1,5 @@
 from django.views import View
-from rest_framework_json_api import views
-from rest_framework import viewsets, status
+from rest_framework import status
 from rest_framework.response import Response
 from django.http import HttpResponse
 
@@ -17,7 +16,7 @@ from io import BytesIO
 import base64
 
 # from core.views import ModelViewSet
-ModelViewSet = viewsets.ModelViewSet
+from rest_framework.viewsets import ModelViewSet
 
 # ============================================
 # 	Association
@@ -156,26 +155,31 @@ class ItemViewSet(ModelViewSet):
 # 	Order & OrderLine
 # ============================================
 
-class OrderViewSet(ModelViewSet):
+# from core.viewsets import ModelViewSet as CustomModelViewSet
+from rest_framework_json_api.views import ModelViewSet as CustomModelViewSet 
+
+
+class OrderViewSet(CustomModelViewSet):
 	"""
 	Defines the behavior of the order CRUD
 	"""
-	queryset = Order.objects.all()
 	serializer_class = OrderSerializer
 	permission_classes = (IsOrderOwnerOrAdmin,)
 
 	def get_queryset(self):
+		queryset = Order.objects.all()
 		user = self.request.user
-		queryset = self.queryset
 
 		# Anonymous users see nothing
 		if not user.is_authenticated:
 			return None
 
-		# Admins see everything otherwise filter to see only those owned by the user
-		# if not user.is_admin:
-		# 	queryset = queryset.filter(owner=user)
+		# Admins see everything
+		# Otherwise automatically filter to only those owned by the user
+		if not user.is_admin:
+			queryset = queryset.filter(owner=user)
 
+		# Filter per user
 		if 'user_pk' in self.kwargs:
 			user_pk = self.kwargs['user_pk']
 			queryset = queryset.filter(owner__pk=user_pk)
@@ -211,6 +215,7 @@ class OrderViewSet(ModelViewSet):
 		return Response(serializer.data, status=httpStatus, headers=headers)
 
 	def destroy(self, request, *args, **kwargs):
+		"""Doesn't destroy an order but set it as cancelled"""
 		order = self.get_object()
 		if order.status in OrderStatus.CANCELLABLE_LIST.value:
 			# TODO Add time

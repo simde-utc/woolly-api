@@ -1,10 +1,12 @@
 from authentication.serializers import UserSerializer, UserTypeSerializer
 from authentication.models import User, UserType
-from core.serializers import ModelSerializer
 from rest_framework import serializers
 from .models import *
 
 RelatedField = serializers.PrimaryKeyRelatedField
+
+# from core.serializers import ModelSerializer
+from rest_framework_json_api.serializers import ModelSerializer
 
 # ============================================
 # 	Items & Sales

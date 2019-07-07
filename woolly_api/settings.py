@@ -62,7 +62,7 @@ ALLOWED_HOSTS = confidentials.ALLOWED_HOSTS
 # SECURE_SSL_REDIRECT = True
 
 SESSION_COOKIE_SECURE = False # False to enable the use of cookies in ajax requests
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' # cache or cached_db
 
 # CORS headers config
 CORS_ORIGIN_ALLOW_ALL = True
@@ -113,6 +113,7 @@ REST_FRAMEWORK = {
 	# JSON API Format
 	# 'DEFAULT_METADATA_CLASS': 'rest_framework_json_api.metadata.JSONAPIMetadata',
 	# 'EXCEPTION_HANDLER': 'rest_framework_json_api.exceptions.exception_handler',
+	# 'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
 
 	# 'TEST_REQUEST_DEFAULT_FORMAT': 'vnd.api+json',
 	'TEST_REQUEST_RENDERER_CLASSES': (
