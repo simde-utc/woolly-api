@@ -44,7 +44,7 @@ def dump_cat_excel(sale_pk: int=None):
 				data = { orderlinefield.field.name: orderlinefield.value
 									for orderlinefield in orderlineitem.orderlinefields.all() }
 				data.update({
-					'UUID': orderlineitem.id,
+					'UUID': orderlineitem.id.replace('-', ''), # Remove dashes for wap
 					'Email Acheteur': order.owner.email,
 					'Item':	orderline.item.name,
 				})
