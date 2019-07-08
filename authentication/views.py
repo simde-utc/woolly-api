@@ -89,9 +89,15 @@ class AuthView:
 	def me(cls, request):
 		APIAuthentication().authenticate(request)
 		me = request.user
+		if me.is_anonymous:
+			user = None
+		else:
+			include_query = request.GET.get('include')
+			include_map = ModelViewSet.get_include_map(include_query)
+			user = UserSerializer(me, context={ 'include_map': include_map}).data
 		return JsonResponse({
 			'authenticated': me.is_authenticated,
-			'user': None if me.is_anonymous else UserSerializer(me).data
+			'user': user
 		})
 
 	@classmethod

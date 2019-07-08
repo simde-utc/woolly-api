@@ -17,12 +17,14 @@ class ModelViewSet(viewsets.ModelViewSet):
 	# 	return super().get_object()
 
 	def get_serializer_context(self):
+		include_query = self.request.query_params.get('include')
 		return {
 			**super().get_serializer_context(),
-			'include_map': self.get_include_map(),
+			'include_map': self.get_include_map(include_query),
 		}
 
-	def get_include_map(self):
+	@classmethod
+	def get_include_map(self, include_query:str):
 		"""
 		Create a include map for nested serializers from query
 		query: include=sub1,sub2,sub2__a,sub2__b
@@ -34,7 +36,6 @@ class ModelViewSet(viewsets.ModelViewSet):
 			},
 		}
 		"""
-		include_query = self.request.query_params.get('include')
 		if not include_query:
 			return None
 
