@@ -317,7 +317,7 @@ def sendConfirmationMail(order):
 					+ "Vous avez commandé:\n" \
 					+ "".join([ " - " + str(ol.quantity) + " " + ol.item.name + "\n" for ol in order.orderlines.all() ]) \
 					+ "Vous pouvez télécharger vos billets ici : " + link_order + "\n\n" \
-					+ "Merci d'avoir utiliser Woolly"
+					+ "Merci d'avoir utilisé Woolly"
 
 	email = EmailMessage(
 		subject="Woolly - Confirmation de commande",
