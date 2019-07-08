@@ -1,16 +1,17 @@
-from rest_framework_json_api import serializers
+from core.serializers import ModelSerializer
 from core.helpers import get_ResourceRelatedField
+from rest_framework import serializers
 
 from authentication.models import User, UserType
 from sales.models import AssociationMember, Order
 
-class UserTypeSerializer(serializers.ModelSerializer):
+class UserTypeSerializer(ModelSerializer):
 	class Meta:
 		model = UserType
 		fields = ('id', 'name')
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(ModelSerializer):
 
 	usertype = get_ResourceRelatedField('users', 'usertypes', read_only=True, required=False)
 	associations = get_ResourceRelatedField('users', 'associations', queryset=AssociationMember.objects, required=False)

@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from django.shortcuts import redirect
-from rest_framework_json_api import views
+from core.viewsets import ModelViewSet
 
 from rest_framework.permissions import AllowAny
 from .permissions import *
@@ -11,7 +11,7 @@ from .models import UserType, User
 from .services import OAuthAPI
 
 
-class UserViewSet(views.ModelViewSet):
+class UserViewSet(ModelViewSet):
 	queryset = User.objects.all()
 	serializer_class = UserSerializer
 	permission_classes = (IsUserOrAdmin,)
@@ -38,12 +38,7 @@ class UserViewSet(views.ModelViewSet):
 
 		return queryset
 
-
-class UserRelationshipView(views.RelationshipView):
-	queryset = User.objects
-
-
-class UserTypeViewSet(views.ModelViewSet):
+class UserTypeViewSet(ModelViewSet):
 	queryset = UserType.objects.all()
 	serializer_class = UserTypeSerializer
 	permission_classes = (IsAdminOrReadOnly,)
@@ -57,10 +52,6 @@ class UserTypeViewSet(views.ModelViewSet):
 			queryset = queryset.filter(users__pk=user_pk)  # TODO Not working
 
 		return queryset
-
-
-class UserTypeRelationshipView(views.RelationshipView):
-	queryset = UserType.objects
 
 
 # ========================================================

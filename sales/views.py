@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from django.http import HttpResponse
 
+from core.viewsets import ModelViewSet
 from core.helpers import errorResponse
 from core.permissions import *
 from .serializers import *
@@ -15,8 +16,6 @@ from django.shortcuts import render
 from io import BytesIO
 import base64
 
-# from core.views import ModelViewSet
-from rest_framework.viewsets import ModelViewSet
 
 # ============================================
 # 	Association
@@ -155,11 +154,7 @@ class ItemViewSet(ModelViewSet):
 # 	Order & OrderLine
 # ============================================
 
-# from core.viewsets import ModelViewSet as CustomModelViewSet
-from rest_framework_json_api.views import ModelViewSet as CustomModelViewSet 
-
-
-class OrderViewSet(CustomModelViewSet):
+class OrderViewSet(ModelViewSet):
 	"""
 	Defines the behavior of the order CRUD
 	"""

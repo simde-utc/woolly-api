@@ -2,10 +2,6 @@ from rest_framework import viewsets
 
 class ModelViewSet(viewsets.ModelViewSet):
 
-	# def __init__(self, *args, **kwargs):
-	# 	super().__init__(*args, **kwargs)
-	# 	print("-- ModelViewSet.__init__ -- ", self.__class__.__name__)
-
 	def get_queryset(self):
 		queryset = super().get_queryset()
 
@@ -15,19 +11,11 @@ class ModelViewSet(viewsets.ModelViewSet):
 			import pdb; pdb.set_trace()
 			queryset = queryset.prefetch_related(include_query)
 
-		# Filter permission ??
+		# TODO Filter permission ??
 		return queryset
 
 	# def get_object(self):
 	# 	return super().get_object()
-
-	# def get_serializer(self, *args, **kwargs):
-	# 	"""Override of GenericAPIView.get_serializer"""
-	# 	# self.include_map
-	# 	return super().get_serializer(*args, **kwargs)
-
-	# def get_serializer_class(self):
-	# 	return super().get_serializer_class()
 
 	def get_serializer_context(self):
 		return {
@@ -58,11 +46,7 @@ class ModelViewSet(viewsets.ModelViewSet):
 				if step not in current_map:
 					current_map[step] = {}
 				current_map = current_map[step]
-
-		import pdb; pdb.set_trace()
-
 		return include_map
-
 
 
 	# def filter_queryset(self, queryset):

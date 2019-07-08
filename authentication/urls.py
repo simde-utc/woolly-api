@@ -8,8 +8,8 @@ from .views import *
 
 # JSON API Resource routes
 urlpatterns = merge_sets(
-	gen_url_set('users', UserViewSet, UserRelationshipView),
-	gen_url_set('usertypes', UserTypeViewSet, UserTypeRelationshipView),
+	gen_url_set('users', UserViewSet),
+	gen_url_set('usertypes', UserTypeViewSet),
 	gen_url_set(['users', 'usertypes'], UserTypeViewSet),
 )
 

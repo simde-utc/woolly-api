@@ -105,8 +105,8 @@ REST_FRAMEWORK = {
 	),
 	'DEFAULT_RENDERER_CLASSES': (
 		'rest_framework.renderers.JSONRenderer',						# Simple JSON
-		# 'rest_framework_json_api.renderers.JSONRenderer',	# JSON API Format
-		# 'rest_framework.renderers.BrowsableAPIRenderer',	
+		'rest_framework_json_api.renderers.JSONRenderer',		# JSON API Format
+		# 'rest_framework.renderers.BrowsableAPIRenderer',
 		'core.utils.BrowsableAPIRendererWithoutForms',			# For performance testing
 	),
 	
