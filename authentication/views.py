@@ -16,14 +16,6 @@ class UserViewSet(ModelViewSet):
 	serializer_class = UserSerializer
 	permission_classes = (IsUserOrAdmin,)
 
-	# Block create and redirect to login
-	def create(self, request, *args, **kwargs):
-		return redirect('auth.login')
-
-	# TODO : block self is_admin -> True
-	# def update(self, request, *args, **kwargs):
-		# pass
-
 	def get_queryset(self):
 		user = self.request.user
 		queryset = self.queryset
@@ -37,6 +29,15 @@ class UserViewSet(ModelViewSet):
 		# 	queryset = queryset.filter(user__pk=association_pk)
 
 		return queryset
+
+	# Block create and redirect to login
+	def create(self, request, *args, **kwargs):
+		return redirect('auth.login')
+
+	# TODO : block self is_admin -> True
+	# def update(self, request, *args, **kwargs):
+		# pass
+
 
 class UserTypeViewSet(ModelViewSet):
 	queryset = UserType.objects.all()

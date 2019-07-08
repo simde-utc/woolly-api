@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
+import sys
 from woolly_api import settings_confidential as confidentials
 
 # Build paths inside the project like this: use make_path helper or os.path.join(BASE_DIR, ...)
@@ -94,30 +95,21 @@ REST_FRAMEWORK = {
 
 	'PAGE_SIZE': 10,
 	'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-	# 'DEFAULT_PAGINATION_CLASS': 'rest_framework_json_api.pagination.JsonApiPageNumberPagination',
-	# 'DEFAULT_PAGINATION_CLASS': 'rest_framework_json_api.pagination.PageNumberPagination',
 
 	'DEFAULT_PARSER_CLASSES': (
 		'rest_framework.parsers.JSONParser',								# Simple JSON
-		# 'rest_framework_json_api.parsers.JSONParser',			# JSON API Format
 		'rest_framework.parsers.FormParser',
 		'rest_framework.parsers.MultiPartParser'
 	),
 	'DEFAULT_RENDERER_CLASSES': (
 		'rest_framework.renderers.JSONRenderer',						# Simple JSON
-		'rest_framework_json_api.renderers.JSONRenderer',		# JSON API Format
 		# 'rest_framework.renderers.BrowsableAPIRenderer',
 		'core.utils.BrowsableAPIRendererWithoutForms',			# For performance testing
 	),
 	
-	# JSON API Format
-	# 'DEFAULT_METADATA_CLASS': 'rest_framework_json_api.metadata.JSONAPIMetadata',
-	# 'EXCEPTION_HANDLER': 'rest_framework_json_api.exceptions.exception_handler',
 	# 'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
 
-	# 'TEST_REQUEST_DEFAULT_FORMAT': 'vnd.api+json',
 	'TEST_REQUEST_RENDERER_CLASSES': (
-		# 'rest_framework_json_api.renderers.JSONRenderer',
 		'rest_framework.renderers.MultiPartRenderer',
 		'rest_framework.renderers.JSONRenderer',
 		'rest_framework.renderers.TemplateHTMLRenderer'
@@ -149,6 +141,8 @@ DATABASES = {
 		'NAME': 'db.sqlite3',
 	}
 }
+if 'test' in sys.argv and 'sqlite' in DATABASES: # Test database
+	DATABASES['default'] = DATABASES.pop('sqlite')
 
 INSTALLED_APPS = [
 	# Django

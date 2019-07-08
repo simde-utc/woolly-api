@@ -30,7 +30,7 @@ class AssociationViewSet(ModelViewSet):
 	permission_classes = (IsManagerOrReadOnly,)
 
 	def get_queryset(self):
-		queryset = self.queryset
+		queryset = super().get_queryset()
 
 		# user-association-list
 		if 'user_pk' in self.kwargs:
@@ -81,7 +81,7 @@ class SaleViewSet(ModelViewSet):
 	permission_classes = (IsManagerOrReadOnly,)
 
 	def get_queryset(self):
-		queryset = self.queryset
+		queryset = super().get_queryset()
 					# .filter(items__itemspecifications__user_type__name=self.request.user.usertype.name)
 					# TODO filtrer par date ?
 
@@ -138,7 +138,10 @@ class ItemViewSet(ModelViewSet):
 	"""
 
 	def get_queryset(self):
-		queryset = self.queryset.filter(is_active=True)
+		queryset = super().get_queryset()
+
+		if not self.request.GET.get('include_inactive', False):
+			queryset = queryset.filter(is_active=True)
 
 		if 'sale_pk' in self.kwargs:
 			sale_pk = self.kwargs['sale_pk']
@@ -158,11 +161,12 @@ class OrderViewSet(ModelViewSet):
 	"""
 	Defines the behavior of the order CRUD
 	"""
+	queryset = Order.objects.all()
 	serializer_class = OrderSerializer
 	permission_classes = (IsOrderOwnerOrAdmin,)
 
 	def get_queryset(self):
-		queryset = Order.objects.all()
+		queryset = super().get_queryset()
 		user = self.request.user
 
 		# Anonymous users see nothing
@@ -187,20 +191,17 @@ class OrderViewSet(ModelViewSet):
 			# TODO ajout de la limite de temps
 			order = Order.objects \
 				.filter(status__in=OrderStatus.BUYABLE_STATUS_LIST.value) \
-				.get(sale=request.data['sale']['id'], owner=request.user.id)
+				.get(sale=request.data['sale'], owner=request.user.id)
 
 			serializer = OrderSerializer(order)
 			httpStatus = status.HTTP_200_OK
 		except Order.DoesNotExist as err:
 			# Configure new Order
-			serializer = OrderSerializer(data = {
+			serializer = OrderSerializer(data={
 				'sale': request.data['sale'],
-				'owner': {
-					'id': request.user.id,
-					'type': 'users'
-				},
+				'owner': request.user.id,
 				'orderlines': [],
-				'status': OrderStatus.ONGOING.value
+				'status': OrderStatus.ONGOING.value,
 			})
 			serializer.is_valid(raise_exception=True)
 			self.perform_create(serializer)
@@ -231,7 +232,7 @@ class OrderLineViewSet(ModelViewSet):
 
 	def get_queryset(self):
 		user = self.request.user
-		queryset = self.queryset
+		queryset = super().get_queryset()
 
 		# Anonymous users see nothing
 		if not user.is_authenticated:
@@ -243,14 +244,14 @@ class OrderLineViewSet(ModelViewSet):
 
 		if 'order_pk' in self.kwargs:
 			order_pk = self.kwargs['order_pk']
-			queryset = OrderLine.objects.all().filter(order__pk=order_pk)
+			queryset = queryset.filter(order__pk=order_pk)
 
 		return queryset
 
 	def create(self, request, *args, **kwargs):
 		# Retrieve Order...
 		try:
-			order = Order.objects.get(pk=request.data['order']['id'])
+			order = Order.objects.get(pk=request.data['order'])
 		# ...or fail
 		except Order.DoesNotExist as err:
 			msg = "Impossible de trouver la commande."
@@ -269,7 +270,7 @@ class OrderLineViewSet(ModelViewSet):
 
 		# Try to retrieve a similar OrderLine...
 		try:
-			orderline = OrderLine.objects.get(order=request.data['order']['id'], item=request.data['item']['id'])
+			orderline = OrderLine.objects.get(order=request.data['order'], item=request.data['item'])
 			# TODO ajout de la vérification de la limite de temps
 			serializer = OrderLineSerializer(orderline, data={'quantity': request.data['quantity']}, partial=True)
 
@@ -351,7 +352,7 @@ class OrderLineFieldViewSet(ModelViewSet):
 	permission_classes = (IsOrderOwnerReadUpdateOrAdmin,)
 
 	def get_queryset(self):
-		queryset = self.queryset
+		queryset = super().get_queryset()
 		if 'orderlineitem_pk' in self.kwargs:
 			orderlineitem_pk = self.kwargs['orderlineitem_pk']
 			queryset = queryset.filter(orderlineitem__pk=orderlineitem_pk)

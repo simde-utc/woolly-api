@@ -28,9 +28,6 @@ class UserType(models.Model):
 		ordering = ('id',)
 		verbose_name = "User Type"
 
-	class JSONAPIMeta:
-		resource_name = "usertypes"
-
 
 class UserManager(BaseUserManager):
 	def create_user(self, email, password=None, **other_fields):
@@ -54,7 +51,6 @@ class UserManager(BaseUserManager):
 		user.is_admin = True
 		user.save(using=self._db)
 		return user
-
 
 class User(AbstractBaseUser):
 	# Properties
@@ -111,6 +107,3 @@ class User(AbstractBaseUser):
 
 	class Meta:
 		ordering = ('id',)
-
-	class JSONAPIMeta:
-		resource_name = "users"
