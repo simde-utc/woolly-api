@@ -8,7 +8,7 @@ class ModelViewSet(viewsets.ModelViewSet):
 		# Add include sub_models
 		include_query = self.request.query_params.get('include')
 		if include_query:
-			queryset = queryset.prefetch_related(include_query)
+			queryset = queryset.prefetch_related(*include_query.split(','))
 
 		# TODO Filter permission ??
 		return queryset
