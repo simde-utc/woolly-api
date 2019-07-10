@@ -84,7 +84,8 @@ class FakeModelFactory(object):
 				'first_name': kwargs.get('first_name', self.faker.first_name()),
 				'last_name':  kwargs.get('last_name',  self.faker.last_name()),
 				# 'birthdate':  kwargs.get('birthdate',  self.faker.date_of_birth()),
-				'usertype':   kwargs.get('usertype',   _get_related('usertype', UserType))
+				'is_admin':   kwargs.get('is_admin',   False),
+				'usertype':   kwargs.get('usertype',   _get_related('usertype', UserType)),
 			}
 
 		if model == UserType:
@@ -229,9 +230,9 @@ class CRUDViewSetTestMixin(object):
 
 		# Get users
 		self.users = {
-			'admin':  User.objects.create_superuser(email="admin@woolly.com"),
-			'user':   User.objects.create_user(email="user@woolly.com"),
-			'other':  User.objects.create_user(email="other@woolly.com"),
+			'admin':  self.modelFactory.create(User, email="admin@woolly.com", is_admin=True),
+			'user':   self.modelFactory.create(User, email="user@woolly.com"),
+			'other':  self.modelFactory.create(User, email="other@woolly.com"),
 			'public': None
 		}
 
