@@ -2,7 +2,8 @@ from django.contrib.sessions.backends.db import SessionStore
 from django.utils.crypto import get_random_string
 from django.core.cache import cache
 
-from authlib.client import OAuth2Session, OAuthException
+from authlib.client import OAuth2Session
+from authlib.common.errors import AuthlibBaseError
 import time
 
 from woolly_api.settings import DEBUG, OAUTH as OAuthConfig
@@ -21,22 +22,22 @@ class OAuthAPI:
 		logout
 		fetch_resource
 	"""
-	provider = 'portal'
 
-	def __init__(self):
+	def __init__(self, provider: str='portal', config: dict=None):
 		"""
 		OAuth2 Client initialisation
 		"""
-		config = OAuthConfig[self.provider]
-		self.oauthClient = OAuth2Session(**config)
+		self.provider = provider
+		self.config = config or OAuthConfig[provider]
+		self.oauthClient = OAuth2Session(**self.config)
 
 	def get_auth_url(self, redirect):
 		"""
 		Return authorization url
 		"""
 		# Get url and state from OAuth server
-		url, state = self.oauthClient.authorization_url(
-			OAuthConfig[self.provider]['authorize_url'])
+		url, state = self.oauthClient.authorization_url(self.config['authorize_url'])
+		
 		# Cache front url with state for 5mins
 		cache.set(state, redirect, 300)
 		return url
@@ -51,8 +52,7 @@ class OAuthAPI:
 			state = request.GET.get('state', '')
 
 			# Get token from code
-			oauthToken = self.oauthClient.fetch_access_token(
-				OAuthConfig[self.provider]['access_token_url'], code=code)
+			oauthToken = self.oauthClient.fetch_access_token(self.config['access_token_url'], code=code)
 
 			# Retrieve user infos from the Portal
 			auth_user_infos = self.fetch_resource('user/?types=*')  # TODO restreindre
@@ -73,9 +73,9 @@ class OAuthAPI:
 
 			return redirection
 
-		except OAuthException as error:
+		except AuthlibBaseError as error:
 			return {
-				'error': 'OAuthException',
+				'error': 'AuthlibBaseError',
 				'message': str(error)
 			}
 
@@ -87,15 +87,15 @@ class OAuthAPI:
 		request.session.flush()
 
 		# Redirect to logout
-		return OAuthConfig[self.provider]['logout_url']
+		return self.config['logout_url']
 
 	def fetch_resource(self, query):
 		"""
-		Return infos from the API if 200 else an OAuthException
+		Return infos from the API if 200 else an AuthlibBaseError
 		"""
-		resp = self.oauthClient.get(OAuthConfig[self.provider]['base_url'] + query)
+		resp = self.oauthClient.get(self.config['base_url'] + query)
 		if resp.status_code == 200:
 			return resp.json()
 		elif resp.status_code == 404:
-			raise OAuthException('Page not found')
-		raise OAuthException('Unknown error')
+			raise AuthlibBaseError('Page not found')
+		raise AuthlibBaseError('Unknown error')
