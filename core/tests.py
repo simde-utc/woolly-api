@@ -2,6 +2,7 @@ from django.urls import reverse, exceptions
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
+from core.helpers import get_resource_name
 
 from copy import deepcopy
 from faker import Faker
@@ -12,11 +13,11 @@ from sales.models import *
 
 # Only admin can do things by default
 DEFAULT_CRUD_PERMISSIONS = {
-	'list': 	{ 'public': False, 	'user': False, 	'other': False, 	'admin': True },
+	'list':     { 'public': False, 	'user': False, 	'other': False, 	'admin': True },
 	'retrieve': { 'public': False, 	'user': False, 	'other': False, 	'admin': True },
-	'create': 	{ 'public': False, 	'user': False, 	'other': False, 	'admin': True },
-	'update': 	{ 'public': False, 	'user': False, 	'other': False, 	'admin': True },
-	'delete': 	{ 'public': False, 	'user': False, 	'other': False, 	'admin': True },
+	'create':   { 'public': False, 	'user': False, 	'other': False, 	'admin': True },
+	'update':   { 'public': False, 	'user': False, 	'other': False, 	'admin': True },
+	'delete':   { 'public': False, 	'user': False, 	'other': False, 	'admin': True },
 }
 
 VISIBILITY_SHORTCUTS = {
@@ -48,6 +49,7 @@ def get_permissions_from_compact(compact):
 def format_date(date):
 	return timezone.make_aware(date, timezone.get_current_timezone(), is_dst=False)
 
+
 class FakeModelFactory(object):
 
 	def __init__(self, seed=None):
@@ -70,11 +72,7 @@ class FakeModelFactory(object):
 
 		def _get_related(kw, model):
 			related = kwargs.get(kw, self.create(model))
-			jsonApiId = {
-				'type': model.JSONAPIMeta.resource_name,
-				'id': 	related.pk if hasattr(related, 'pk') else None,
-			}
-			return jsonApiId if withPk else related
+			return getattr(related, 'pk', None) if withPk else related
 
 		# ============================================
 		# 	Authentication
@@ -82,11 +80,11 @@ class FakeModelFactory(object):
 
 		if model == User:
 			return {
-				'email': 		kwargs.get('email', 		self.faker.email()),
-				'first_name': 	kwargs.get('first_name', 	self.faker.first_name()),
-				'last_name': 	kwargs.get('last_name', 	self.faker.last_name()),
-				# 'birthdate': 	kwargs.get('birthdate', 	self.faker.date_of_birth()),
-				'usertype': 	kwargs.get('usertype', 		_get_related('usertype', UserType))
+				'email':      kwargs.get('email',      self.faker.email()),
+				'first_name': kwargs.get('first_name', self.faker.first_name()),
+				'last_name':  kwargs.get('last_name',  self.faker.last_name()),
+				# 'birthdate':  kwargs.get('birthdate',  self.faker.date_of_birth()),
+				'usertype':   kwargs.get('usertype',   _get_related('usertype', UserType))
 			}
 
 		if model == UserType:
@@ -100,29 +98,29 @@ class FakeModelFactory(object):
 
 		if model == Association:
 			return {
-				'name':		kwargs.get('name', 		self.faker.company()),
-				'fun_id':	kwargs.get('fun_id', 	self.faker.random_digit()),
+				'name':		kwargs.get('name',    self.faker.company()),
+				'fun_id':	kwargs.get('fun_id',  self.faker.random_digit()),
 			}
 
 		# if model == AssociationMember:
 	
 		if model == Sale:
 			return {
-				'name':			kwargs.get('name',			self.faker.company()),
-				'description': 	kwargs.get('description',	self.faker.paragraph()),
-				'association': 	_get_related('association', Association),
-				'is_active': 	kwargs.get('is_active', True),
-				'public': 		kwargs.get('public', 	True),
-				'begin_at':		format_date(kwargs.get('begin_at',
-						self.faker.date_time_this_year(before_now=True, after_now=False
-				))),
-				'end_at': 		format_date(kwargs.get('end_at',
-						self.faker.date_time_this_year(before_now=False, after_now=True
-				))),
+				'name':         kwargs.get('name',          self.faker.company()),
+				'description':  kwargs.get('description',   self.faker.paragraph()),
+				'association':  _get_related('association', Association),
+				'is_active':    kwargs.get('is_active',     True),
+				'public':       kwargs.get('public',        True),
+				'begin_at':     format_date(kwargs.get('begin_at',
+					self.faker.date_time_this_year(before_now=True, after_now=False)
+				)),
+				'end_at':       format_date(kwargs.get('end_at',
+					self.faker.date_time_this_year(before_now=False, after_now=True)
+				)),
 				'max_item_quantity': kwargs.get('max_item_quantity', self.faker.random_number()),
-				'max_payment_date':	 format_date(kwargs.get('max_payment_date',
-					self.faker.date_time_this_year(before_now=False, after_now=True
-				))),
+				'max_payment_date':  format_date(kwargs.get('max_payment_date',
+					self.faker.date_time_this_year(before_now=False, after_now=True)
+				)),
 			}
 
 		# ============================================
@@ -131,25 +129,25 @@ class FakeModelFactory(object):
 
 		if model == ItemGroup:
 			return {
-				'name': 		kwargs.get('name',			self.faker.word()),
-				'quantity': 	kwargs.get('quantity',		self.faker.random_number()),
-				'max_per_user': kwargs.get('max_per_user',	self.faker.random_number()),
+				'name':          kwargs.get('name',         self.faker.word()),
+				'quantity':      kwargs.get('quantity',     self.faker.random_number()),
+				'max_per_user':  kwargs.get('max_per_user', self.faker.random_number()),
 			}
 
 		if model == Item:
 			return {
-				'name': 		kwargs.get('name', self.faker.word()),
-				'description': 	kwargs.get('description', self.faker.paragraph()),
-				'sale':			_get_related('sale', Sale),
-				'group':		_get_related('group', ItemGroup),
-				'usertype': 	_get_related('usertype', UserType),
-				'quantity': 	kwargs.get('quantity', 		self.faker.random_number()),
-				'max_per_user': kwargs.get('max_per_user', 	self.faker.random_number()),
-				'is_active': 	kwargs.get('is_active', 	True),
-				'quantity': 	kwargs.get('quantity', 		self.faker.random_number()),
-				'price': 		float(kwargs.get('price', 	self.faker.random_number()/10.)),
-				'nemopay_id': 	kwargs.get('nemopay_id', 	self.faker.random_number()),
-				'max_per_user': kwargs.get('max_per_user', 	self.faker.random_number()),
+				'name':          kwargs.get('name',         self.faker.word()),
+				'description':   kwargs.get('description',  self.faker.paragraph()),
+				'sale':          _get_related('sale',       Sale),
+				'group':         _get_related('group',      ItemGroup),
+				'usertype':      _get_related('usertype',   UserType),
+				'quantity':      kwargs.get('quantity',     self.faker.random_number()),
+				'max_per_user':  kwargs.get('max_per_user', self.faker.random_number()),
+				'is_active':     kwargs.get('is_active',    True),
+				'quantity':      kwargs.get('quantity',     self.faker.random_number()),
+				'price':         float(kwargs.get('price',  self.faker.random_number()/10.)),
+				'nemopay_id':    kwargs.get('nemopay_id',   self.faker.random_number()),
+				'max_per_user':  kwargs.get('max_per_user', self.faker.random_number()),
 				# 'fields':
 			}
 
@@ -159,22 +157,22 @@ class FakeModelFactory(object):
 
 		if model == Order:
 			return {
-				'owner':		_get_related('owner', User),
-				'sale':			_get_related('sale', Sale),
-				'created_at':	format_date(kwargs.get('created_at', 
-					self.faker.date_time_this_year(before_now=True, after_now=False
-				))),
-				'updated_at':	format_date(kwargs.get('updated_at', 
-					self.faker.date_time_this_year(before_now=True, after_now=False
-				))),
-				'status':		kwargs.get('status', OrderStatus.ONGOING.value),
-				'tra_id':		kwargs.get('tra_id', self.faker.random_number()),
+				'owner':      _get_related('owner', User),
+				'sale':       _get_related('sale',  Sale),
+				'created_at': format_date(kwargs.get('created_at', 
+					self.faker.date_time_this_year(before_now=True, after_now=False)
+				)),
+				'updated_at': format_date(kwargs.get('updated_at', 
+					self.faker.date_time_this_year(before_now=True, after_now=False)
+				)),
+				'status': kwargs.get('status', OrderStatus.ONGOING.value),
+				'tra_id': kwargs.get('tra_id', self.faker.random_number()),
 			}
 
 		if model == OrderLine:
 			return {
-				'item': 	_get_related('item', Item),
-				'order': 	_get_related('order', Order),
+				'item':     _get_related('item',   Item),
+				'order':    _get_related('order',  Order),
 				'quantity': kwargs.get('quantity', self.faker.random_digit()),
 			}
 
@@ -189,24 +187,24 @@ class FakeModelFactory(object):
 
 		if model == Field:
 			return {
-				'name': 	kwargs.get('name', 		self.faker.word()),
-				'type': 	kwargs.get('type', 		self.faker.word()),
-				'default': 	kwargs.get('default', 	self.faker.word()),
+				'name':     kwargs.get('name',    self.faker.word()),
+				'type':     kwargs.get('type',    self.faker.word()),
+				'default':  kwargs.get('default', self.faker.word()),
 				# 'items': 	
 			}
 
 		if model == ItemField:
 			return {
-				'field': 	_get_related('field', Field),
-				'item': 	_get_related('item', Item),
+				'field':    _get_related('field',  Field),
+				'item':     _get_related('item',   Item),
 				'editable': kwargs.get('editable', self.faker.boolean()),
 			}
 
 		if model == OrderLineField:
 			return {
 				'orderlineitem': _get_related('orderlineitem', OrderLineItem),
-				'field': 		 _get_related('field', Field),
-				'value': 		 kwargs.get('value', self.faker.word()),
+				'field':         _get_related('field', Field),
+				'value':         kwargs.get('value',   self.faker.word()),
 			}
 
 		raise NotImplementedError("This model isn't faked yet")
@@ -223,11 +221,11 @@ class CRUDViewSetTestMixin(object):
 		if self.debug:
 			print('')
 
-		# resource_name MUST be specified
+		# Model MUST be specified
 		if not self.model:
-			raise NotImplementedError("Please specify the model")
+			raise ValueError("Please specify the model")
 
-		self.resource_name = self.model.JSONAPIMeta.resource_name
+		self.resource_name = get_resource_name(self.model)
 
 		# Get users
 		self.users = {
@@ -267,17 +265,17 @@ class CRUDViewSetTestMixin(object):
 
 	def _get_url(self, pk=None):
 		"""Helper to get url from resource_name and pk"""
-		try:
-			if pk is None:
-				return reverse(self.resource_name + '-list')
-			else:
-				return reverse(self.resource_name + '-detail', kwargs={ 'pk': pk })
-		except exceptions.NoReverseMatch:
-			self.assertIsNotNone(url, "Route '%s' is not defined" % route['name'])
+		# try:
+		if pk is None:
+			return reverse(self.resource_name + '-list')
+		else:
+			return reverse(self.resource_name + '-detail', kwargs={ 'pk': pk })
+		# except exceptions.NoReverseMatch:
+		# 	self.assertIsNotNone(url, "Route '%s' is not defined" % route['name'])
 
 	def _get_expected_status_code(self, method, allowed, user):
 		if not allowed:
-			return status.HTTP_403_FORBIDDEN
+			return (status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND)
 		if method == 'post':
 			return status.HTTP_201_CREATED
 		if method == 'delete':
@@ -311,9 +309,9 @@ class CRUDViewSetTestMixin(object):
 
 		# Create request
 		HTTP_method = kwargs.get('method', 'get')
-		data = self._parse_data_for_request(data = kwargs.get('data', None), id = kwargs.get('id', None))
+		# data = self._parse_data_for_request(data=kwargs.get('data'), id=kwargs.get('id'))
 		call_method = getattr(self.client, HTTP_method)
-		response = call_method(url, data, format='vnd.api+json')
+		response = call_method(url, kwargs.get('data'), format='json')
 
 		# Get expected status_code 
 		expected_status_code = kwargs.get('expected_status_code', self._get_expected_status_code(HTTP_method, allowed, user))
@@ -323,12 +321,11 @@ class CRUDViewSetTestMixin(object):
 		# Build detailled error message
 		error_message = "for '%s' user" % user
 		if hasattr(response, 'data') and response.data:
-			error_details = ', '.join(
-				data.get('detail', '') + " [%s]" % data['source']['pointer'] \
-				for data in response.data if type(data) is dict
-			)
+			# TODO Improve
+			error_details = response.data.get('detail')
 			error_message += " (%s)" % error_details
-		self.assertEqual(response.status_code, expected_status_code, error_message)
+		assert_method = self.assertEqual if type(expected_status_code) is int else self.assertIn
+		assert_method(response.status_code, expected_status_code, error_message)
 
 
 	def _get_object_attributes(self, user=None, withPk=True):
@@ -361,7 +358,7 @@ class CRUDViewSetTestMixin(object):
 		options['id'] = None if action in ('list', 'create') else self.object.pk
 		options['method'] = action_to_method_map[action]
 		
-		url = self._get_url(pk = options['id'])
+		url = self._get_url(pk=options['id'])
 
 		# Debug
 		if self.debug:

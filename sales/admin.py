@@ -22,6 +22,11 @@ class OrderLineItemInline(admin.TabularInline):
 	extra = 0
 	readonly_fields = ('id',)
 
+class OrderLineFieldInline(admin.TabularInline):
+	model = OrderLineField
+	extra = 0
+	readonly_fields = ('id',)
+
 
 # ============================================
 # 	Association & Sale
@@ -78,7 +83,7 @@ class SaleAdmin(admin.ModelAdmin):
 # ============================================
 
 class ItemAdmin(admin.ModelAdmin):
-	list_display = ('name', 'sale', 'group', 'is_active', 'quantity', 'usertype', 'price', 'max_per_user')
+	list_display = ('name', 'sale', 'group', 'is_active', 'quantity', 'quantity_left', 'usertype', 'price', 'max_per_user')
 	list_filter = ('is_active', 'sale', 'group', 'usertype')
 	list_editable = tuple()
 
@@ -145,7 +150,15 @@ class OrderLineAdmin(admin.ModelAdmin):
 	def owner(self, obj):
 		return obj.order.owner
 
-	list_display = ('id', 'order_id', 'order_status', 'owner', 'sale_name', 'item_name', 'quantity')
+	def get_uuids(self, orderline):
+		return mark_safe("<br>".join(str(orderlineitem.id) \
+			for orderlineitem in orderline.orderlineitems.all()
+		))
+	get_uuids.short_description = 'UUIDs'
+	get_uuids.admin_order_field = 'uuids'
+
+
+	list_display = ('id', 'order_id', 'order_status', 'owner', 'sale_name', 'item_name', 'get_uuids', 'quantity')
 	def get_readonly_fields(self, request, obj=None):
 		return custom_editable_fields(request, obj, ('order', 'item'))
 
@@ -155,6 +168,7 @@ class OrderLineAdmin(admin.ModelAdmin):
 	)
 
 	search_fields = ('item__name', 'order__owner__email', 'order__sale__name')
+	list_filter = ('order__status', 'order__sale__name')
 
 
 # ============================================
@@ -184,6 +198,7 @@ class OrderLineItemAdmin(admin.ModelAdmin):
 
 	list_display = ('id', 'orderline_id', 'order_id', 'owner', 'sale')
 	list_filter = ('orderline__order__sale',) # TODO Not working
+	inlines = (OrderLineFieldInline,)
 
 	def get_readonly_fields(self, request, obj=None):
 		return custom_editable_fields(request, obj, ('orderline',), ('id',))

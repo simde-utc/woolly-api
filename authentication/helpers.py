@@ -1,19 +1,5 @@
-from authlib.specs.rfc7519 import JWTError
 from .models import User, UserType
 from .serializers import UserSerializer
-
-
-def get_jwt_from_request(request):
-	"""
-	Helper to get JWT from request
-	Return None if no JWT
-	"""
-	jwt = request.META.get('HTTP_AUTHORIZATION', None)	# Traité automatiquement par Django
-	if not jwt or jwt == '':
-		return None
-	if jwt[:7] != 'Bearer ':
-		raise JWTError("Authorization header doesn't begin with 'Bearer '")
-	return jwt[7:]		# substring : Bearer ...
 
 
 def find_or_create_user(user_infos):

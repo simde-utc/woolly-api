@@ -1,16 +1,16 @@
 from django.views import View
-from rest_framework_json_api import views
-from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.response import Response
 from django.http import HttpResponse
 
+from core.viewsets import ModelViewSet
 from core.helpers import errorResponse
 from core.permissions import *
 from .serializers import *
 from .permissions import *
 from .models import OrderStatus
 
-from authentication.auth import JWTAuthentication
+from authentication.auth import APIAuthentication
 from core.utils import render_to_pdf, data_to_qrcode
 from django.shortcuts import render
 from io import BytesIO
@@ -21,7 +21,7 @@ import base64
 # 	Association
 # ============================================
 
-class AssociationViewSet(views.ModelViewSet):
+class AssociationViewSet(ModelViewSet):
 	"""
 	Defines the behavior of the association view
 	"""
@@ -30,7 +30,7 @@ class AssociationViewSet(views.ModelViewSet):
 	permission_classes = (IsManagerOrReadOnly,)
 
 	def get_queryset(self):
-		queryset = self.queryset
+		queryset = super().get_queryset()
 
 		# user-association-list
 		if 'user_pk' in self.kwargs:
@@ -39,13 +39,7 @@ class AssociationViewSet(views.ModelViewSet):
 
 		return queryset
 
-class AssociationRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the associations related links
-	"""
-	queryset = Association.objects
-
-class AssociationMemberViewSet(views.ModelViewSet):
+class AssociationMemberViewSet(ModelViewSet):
 	"""
 	Defines the behavior link to the association member view
 	"""
@@ -74,30 +68,29 @@ class AssociationMemberViewSet(views.ModelViewSet):
 		return queryset
 	"""
 
-class AssociationMemberRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the association members related links
-	"""
-	queryset = AssociationMember.objects
-
-
 # ============================================
 # 	Sale
 # ============================================
 
-class SaleViewSet(views.ModelViewSet):
+class SaleViewSet(ModelViewSet):
 	"""
 	Defines the behavior of the sale view
 	"""
+	queryset = Sale.objects.all()
 	serializer_class = SaleSerializer
 	permission_classes = (IsManagerOrReadOnly,)
 
 	def get_queryset(self):
-		queryset = Sale.objects.all()
+		queryset = super().get_queryset()
 					# .filter(items__itemspecifications__user_type__name=self.request.user.usertype.name)
 					# TODO filtrer par date ?
 
-		queryset = queryset.filter(is_active=True, public=True)
+		# queryset = queryset.filter(is_active=True, public=True)
+		if not self.request.GET.get('include_inactive', False):
+			queryset = queryset.filter(is_active=True)
+		if 'pk' not in self.kwargs:
+			queryset = queryset.filter(public=True)
+
 		# TODO V2 : filtering
 		# filters = ('active', )
 		# filterQuery = self.request.query_params.get('filterQuery', None)
@@ -107,23 +100,15 @@ class SaleViewSet(views.ModelViewSet):
 
 		# Association detail route
 		if 'association_pk' in self.kwargs:
-			association_pk = self.kwargs['association_pk']
-			queryset = queryset.filter(association__pk=association_pk)
+			queryset = queryset.filter(association__pk=self.kwargs['association_pk'])
 
 		return queryset
-
-class SaleRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the sales related links
-	"""
-	queryset = Sale.objects
-
 
 # ============================================
 # 	Item
 # ============================================
 
-class ItemGroupViewSet(views.ModelViewSet):
+class ItemGroupViewSet(ModelViewSet):
 	"""
 	Defines the behavior of the itemGroup interactions
 	"""
@@ -131,14 +116,7 @@ class ItemGroupViewSet(views.ModelViewSet):
 	serializer_class = ItemGroupSerializer
 	permission_classes = (IsManagerOrReadOnly,)
 
-class ItemGroupRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the itemGroups related links
-	"""
-	queryset = ItemGroup.objects
-
-
-class ItemViewSet(views.ModelViewSet):
+class ItemViewSet(ModelViewSet):
 	"""
 	Defines the behavior of the item interactions
 	"""
@@ -160,7 +138,10 @@ class ItemViewSet(views.ModelViewSet):
 	"""
 
 	def get_queryset(self):
-		queryset = self.queryset.filter(is_active=True)
+		queryset = super().get_queryset()
+
+		if not self.request.GET.get('include_inactive', False):
+			queryset = queryset.filter(is_active=True)
 
 		if 'sale_pk' in self.kwargs:
 			sale_pk = self.kwargs['sale_pk']
@@ -172,18 +153,11 @@ class ItemViewSet(views.ModelViewSet):
 
 		return queryset
 
-class ItemRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the items related links
-	"""
-	queryset = Item.objects
-
-
 # ============================================
 # 	Order & OrderLine
 # ============================================
 
-class OrderViewSet(views.ModelViewSet):
+class OrderViewSet(ModelViewSet):
 	"""
 	Defines the behavior of the order CRUD
 	"""
@@ -192,17 +166,19 @@ class OrderViewSet(views.ModelViewSet):
 	permission_classes = (IsOrderOwnerOrAdmin,)
 
 	def get_queryset(self):
+		queryset = super().get_queryset()
 		user = self.request.user
-		queryset = self.queryset
 
 		# Anonymous users see nothing
 		if not user.is_authenticated:
 			return None
 
-		# Admins see everything otherwise filter to see only those owned by the user
-		# if not user.is_admin:
-		# 	queryset = queryset.filter(owner=user)
+		# Admins see everything
+		# Otherwise automatically filter to only those owned by the user
+		if not user.is_admin:
+			queryset = queryset.filter(owner=user)
 
+		# Filter per user
 		if 'user_pk' in self.kwargs:
 			user_pk = self.kwargs['user_pk']
 			queryset = queryset.filter(owner__pk=user_pk)
@@ -215,20 +191,17 @@ class OrderViewSet(views.ModelViewSet):
 			# TODO ajout de la limite de temps
 			order = Order.objects \
 				.filter(status__in=OrderStatus.BUYABLE_STATUS_LIST.value) \
-				.get(sale=request.data['sale']['id'], owner=request.user.id)
+				.get(sale=request.data['sale'], owner=request.user.id)
 
 			serializer = OrderSerializer(order)
 			httpStatus = status.HTTP_200_OK
 		except Order.DoesNotExist as err:
 			# Configure new Order
-			serializer = OrderSerializer(data = {
+			serializer = OrderSerializer(data={
 				'sale': request.data['sale'],
-				'owner': {
-					'id': request.user.id,
-					'type': 'users'
-				},
+				'owner': request.user.id,
 				'orderlines': [],
-				'status': OrderStatus.ONGOING.value
+				'status': OrderStatus.ONGOING.value,
 			})
 			serializer.is_valid(raise_exception=True)
 			self.perform_create(serializer)
@@ -238,6 +211,7 @@ class OrderViewSet(views.ModelViewSet):
 		return Response(serializer.data, status=httpStatus, headers=headers)
 
 	def destroy(self, request, *args, **kwargs):
+		"""Doesn't destroy an order but set it as cancelled"""
 		order = self.get_object()
 		if order.status in OrderStatus.CANCELLABLE_LIST.value:
 			# TODO Add time
@@ -248,14 +222,7 @@ class OrderViewSet(views.ModelViewSet):
 			msg = "La commande n'est pas annulable."
 			return errorResponse(msg, [msg], status.HTTP_406_NOT_ACCEPTABLE)
 
-class OrderRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the orders related links
-	"""
-	queryset = Order.objects
-
-
-class OrderLineViewSet(views.ModelViewSet):
+class OrderLineViewSet(ModelViewSet):
 	"""
 	Defines the behavior of the Orderline view
 	"""
@@ -265,7 +232,7 @@ class OrderLineViewSet(views.ModelViewSet):
 
 	def get_queryset(self):
 		user = self.request.user
-		queryset = self.queryset
+		queryset = super().get_queryset()
 
 		# Anonymous users see nothing
 		if not user.is_authenticated:
@@ -277,14 +244,14 @@ class OrderLineViewSet(views.ModelViewSet):
 
 		if 'order_pk' in self.kwargs:
 			order_pk = self.kwargs['order_pk']
-			queryset = OrderLine.objects.all().filter(order__pk=order_pk)
+			queryset = queryset.filter(order__pk=order_pk)
 
 		return queryset
 
 	def create(self, request, *args, **kwargs):
 		# Retrieve Order...
 		try:
-			order = Order.objects.get(pk=request.data['order']['id'])
+			order = Order.objects.get(pk=request.data['order'])
 		# ...or fail
 		except Order.DoesNotExist as err:
 			msg = "Impossible de trouver la commande."
@@ -303,7 +270,7 @@ class OrderLineViewSet(views.ModelViewSet):
 
 		# Try to retrieve a similar OrderLine...
 		try:
-			orderline = OrderLine.objects.get(order=request.data['order']['id'], item=request.data['item']['id'])
+			orderline = OrderLine.objects.get(order=request.data['order'], item=request.data['item'])
 			# TODO ajout de la vérification de la limite de temps
 			serializer = OrderLineSerializer(orderline, data={'quantity': request.data['quantity']}, partial=True)
 
@@ -347,18 +314,11 @@ class OrderLineViewSet(views.ModelViewSet):
 		# 	serializer.save()
 	"""
 
-class OrderLineRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the orderlines related links
-	"""
-	queryset = OrderLine.objects
-
-
 # ============================================
 # 	Field & ItemField
 # ============================================
 
-class FieldViewSet(views.ModelViewSet):
+class FieldViewSet(ModelViewSet):
 	"""
 	Defines the view which display the items of an orderline
 	"""
@@ -366,14 +326,7 @@ class FieldViewSet(views.ModelViewSet):
 	serializer_class = FieldSerializer
 	permission_classes = (IsAdminOrReadOnly,)
 
-class FieldRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the orderlines related links
-	"""
-	queryset = Field.objects
-
-
-class ItemFieldViewSet(views.ModelViewSet):
+class ItemFieldViewSet(ModelViewSet):
 	"""
 	Defines the view which display the items of an orderline
 	"""
@@ -381,29 +334,16 @@ class ItemFieldViewSet(views.ModelViewSet):
 	serializer_class = ItemFieldSerializer
 	permission_classes = (IsManagerOrReadOnly,)
 
-class ItemFieldRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the orderlines related links
-	"""
-	queryset = ItemField.objects
-
 # ============================================
 # 	OrderLineItem & OrderLineField
 # ============================================
 
-class OrderLineItemViewSet(views.ModelViewSet):
+class OrderLineItemViewSet(ModelViewSet):
 	queryset = OrderLineItem.objects.all()
 	serializer_class = OrderLineItemSerializer
 	permission_classes = (IsOrderOwnerReadOnlyOrAdmin,)
 
-class OrderLineItemRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the orderlines related links
-	"""
-	queryset = OrderLineItem.objects
-
-
-class OrderLineFieldViewSet(views.ModelViewSet):
+class OrderLineFieldViewSet(ModelViewSet):
 	"""
 	Defines the view which display the items of an orderline
 	"""
@@ -412,12 +352,16 @@ class OrderLineFieldViewSet(views.ModelViewSet):
 	permission_classes = (IsOrderOwnerReadUpdateOrAdmin,)
 
 	def get_queryset(self):
-		queryset = self.queryset
+		queryset = super().get_queryset()
 		if 'orderlineitem_pk' in self.kwargs:
 			orderlineitem_pk = self.kwargs['orderlineitem_pk']
 			queryset = queryset.filter(orderlineitem__pk=orderlineitem_pk)
 
 		return queryset
+
+	def partial_update(self, request, *args, **kwargs):
+		kwargs['partial'] = True
+		return self.update(request, *args, **kwargs)
 
 	def update(self, request, *args, **kwargs):
 		partial = kwargs.pop('partial', False)
@@ -430,23 +374,15 @@ class OrderLineFieldViewSet(views.ModelViewSet):
 			serializer = OrderLineFieldSerializer(instance)
 		return Response(serializer.data)
 
-class OrderLineFieldRelationshipView(views.RelationshipView):
-	"""
-	Required by JSON API to display the orderlines related links
-	"""
-	queryset = OrderLineField.objects
-
-
 # ============================================
 # 	Billet
 # ============================================
+
 class GeneratePdf(View):
 
 	def get(self, request, *args, **kwargs):
-		# Authenticate by forcing JWT from ?code=...
-		request.META['HTTP_AUTHORIZATION'] = "Bearer " + request.GET.get('code', '')
-		jwtAuth = JWTAuthentication()
-		authUser = jwtAuth.authenticate(request)
+		# Authenticate
+		authUser = APIAuthentication().authenticate(request)
 
 		if authUser is None:
 			return errorResponse("Valid Code Required", [], httpStatus = status.HTTP_401_UNAUTHORIZED)

@@ -1,7 +1,6 @@
 from django.db import models
 from authentication.models import User, UserType
 from enum import Enum
-from functools import reduce
 import uuid
 from core.helpers import custom_editable_fields
 
@@ -24,9 +23,6 @@ class Association(models.Model):
 	class Meta:
 		ordering = ('id',)
 
-	class JSONAPIMeta:
-		resource_name = "associations"
-
 class AssociationMember(models.Model):
 	"""
 	Links an User to an Association
@@ -42,9 +38,6 @@ class AssociationMember(models.Model):
 	class Meta:
 		ordering = ('id',)
 		verbose_name = "Association Member"			
-
-	class JSONAPIMeta:
-		resource_name = "associationmembers"
 
 
 # ============================================
@@ -82,9 +75,6 @@ class Sale(models.Model):
 	class Meta:
 		ordering = ('id',)
 
-	class JSONAPIMeta:
-		resource_name = "sales"
-
 
 # ============================================
 # 	Item
@@ -105,9 +95,6 @@ class ItemGroup(models.Model):
 	class Meta:
 		ordering = ('id',)
 		verbose_name = "Item Group"
-
-	class JSONAPIMeta:
-		resource_name = "itemgroups"
 
 class Item(models.Model):
 	"""
@@ -134,9 +121,8 @@ class Item(models.Model):
 			return None
 		allOrders = self.sale.orders.filter(orderlines__item__pk=self.pk, status__in=OrderStatus.NOT_CANCELLED_LIST.value) \
 						.prefetch_related('orderlines').all()
-		allItemsBought = reduce(lambda acc, order: acc + \
-				reduce(lambda acc2, orderline: acc2 + orderline.quantity, order.orderlines.all(), 0), \
-			allOrders, 0)
+		allItemsBought = sum(orderline.quantity for order in allOrders
+																						for orderline in order.orderlines.filter(item=self).all())
 		return self.quantity - allItemsBought
 
 	def __str__(self):
@@ -144,9 +130,6 @@ class Item(models.Model):
 
 	class Meta:
 		ordering = ('id',)
-
-	class JSONAPIMeta:
-		resource_name = "items"
 
 
 # ============================================
@@ -160,7 +143,7 @@ class OrderStatus(Enum):
 	ONGOING = 0
 	AWAITING_VALIDATION = 1
 	VALIDATED = 2
-	NOT_PAID = 3
+	NOT_PAID = 3 # TODO AWAITING_PAYMENT
 	PAID = 4
 	EXPIRED = 5
 	CANCELLED = 6
@@ -169,7 +152,7 @@ class OrderStatus(Enum):
 	CANCELLABLE_LIST = (NOT_PAID, AWAITING_VALIDATION)
 	# NOT_CANCELLED_LIST = (AWAITING_VALIDATION, VALIDATED, NOT_PAID, PAID) 
 	NOT_CANCELLED_LIST = (PAID, VALIDATED) 
-	BUYABLE_STATUS_LIST = (ONGOING, AWAITING_VALIDATION, NOT_PAID) 
+	BUYABLE_STATUS_LIST = (ONGOING, AWAITING_VALIDATION, NOT_PAID)  # TODO PENDING_LIST
 	VALIDATED_LIST = (VALIDATED, PAID)
 	CANCELLED_LIST = (EXPIRED, CANCELLED)
 
@@ -182,26 +165,23 @@ class Order(models.Model):
 	"""
 	Defines the Order object
 	"""
-	owner 	= models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders') #, editable=False)
-	sale 	= models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='orders') #, editable=False)
+	owner 	= models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders', editable=False)
+	sale 		= models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='orders', editable=False)
 
 	created_at = models.DateTimeField(auto_now_add=True, editable=False)
 	updated_at = models.DateTimeField(auto_now=True)
 
 	status = models.PositiveSmallIntegerField(
-		choices = OrderStatus.choices(),	# Choices is a list of Tuple
-		default = OrderStatus.ONGOING.value
+		choices=OrderStatus.choices(),	# Choices is a list of Tuple
+		default=OrderStatus.ONGOING.value,
 	)
 	tra_id = models.IntegerField(blank=True, null=True, default=None)
 
 	def __str__(self):
-		return "%d - %s ordered by %s" % (self.id, self.sale, self.owner)
+		return "%d %s - %s ordered by %s" % (self.id, OrderStatus(self.status).name, self.sale, self.owner)
 
 	class Meta:
 		ordering = ('id',)
-
-	class JSONAPIMeta:
-		resource_name = "orders"
 
 
 class OrderLine(models.Model):
@@ -218,9 +198,6 @@ class OrderLine(models.Model):
 	class Meta:
 		ordering = ('id',)
 		verbose_name = "Order Line"
-
-	class JSONAPIMeta:
-		resource_name = "orderlines"
 
 
 # ============================================
@@ -242,9 +219,6 @@ class Field(models.Model):
 	class Meta:
 		ordering = ('id',)
 
-	class JSONAPIMeta:
-		resource_name = "fields"
-
 class ItemField(models.Model):
 	"""
 	Links an Item to a Field with additionnal options
@@ -265,9 +239,6 @@ class ItemField(models.Model):
 		ordering = ('id',)
 		verbose_name = "Item Field"
 
-	class JSONAPIMeta:
-		resource_name = "itemfields"
-
 
 class OrderLineItem(models.Model):
 	"""
@@ -283,9 +254,6 @@ class OrderLineItem(models.Model):
 	class Meta:
 		ordering = ('id',)
 		verbose_name = "OrderLine Item"
-
-	class JSONAPIMeta:
-		resource_name = "orderlineitems"
 
 class OrderLineField(models.Model):
 	"""
@@ -305,7 +273,4 @@ class OrderLineField(models.Model):
 	class Meta:
 		ordering = ('id',)
 		verbose_name = "OrderLine Field"
-
-	class JSONAPIMeta:
-		resource_name = "orderlinefields"
 

@@ -11,10 +11,13 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
+import sys
 from woolly_api import settings_confidential as confidentials
 
 # Build paths inside the project like this: use make_path helper or os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 def make_path(rel):
 	return os.path.join(BASE_DIR, rel.replace('/', os.path.sep))
 
@@ -22,10 +25,9 @@ def make_path(rel):
 # 		Services Configuration
 # --------------------------------------------------------------------------
 
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = confidentials.SECRET_KEY
-JWT_SECRET_KEY = confidentials.JWT_SECRET_KEY
-JWT_TTL = 3600
 
 # Payutc & Ginger config
 PAYUTC_KEY = confidentials.PAYUTC_KEY
@@ -60,8 +62,8 @@ ALLOWED_HOSTS = confidentials.ALLOWED_HOSTS
 # SECURE_BROWSER_XSS_FILTER = True
 # SECURE_SSL_REDIRECT = True
 
-SESSION_COOKIE_SECURE = confidentials.HTTPS_ENABLED
-SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+SESSION_COOKIE_SECURE = False # False to enable the use of cookies in ajax requests
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' # cache or cached_db
 
 # CORS headers config
 CORS_ORIGIN_ALLOW_ALL = True
@@ -76,9 +78,9 @@ CORS_ALLOW_METHODS = (
 
 # necessary in addition to the whitelist for protected requests
 CORS_ALLOW_CREDENTIALS = True
-CSRF_COOKIE_HTTPONLY = True  # Useful ??
+CSRF_COOKIE_HTTPONLY = False # False to enable the use of cookies in ajax requests
 CSRF_USE_SESSIONS = False  # Useful ??
-CSRF_TRUSTED_ORIGINS = confidentials.ALLOWED_HOSTS
+CSRF_TRUSTED_ORIGINS = ALLOWED_HOSTS
 
 
 # --------------------------------------------------------------------------
@@ -86,33 +88,32 @@ CSRF_TRUSTED_ORIGINS = confidentials.ALLOWED_HOSTS
 # --------------------------------------------------------------------------
 
 REST_FRAMEWORK = {
-	'PAGE_SIZE': 10,
 	'DEFAULT_AUTHENTICATION_CLASSES': (
 		'rest_framework.authentication.SessionAuthentication',
-		'authentication.auth.JWTAuthentication'
+		'authentication.auth.APIAuthentication',
 	),
-	'DEFAULT_PAGINATION_CLASS': 'rest_framework_json_api.pagination.JsonApiPageNumberPagination',
-	# 'DEFAULT_PAGINATION_CLASS': 'rest_framework_json_api.pagination.PageNumberPagination',
+
+	'PAGE_SIZE': 10,
+	'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+
 	'DEFAULT_PARSER_CLASSES': (
-		'rest_framework_json_api.parsers.JSONParser',
+		'rest_framework.parsers.JSONParser',								# Simple JSON
 		'rest_framework.parsers.FormParser',
 		'rest_framework.parsers.MultiPartParser'
 	),
 	'DEFAULT_RENDERER_CLASSES': (
-		'rest_framework_json_api.renderers.JSONRenderer',
+		'rest_framework.renderers.JSONRenderer',						# Simple JSON
 		# 'rest_framework.renderers.BrowsableAPIRenderer',
-		'core.utils.BrowsableAPIRendererWithoutForms',		# For performance testing
-		'rest_framework.renderers.JSONRenderer',
+		'core.utils.BrowsableAPIRendererWithoutForms',			# For performance testing
 	),
-	'DEFAULT_METADATA_CLASS': 'rest_framework_json_api.metadata.JSONAPIMetadata',
-	'EXCEPTION_HANDLER': 'rest_framework_json_api.exceptions.exception_handler',
+	
+	# 'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
+
 	'TEST_REQUEST_RENDERER_CLASSES': (
-		'rest_framework_json_api.renderers.JSONRenderer',
 		'rest_framework.renderers.MultiPartRenderer',
 		'rest_framework.renderers.JSONRenderer',
 		'rest_framework.renderers.TemplateHTMLRenderer'
 	),
-	'TEST_REQUEST_DEFAULT_FORMAT': 'vnd.api+json',
 }
 
 VIEWSET = {
@@ -140,6 +141,8 @@ DATABASES = {
 		'NAME': 'db.sqlite3',
 	}
 }
+if 'test' in sys.argv and 'sqlite' in DATABASES: # Test database
+	DATABASES['default'] = DATABASES.pop('sqlite')
 
 INSTALLED_APPS = [
 	# Django
@@ -149,10 +152,10 @@ INSTALLED_APPS = [
 	'django.contrib.auth',
 	'django.contrib.contenttypes',
 	'django.contrib.messages',
+	'django_extensions',
 	# Django REST
 	'rest_framework',
 	'corsheaders',
-	'django_extensions',
 	# Woolly
 	'core',
 	'authentication',
@@ -276,7 +279,7 @@ LOGGING = {
 			'filters': ['require_debug_false'],
 			'class': 'logging.handlers.RotatingFileHandler',
 			'filename': make_path('debug.log'),
-			'maxBytes': 1024*1024*15, # 15MB
+			'maxBytes': 1024*1024*15,  # 15MB
 			'backupCount': 5,
 			'formatter': 'verbose',
 		},
