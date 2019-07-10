@@ -36,7 +36,7 @@ class OAuthAPI:
 		Return authorization url
 		"""
 		# Get url and state from OAuth server
-		url, state = self.oauthClient.authorization_url(self.config['authorize_url'])
+		url, state = self.oauthClient.create_authorization_url(self.config['authorize_url'])
 		
 		# Cache front url with state for 5mins
 		cache.set(state, redirect, 300)
