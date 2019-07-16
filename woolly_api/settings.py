@@ -182,9 +182,6 @@ AUTH_USER_MODEL = 'authentication.User'
 
 # Only to access web admin panel
 AUTHENTICATION_BACKENDS = None
-	# 'django.contrib.auth.backends.ModelBackend',
-	# 'authentication.auth.AdminSiteBackend',					# TODO
-# )
 
 # Password validation : https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
 AUTH_PASSWORD_VALIDATORS = [
