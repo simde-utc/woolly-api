@@ -10,7 +10,7 @@ from .serializers import *
 from .permissions import *
 from .models import OrderStatus
 
-from authentication.auth import APIAuthentication
+from authentication.oauth import OAuthAPI
 from core.utils import render_to_pdf, data_to_qrcode
 from django.shortcuts import render
 from io import BytesIO
@@ -189,8 +189,9 @@ class OrderViewSet(ModelViewSet):
 		"""Find if user has a Buyable Order or create"""
 		try:
 			# TODO ajout de la limite de temps
+			# TODO ONGOING or BUYABLE LIST ???
 			order = Order.objects \
-				.filter(status__in=OrderStatus.BUYABLE_STATUS_LIST.value) \
+				.filter(status=OrderStatus.ONGOING.value) \
 				.get(sale=request.data['sale'], owner=request.user.id)
 
 			serializer = OrderSerializer(order)
@@ -382,7 +383,7 @@ class GeneratePdf(View):
 
 	def get(self, request, *args, **kwargs):
 		# Authenticate
-		authUser = APIAuthentication().authenticate(request)
+		authUser = OAuthAPI().authenticate(request)
 
 		if authUser is None:
 			return errorResponse("Valid Code Required", [], httpStatus = status.HTTP_401_UNAUTHORIZED)

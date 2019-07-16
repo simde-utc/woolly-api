@@ -11,8 +11,8 @@ def api_root(request, format=None):
 	"""
 	return Response({
 		# Login & Users
-		'login':              reverse('auth.login',                request=request, format=format),
-		'me':                 reverse('auth.me',                   request=request, format=format),
+		'login':              reverse('login',                     request=request, format=format),
+		'me':                 reverse('me',                        request=request, format=format),
 		'users':              reverse('users-list',                request=request, format=format),
 		'usertypes':          reverse('usertypes-list',            request=request, format=format),
 

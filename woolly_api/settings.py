@@ -89,8 +89,7 @@ CSRF_TRUSTED_ORIGINS = ALLOWED_HOSTS
 
 REST_FRAMEWORK = {
 	'DEFAULT_AUTHENTICATION_CLASSES': (
-		'rest_framework.authentication.SessionAuthentication',
-		'authentication.auth.APIAuthentication',
+		'authentication.oauth.OAuthAPI',
 	),
 
 	'PAGE_SIZE': 10,
@@ -148,7 +147,6 @@ INSTALLED_APPS = [
 	# Django
 	'django.contrib.sessions',
 	'django.contrib.staticfiles',
-	'django.contrib.admin',
 	'django.contrib.auth',
 	'django.contrib.contenttypes',
 	'django.contrib.messages',
@@ -157,6 +155,7 @@ INSTALLED_APPS = [
 	'rest_framework',
 	'corsheaders',
 	# Woolly
+	'woolly_api.admin.AdminConfig', # Replace 'django.contrib.admin',
 	'core',
 	'authentication',
 	'sales',
@@ -182,10 +181,10 @@ MIDDLEWARE = [
 AUTH_USER_MODEL = 'authentication.User'
 
 # Only to access web admin panel
-AUTHENTICATION_BACKENDS = (
+AUTHENTICATION_BACKENDS = None
 	# 'django.contrib.auth.backends.ModelBackend',
-	'authentication.auth.AdminSiteBackend',
-)
+	# 'authentication.auth.AdminSiteBackend',					# TODO
+# )
 
 # Password validation : https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
 AUTH_PASSWORD_VALIDATORS = [

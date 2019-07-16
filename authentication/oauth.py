@@ -1,26 +1,21 @@
-from django.contrib.sessions.backends.db import SessionStore
-from django.utils.crypto import get_random_string
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.exceptions import AuthenticationFailed
 from django.core.cache import cache
 
 from authlib.client import OAuth2Session
 from authlib.common.errors import AuthlibBaseError
-import time
 
-from woolly_api.settings import DEBUG, OAUTH as OAuthConfig
+from woolly_api.settings import OAUTH as OAuthConfig
+from django.contrib.auth import get_user_model
 from .helpers import find_or_create_user
-from .models import User, UserType
-from .serializers import UserSerializer
+
+UserModel = get_user_model()
 
 
-class OAuthAPI:
+class OAuthAPI(SessionAuthentication):
 	"""
-	Accès à l'API du portail des assos ou autre API OAuth
+	Accès à l'API du portail des assos ou autre API OAuth2
 	Utile pour la connexion, la récupération des droits
-	Methods:
-		get_auth_url
-		callback_and_create_session
-		logout
-		fetch_resource
 	"""
 
 	def __init__(self, provider: str='portal', config: dict=None):
@@ -29,14 +24,44 @@ class OAuthAPI:
 		"""
 		self.provider = provider
 		self.config = config or OAuthConfig[provider]
-		self.oauthClient = OAuth2Session(**self.config)
+		self.oauth_client = OAuth2Session(**self.config)
+
+	def get_user_from_request(self, request):
+		"""
+		Get the user from the request session
+		"""
+		# user = getattr(request._request, 'user', None) # TODO
+		if request._request.user.is_authenticated:
+			return request._request.user
+
+		user_id = request.session.get('user_id')
+		if not user_id:
+			return None
+		try:
+			return UserModel.objects.get(pk=user_id)
+		except UserModel.DoesNotExist:
+			raise AuthenticationFailed("user_id does not match a user")
+
+	def authenticate(self, request, **kwargs):
+		"""
+		For rest_framework authentication
+		"""
+		user = self.get_user_from_request(request)
+		if user:
+			# Attach user and CSRF token to the request
+			request.user = user
+			self.enforce_csrf(request)
+			return (user, None)
+		else:
+			return None
+
 
 	def get_auth_url(self, redirect):
 		"""
 		Return authorization url
 		"""
 		# Get url and state from OAuth server
-		url, state = self.oauthClient.create_authorization_url(self.config['authorize_url'])
+		url, state = self.oauth_client.create_authorization_url(self.config['authorize_url'])
 		
 		# Cache front url with state for 5mins
 		cache.set(state, redirect, 300)
@@ -52,7 +77,7 @@ class OAuthAPI:
 			state = request.GET.get('state', '')
 
 			# Get token from code
-			oauthToken = self.oauthClient.fetch_access_token(self.config['access_token_url'], code=code)
+			oauthToken = self.oauth_client.fetch_access_token(self.config['access_token_url'], code=code)
 
 			# Retrieve user infos from the Portal
 			auth_user_infos = self.fetch_resource('user/?types=*')  # TODO restreindre
@@ -60,7 +85,8 @@ class OAuthAPI:
 			# Find or create User
 			user = find_or_create_user(auth_user_infos)
 
-			# Create session
+			# Login and Create session
+			request.user = user
 			request.session['user_id'] = user.pk
 			request.session['portal_token'] = oauthToken
 
@@ -68,10 +94,7 @@ class OAuthAPI:
 			redirection = cache.get(state)
 			cache.delete(state)
 
-			if redirection == None:
-				return 'root'
-
-			return redirection
+			return redirection or 'root'
 
 		except AuthlibBaseError as error:
 			return {
@@ -93,7 +116,7 @@ class OAuthAPI:
 		"""
 		Return infos from the API if 200 else an AuthlibBaseError
 		"""
-		resp = self.oauthClient.get(self.config['base_url'] + query)
+		resp = self.oauth_client.get(self.config['base_url'] + query)
 		if resp.status_code == 200:
 			return resp.json()
 		elif resp.status_code == 404:

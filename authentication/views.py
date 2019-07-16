@@ -5,10 +5,9 @@ from core.viewsets import ModelViewSet
 from rest_framework.permissions import AllowAny
 from .permissions import *
 
-from .auth import APIAuthentication
 from .serializers import UserSerializer, UserTypeSerializer
 from .models import UserType, User
-from .services import OAuthAPI
+from .oauth import OAuthAPI
 
 
 class UserViewSet(ModelViewSet):
@@ -32,7 +31,7 @@ class UserViewSet(ModelViewSet):
 
 	# Block create and redirect to login
 	def create(self, request, *args, **kwargs):
-		return redirect('auth.login')
+		return redirect('login')
 
 	# TODO : block self is_admin -> True
 	# def update(self, request, *args, **kwargs):
@@ -81,13 +80,14 @@ class AuthView:
 		"""
 		resp = cls.oauth.callback_and_create_session(request)
 		# !! Can return dict errors
+		# TODO Raise and catch error
 		if 'error' in resp:
 			return JsonResponse(resp)
 		return redirect(resp)
 
 	@classmethod
 	def me(cls, request):
-		APIAuthentication().authenticate(request)
+		cls.oauth.authenticate(request)
 		me = request.user
 		if me.is_anonymous:
 			user = None
