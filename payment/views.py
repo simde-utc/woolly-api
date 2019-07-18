@@ -1,10 +1,9 @@
 from django.utils import timezone
 from functools import reduce
 
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.decorators import *
-from django.http import JsonResponse
 from django.urls import reverse
 from core.helpers import errorResponse
 from django.core.mail import EmailMessage
@@ -19,17 +18,13 @@ from authentication.oauth import OAuthAuthentication
 from .services.payutc import Payutc
 
 
-# TODO Check if quantities exists first
-# orderline.item.group.max_per_user 
-
-
 # TODO
 class PaymentView:
 	pass
 
 @api_view(['GET'])
-@authentication_classes((OAuthAuthentication,))
-# @permission_classes((IsOwner,))
+@authentication_classes([OAuthAuthentication])
+@permission_classes([IsOrderOwnerOrAdmin])
 def pay(request, pk):
 	"""
 	Permet le paiement d'une order
@@ -45,7 +40,7 @@ def pay(request, pk):
 	# 1. Retrieve Order
 	try:
 		# TODO ajout de la limite de temps
-		order = Order.objects.filter(owner=request.user) \
+		order = Order.objects.filter(owner__pk=request.user.pk) \
 					.filter(status__in=OrderStatus.BUYABLE_STATUS_LIST.value) \
 					.prefetch_related('sale', 'orderlines', 'owner') \
 					.get(pk=pk)
@@ -92,7 +87,7 @@ def pay(request, pk):
 		'status': 'NOT_PAID',
 		'url': transaction['url']
 	}
-	return JsonResponse(resp, status=status.HTTP_200_OK)
+	return Response(resp, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -258,7 +253,7 @@ def updateOrderStatus(order, transaction):
 			'status': OrderStatus.NOT_PAID.name,
 			'url': PAYUTC_TRANSACTION_BASE_URL + str(transaction['id'])
 		}
-	return JsonResponse(resp, status=status.HTTP_200_OK)
+	return Response(resp, status=status.HTTP_200_OK)
 
 
 # OrderLine
