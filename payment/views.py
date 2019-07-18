@@ -15,7 +15,7 @@ from sales.serializers import *
 from sales.permissions import *
 
 from woolly_api.settings import PAYUTC_KEY, PAYUTC_TRANSACTION_BASE_URL
-from authentication.oauth import OAuthAPI
+from authentication.oauth import OAuthAuthentication
 from .services.payutc import Payutc
 
 
@@ -28,7 +28,7 @@ class PaymentView:
 	pass
 
 @api_view(['GET'])
-@authentication_classes((OAuthAPI,))
+@authentication_classes((OAuthAuthentication,))
 # @permission_classes((IsOwner,))
 def pay(request, pk):
 	"""

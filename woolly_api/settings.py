@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 import os
 import sys
 from woolly_api import settings_confidential as confidentials
+from corsheaders.defaults import default_headers
 
 # Build paths inside the project like this: use make_path helper or os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -62,18 +63,16 @@ SECURE_BROWSER_XSS_FILTER = True
 SESSION_COOKIE_SECURE = False # False to enable the use of cookies in ajax requests
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' # cache or cached_db
 
-# Cross-Origin Resource Sharing protection
-CORS_ORIGIN_ALLOW_ALL = DEBUG
-CORS_ALLOW_CREDENTIALS = True
-CORS_ORIGIN_WHITELIST = confidentials.CORS_ORIGIN_WHITELIST
-
 # Cross Site Request Foregery protection
 CSRF_COOKIE_SECURE = HTTPS_ENABLED
 CSRF_TRUSTED_ORIGINS = ALLOWED_HOSTS
 CSRF_COOKIE_HTTPONLY = False      # False to enable the use of cookies in ajax requests
 CSRF_USE_SESSIONS = False         # False to enable the use of cookies in ajax requests
-CSRF_HEADER_NAME = 'X-CSRFTOKEN'
-CSRF_COOKIE_NAME = 'CSRFTOKEN'
+
+# Cross-Origin Resource Sharing protection
+CORS_ORIGIN_ALLOW_ALL = DEBUG
+CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_WHITELIST = confidentials.CORS_ORIGIN_WHITELIST
 
 
 # --------------------------------------------------------------------------
