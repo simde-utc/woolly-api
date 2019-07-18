@@ -1,6 +1,9 @@
 from django.contrib.admin.apps import AdminConfig as DefaultAdminConfig
 from django.contrib.admin import AdminSite as DefaultAdminSite
 from django.utils.translation import gettext_lazy as _
+from django.contrib import auth as django_auth
+
+from django.http import HttpResponseNotFound, HttpResponseForbidden
 from django.shortcuts import redirect
 from django.urls import reverse
 
@@ -28,21 +31,38 @@ class AdminSite(DefaultAdminSite):
 
 	def login(self, request, extra_context=None):
 		"""
-		Redirect to API Login and Check Permissions
+		Try login user, redirect to API Login if needed
+		and check Permissions
+		There is no form
 		"""
-		# Login if needed
-		if not request.user.is_authenticated:
+		# Try to authenticate from session directly as there is no form
+		user = django_auth.authenticate(request)
+
+		# No user in session, redirect to API Login
+		if not user:
 			url = reverse('login') + '?redirection=' + request.get_full_path()
 			return redirect(url)
 
-		# Check if allowed to login to the admin site
+		# Login user from backend
+		request.user = user
+		django_auth.login(request, user)
+
+		# Check if allowed to access to the admin site
 		if self.has_permission(request):
-			return redirect(request.GET.get('next', 'admin'))
+			return redirect(request.GET.get('next', 'admin:index'))
 		else:
-			return redirect('root')
+			return HttpResponseForbidden()
 
 	def logout(self, request, extra_context=None):
 		"""
 		Redirect to API Logout
 		"""
 		return redirect('logout')
+
+	def password_change(self, request, extra_context=None):
+		"""No password change"""
+		return HttpResponseNotFound()
+
+	def password_change_done(self, request, extra_context=None):
+		"""No password change"""
+		return HttpResponseNotFound()

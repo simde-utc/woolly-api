@@ -17,9 +17,9 @@ from woolly_api import settings_confidential as confidentials
 # Build paths inside the project like this: use make_path helper or os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-
 def make_path(rel):
 	return os.path.join(BASE_DIR, rel.replace('/', os.path.sep))
+
 
 # --------------------------------------------------------------------------
 # 		Services Configuration
@@ -38,16 +38,16 @@ GINGER_SERVER_URL = 'https://assos.utc.fr/ginger/v1/'
 # Portail des Assos config
 OAUTH = {
 	'portal': {
-		'client_id': 		confidentials.PORTAL['id'],
-		'client_secret': 	confidentials.PORTAL['key'],
-		'redirect_uri': 	confidentials.PORTAL['callback'],
-		'base_url': 		'https://assos.utc.fr/api/v1/',
-		'authorize_url': 	'https://assos.utc.fr/oauth/authorize',
+		'client_id':        confidentials.PORTAL['id'],
+		'client_secret':    confidentials.PORTAL['key'],
+		'redirect_uri':     confidentials.PORTAL['callback'],
+		'base_url':         'https://assos.utc.fr/api/v1/',
+		'authorize_url':    'https://assos.utc.fr/oauth/authorize',
 		'access_token_url': 'https://assos.utc.fr/oauth/token',
-		'login_url': 		'https://assos.utc.fr/login',
-		'logout_url': 		'https://assos.utc.fr/logout',
-		'scope': 			'user-get-info user-get-roles user-get-assos-members-joined-now'
-	}
+		'login_url':        'https://assos.utc.fr/login',
+		'logout_url':       'https://assos.utc.fr/logout',
+		'scope':            'user-get-info user-get-roles user-get-assos-members-joined-now'
+	},
 }
 
 # --------------------------------------------------------------------------
@@ -67,14 +67,7 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' # cache or cached_
 
 # CORS headers config
 CORS_ORIGIN_ALLOW_ALL = True
-CORS_ALLOW_METHODS = (
-	'GET',
-	'POST',
-	'PUT',
-	'PATCH',
-	'OPTIONS',
-	'DELETE',
-)
+CORS_ALLOW_METHODS = ('GET', 'POST', 'PUT', 'PATCH', 'OPTIONS', 'DELETE')
 
 # necessary in addition to the whitelist for protected requests
 CORS_ALLOW_CREDENTIALS = True
@@ -89,7 +82,7 @@ CSRF_TRUSTED_ORIGINS = ALLOWED_HOSTS
 
 REST_FRAMEWORK = {
 	'DEFAULT_AUTHENTICATION_CLASSES': (
-		'authentication.oauth.OAuthAPI',
+		'authentication.oauth.OAuthAuthentication',
 	),
 
 	'PAGE_SIZE': 10,
@@ -167,21 +160,24 @@ ROOT_URLCONF = 'woolly_api.urls'
 WSGI_APPLICATION = 'woolly_api.wsgi.application'
 
 MIDDLEWARE = [
-	'django.contrib.sessions.middleware.SessionMiddleware',
 	'django.middleware.security.SecurityMiddleware',
+	'django.contrib.sessions.middleware.SessionMiddleware',
 	'corsheaders.middleware.CorsMiddleware',
-	'django.middleware.common.CommonMiddleware',
-	'django.middleware.clickjacking.XFrameOptionsMiddleware',
-	'django.middleware.csrf.CsrfViewMiddleware',
 	'django.contrib.auth.middleware.AuthenticationMiddleware',
+	'django.middleware.common.CommonMiddleware',
+	'django.middleware.csrf.CsrfViewMiddleware',
+	'django.middleware.clickjacking.XFrameOptionsMiddleware',
 	'django.contrib.messages.middleware.MessageMiddleware',
 ]
 
 # Authentication
+LOGIN_URL = 'login'
 AUTH_USER_MODEL = 'authentication.User'
 
 # Only to access web admin panel
-AUTHENTICATION_BACKENDS = None
+AUTHENTICATION_BACKENDS = (
+	'authentication.oauth.OAuthBackend',
+)
 
 # Password validation : https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
 AUTH_PASSWORD_VALIDATORS = [

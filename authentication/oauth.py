@@ -1,3 +1,4 @@
+from django.contrib.auth.backends import ModelBackend
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from django.core.cache import cache
@@ -11,8 +12,35 @@ from .helpers import find_or_create_user
 
 UserModel = get_user_model()
 
+class OAuthError(Exception):
+	"""
+	OAuth Error
+	(TODO Will be) Useful to send error responses
+	"""
+	pass
 
-class OAuthAPI(SessionAuthentication):
+def get_user_from_request(request):
+	"""
+	Get the user from the request session
+	Can debug logged user like this:
+	> return UserModel(email='test@woolly.com') # DEBUG
+	"""
+	# Try to get the user logged in the request
+	user = (getattr(request, '_request', request)).user
+	if user.is_authenticated:
+		return user
+
+	# Get the user from the session
+	user_id = request.session.get('user_id')
+	if not user_id:
+		return None
+	try:
+		return UserModel.objects.get(pk=user_id)
+	except UserModel.DoesNotExist:
+		raise AuthenticationFailed("user_id does not match a user")
+
+
+class OAuthAPI:
 	"""
 	Accès à l'API du portail des assos ou autre API OAuth2
 	Utile pour la connexion, la récupération des droits
@@ -26,37 +54,7 @@ class OAuthAPI(SessionAuthentication):
 		self.config = config or OAuthConfig[provider]
 		self.oauth_client = OAuth2Session(**self.config)
 
-	def get_user_from_request(self, request):
-		"""
-		Get the user from the request session
-		"""
-		# user = getattr(request._request, 'user', None) # TODO
-		if request._request.user.is_authenticated:
-			return request._request.user
-
-		user_id = request.session.get('user_id')
-		if not user_id:
-			return None
-		try:
-			return UserModel.objects.get(pk=user_id)
-		except UserModel.DoesNotExist:
-			raise AuthenticationFailed("user_id does not match a user")
-
-	def authenticate(self, request, **kwargs):
-		"""
-		For rest_framework authentication
-		"""
-		user = self.get_user_from_request(request)
-		if user:
-			# Attach user and CSRF token to the request
-			request.user = user
-			self.enforce_csrf(request)
-			return (user, None)
-		else:
-			return None
-
-
-	def get_auth_url(self, redirect):
+	def get_auth_url(self, redirection: str) -> str:
 		"""
 		Return authorization url
 		"""
@@ -64,45 +62,40 @@ class OAuthAPI(SessionAuthentication):
 		url, state = self.oauth_client.create_authorization_url(self.config['authorize_url'])
 		
 		# Cache front url with state for 5mins
-		cache.set(state, redirect, 300)
+		cache.set(state, redirection, 300)
 		return url
 
-	def callback_and_create_session(self, request):
+	def callback_and_create_session(self, request) -> str:
 		"""
 		Get token, user informations, store these and redirect
 		"""
+		# Get code and state from request
+		code = request.GET.get('code', '')
+		state = request.GET.get('state', '')
+
+		# Get token from code
 		try:
-			# Get code and state from request
-			code = request.GET.get('code', '')
-			state = request.GET.get('state', '')
-
-			# Get token from code
 			oauthToken = self.oauth_client.fetch_access_token(self.config['access_token_url'], code=code)
-
-			# Retrieve user infos from the Portal
-			auth_user_infos = self.fetch_resource('user/?types=*')  # TODO restreindre
-
-			# Find or create User
-			user = find_or_create_user(auth_user_infos)
-
-			# Login and Create session
-			request.user = user
-			request.session['user_id'] = user.pk
-			request.session['portal_token'] = oauthToken
-
-			# Get front redirection from cached state
-			redirection = cache.get(state)
-			cache.delete(state)
-
-			return redirection or 'root'
-
 		except AuthlibBaseError as error:
-			return {
-				'error': 'AuthlibBaseError',
-				'message': str(error)
-			}
+			raise OAuthError(error)
 
-	def logout(self, request, redirection=None):
+		# Retrieve user infos from the Portal
+		auth_user_infos = self.fetch_resource('user/?types=*')  # TODO restreindre
+
+		# Find or create User
+		user = find_or_create_user(auth_user_infos)
+
+		# Login and Create session
+		request.user = user
+		request.session['user_id'] = user.pk
+		request.session['portal_token'] = oauthToken
+
+		# Get front redirection from cached state
+		redirection = cache.get(state)
+		cache.delete(state)
+		return redirection or 'root'
+
+	def logout(self, request, redirection: str=None):
 		"""
 		Logout the user from Woolly and redirect to the provider's logout
 		"""
@@ -112,13 +105,47 @@ class OAuthAPI(SessionAuthentication):
 		# Redirect to logout
 		return self.config['logout_url']
 
-	def fetch_resource(self, query):
+	def fetch_resource(self, query: str):
 		"""
-		Return infos from the API if 200 else an AuthlibBaseError
+		Return infos from the API if 200 else an OAuthError
 		"""
 		resp = self.oauth_client.get(self.config['base_url'] + query)
 		if resp.status_code == 200:
 			return resp.json()
 		elif resp.status_code == 404:
-			raise AuthlibBaseError('Page not found')
-		raise AuthlibBaseError('Unknown error')
+			raise OAuthError('Resource not found')
+		raise OAuthError('Unknown error')
+
+
+class OAuthBackend(ModelBackend):
+	"""
+	django.contrib.auth custom Backend with OAuth
+	"""
+
+	def authenticate(self, request, **kwargs):
+		"""
+		For rest_framework authentication
+		"""
+		return get_user_from_request(request)
+
+	def get_user(self, user_id):
+		try:
+			return UserModel.objects.get(pk=user_id)
+		except UserModel.DoesNotExist:
+			return None
+
+class OAuthAuthentication(SessionAuthentication):
+	"""
+	rest_framework custom Authentication with OAuth
+	"""
+
+	def authenticate(self, request, **kwargs):
+		"""
+		For rest_framework authentication
+		"""
+		user = get_user_from_request(request)
+		if user:
+			self.enforce_csrf(request)
+			return (user, None)
+		else:
+			return None
