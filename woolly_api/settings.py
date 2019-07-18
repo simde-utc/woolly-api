@@ -25,10 +25,6 @@ def make_path(rel):
 # 		Services Configuration
 # --------------------------------------------------------------------------
 
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = confidentials.SECRET_KEY
-
 # Payutc & Ginger config
 PAYUTC_KEY = confidentials.PAYUTC_KEY
 PAYUTC_TRANSACTION_BASE_URL = 'https://payutc.nemopay.net/validation?tra_id='
@@ -51,29 +47,33 @@ OAUTH = {
 }
 
 # --------------------------------------------------------------------------
-# 		Cors & Debug
+# 		Debug & Security
 # --------------------------------------------------------------------------
 
-# SECURITY WARNING: don't run with debug turned on in production!
+# SECURITY WARNING: don't run with DEBUG turned on in production!
 DEBUG = confidentials.DEBUG
+SECRET_KEY = confidentials.SECRET_KEY
 ALLOWED_HOSTS = confidentials.ALLOWED_HOSTS
+HTTPS_ENABLED = getattr(confidentials, 'HTTPS_ENABLED', False)
 
-# CSRF_COOKIE_SECURE = True
-# SECURE_BROWSER_XSS_FILTER = True
-# SECURE_SSL_REDIRECT = True
+SECURE_SSL_REDIRECT = HTTPS_ENABLED
+SECURE_BROWSER_XSS_FILTER = True
 
 SESSION_COOKIE_SECURE = False # False to enable the use of cookies in ajax requests
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' # cache or cached_db
 
-# CORS headers config
-CORS_ORIGIN_ALLOW_ALL = True
-CORS_ALLOW_METHODS = ('GET', 'POST', 'PUT', 'PATCH', 'OPTIONS', 'DELETE')
-
-# necessary in addition to the whitelist for protected requests
+# Cross-Origin Resource Sharing protection
+CORS_ORIGIN_ALLOW_ALL = DEBUG
 CORS_ALLOW_CREDENTIALS = True
-CSRF_COOKIE_HTTPONLY = False # False to enable the use of cookies in ajax requests
-CSRF_USE_SESSIONS = False  # Useful ??
+CORS_ORIGIN_WHITELIST = confidentials.CORS_ORIGIN_WHITELIST
+
+# Cross Site Request Foregery protection
+CSRF_COOKIE_SECURE = HTTPS_ENABLED
 CSRF_TRUSTED_ORIGINS = ALLOWED_HOSTS
+CSRF_COOKIE_HTTPONLY = False      # False to enable the use of cookies in ajax requests
+CSRF_USE_SESSIONS = False         # False to enable the use of cookies in ajax requests
+CSRF_HEADER_NAME = 'X-CSRFTOKEN'
+CSRF_COOKIE_NAME = 'CSRFTOKEN'
 
 
 # --------------------------------------------------------------------------

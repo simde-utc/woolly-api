@@ -1,6 +1,7 @@
 from django.contrib.auth.backends import ModelBackend
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.exceptions import AuthenticationFailed
+from django.contrib import auth as django_auth
 from django.core.cache import cache
 
 from authlib.client import OAuth2Session
@@ -70,8 +71,8 @@ class OAuthAPI:
 		Get token, user informations, store these and redirect
 		"""
 		# Get code and state from request
-		code = request.GET.get('code', '')
-		state = request.GET.get('state', '')
+		code = request.GET['code']
+		state = request.GET['state']
 
 		# Get token from code
 		try:
@@ -85,8 +86,9 @@ class OAuthAPI:
 		# Find or create User
 		user = find_or_create_user(auth_user_infos)
 
-		# Login and Create session
+		# Login user into Django and Create session
 		request.user = user
+		django_auth.login(request, user)
 		request.session['user_id'] = user.pk
 		request.session['portal_token'] = oauthToken
 
@@ -99,8 +101,8 @@ class OAuthAPI:
 		"""
 		Logout the user from Woolly and redirect to the provider's logout
 		"""
-		# Delete session
-		request.session.flush()
+		# Logout from Django
+		django_auth.logout(request)
 
 		# Redirect to logout
 		return self.config['logout_url']
