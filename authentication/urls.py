@@ -4,13 +4,16 @@ from django.urls import re_path, path, include
 
 from core.helpers import gen_url_set, merge_sets
 from .views import *
+from sales.views import *
 
-
-# JSON API Resource routes
 urlpatterns = merge_sets(
-	gen_url_set('users', UserViewSet),
-	gen_url_set('usertypes', UserTypeViewSet),
-	gen_url_set(['users', 'usertypes'], UserTypeViewSet),
+	# User
+	gen_url_set(UserViewSet),
+	gen_url_set([UserViewSet, AssociationViewSet]),
+	gen_url_set([UserViewSet, OrderViewSet]),
+
+	# Usertype
+	gen_url_set(UserTypeViewSet),
 )
 
 # Addtionnal API endpoints for Authentication
@@ -21,7 +24,7 @@ urlpatterns += [
 	path('auth/logout',           csrf_exempt(AuthView.logout),   name='logout'),
 
 	# Only to get Login and Logout buttons in the BrowsableAPI, not actually working
-  path('auth/', 				        include('rest_framework.urls')),
+	path('auth/',                 include('rest_framework.urls')),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)

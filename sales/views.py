@@ -390,14 +390,13 @@ class OrderLineFieldViewSet(ModelViewSet):
 @api_view(['GET'])
 @authentication_classes([OAuthAuthentication])
 @permission_classes([IsOrderOwnerOrAdmin])
-def generate_pdf(request, *args, **kwargs):
+def generate_pdf(request, pk:int, **kwargs):
 	# Get order
-	order_pk = kwargs.get('order_pk', None)
 	try:
 		order = Order.objects.all() \
 					.prefetch_related('orderlines', 'orderlines__orderlineitems', 'orderlines__item',
 						'orderlines__orderlineitems__orderlinefields', 'orderlines__orderlineitems__orderlinefields__field') \
-					.get(pk=order_pk)
+					.get(pk=pk)
 	except Order.DoesNotExist as e:
 		return errorResponse('La commande est introuvable', [], httpStatus=status.HTTP_404_NOT_FOUND)
 

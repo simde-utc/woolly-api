@@ -18,7 +18,7 @@ class ModelViewSet(viewsets.ModelViewSet):
 			field_lookup = '__pk' # TODO
 			nested_url_filters[key.replace('_pk', '__pk')] = value
 
-		pp(nested_url_filters)
+		# pp(nested_url_filters)
 		# import pdb; pdb.set_trace()
 
 		# if nested_url_filters:

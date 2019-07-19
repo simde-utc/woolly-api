@@ -18,7 +18,7 @@ def api_root(request, format=None):
 
 		# Associations
 		'associations':       reverse('associations-list',         request=request, format=format),
-		'associationmembers': reverse('associationmembers-list',   request=request, format=format),
+		# 'associationmembers': reverse('associationmembers-list',   request=request, format=format),
 
 		# Sales & Item
 		'sales':              reverse('sales-list',                request=request, format=format),
@@ -31,7 +31,6 @@ def api_root(request, format=None):
 
 		# Fields
 		'fields':             reverse('fields-list',               request=request, format=format),
-		# INUTILE ??
 		'itemfields':         reverse('itemfields-list',           request=request, format=format),
 		'orderlinefields':    reverse('orderlinefields-list',      request=request, format=format),
 		'orderlineitems':     reverse('orderlineitems-list',       request=request, format=format),

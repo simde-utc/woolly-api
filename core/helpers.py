@@ -1,12 +1,10 @@
 from django.http import JsonResponse
 from rest_framework import status
-from django.urls import re_path, path # TODO
+from django.urls import path
 from django.db import models
 
 from rest_framework.viewsets import ModelViewSet
 from typing import Sequence, Dict, Union, Tuple
-
-NestedPath = Union[str, Sequence[str]]
 
 
 def filter_dict_keys(obj: dict, whitelist: Sequence):
@@ -80,12 +78,12 @@ def _get_names_and_model(step) -> str:
 
 	return singular, pluralize(singular), model
 
-def build_nested_url(path: NestedPath, converters: Dict[str, str]={}) -> Tuple[str, str]:
+def build_nested_url(path, converters: Dict[str, str]={}) -> Tuple[str, str]:
 	"""
 	Build a nested url of the following shape:
-	[step_plural/<(uuid,int,...):step_singular/<():pk>]resource_plural
+	[step_plural/<(uuid,int,...):step_singular>]/resource_plural/<(...):pk>
 	"""
-	if type(path) is str:
+	if not isinstance(path, (list, tuple)):
 		path = [path]
 
 	last_i = len(path) - 1
@@ -105,77 +103,28 @@ def build_nested_url(path: NestedPath, converters: Dict[str, str]={}) -> Tuple[s
 
 	return '/'.join(url), '-'.join(name)
 
-
-def gen_url_set_2(viewsets: Sequence[ModelViewSet], **kwargs):
+def gen_url_set(viewsets: Union[ModelViewSet, Sequence[ModelViewSet]],
+								converters: Dict[str, str]={}, path_options: dict={}):
 	"""
 	Generate a set of URLs with the right paths and names
 	from the list of nested viewsets
 	"""
-
 	# Build base url route & name
-	url, name = build_nested_url(viewsets, kwargs.get('converters', {}))
+	url, name = build_nested_url(viewsets, converters)
 
 	# Build url patterns
-	viewset = viewsets[-1]
-	path_options = kwargs.get('path_options', {})
-	list = {
+	viewset = viewsets[-1] if isinstance(viewsets, (list, tuple)) else viewsets
+	list_params = {
 		'route': url.rsplit('/', 1)[0], 	# Remove last model_pk 
 		'name': f"{name}-list",
 		'view': viewset.as_view(VIEWSET_METHODS['list']),
 		**path_options.get('list', path_options),
 	}
-	detail = {
+	detail_params = {
 		'route': url,
 		'name': f"{name}-detail",
 		'view': viewset.as_view(VIEWSET_METHODS['detail']),
 		**path_options.get('detail', path_options),
 	}
 
-	return [ re_path(**route_params) for route_params in (list, detail) ]
-
-
-def gen_url_set(path, viewset):
-	"""
-	@brief      Helper to easily generate the right url pattern set
-	
-	@param      path                 The string representing the resource in the url (plural)
-	@param      viewset               The resource ModelViewSet
-	
-	@return     A list of url pattern
-	"""
-
-	# ===== Build base url
-	if type(path) is str:       # Simple version
-		base_url = r'^' + path
-		base_name = path
-	else:                       # Nested version
-		base_url = r'^'
-		base_name = ''
-
-		for step in path[:-1]:
-			# Build base url route & name
-			base_url += step + r'/(?P<' + step + r'_pk>[^/.]+)/'
-			base_name += step + '-'
-
-		resource_name = path[-1]
-		base_url += resource_name
-		base_name += resource_name
-	# TODO Assert last step is resource_name
-	# TODO gen_url_set(*viewsets)
-
-	# ===== Build url patterns
-	list = {
-		'route': base_url + '$',
-		'view': viewset.as_view(VIEWSET_METHODS['list']),
-		'name': base_name + '-list',
-	}
-
-	# Simpler to use [^/.]+
-	# detail_pk_regex = '[0-9a-f-]+' if pk_is_uuid else '[0-9]+'
-	detail = {
-		'route': base_url + r'/(?P<pk>[^/.]+)$',
-		'view': viewset.as_view(VIEWSET_METHODS['detail']),
-		'name': base_name + '-detail',
-	}
-
-	return [ re_path(**route) for route in (list, detail) ]
+	return [ path(**route_params) for route_params in (list_params, detail_params) ]
