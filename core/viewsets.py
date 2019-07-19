@@ -10,7 +10,24 @@ class ModelViewSet(viewsets.ModelViewSet):
 		if include_query:
 			queryset = queryset.prefetch_related(*include_query.split(','))
 
+		# Filter according to sub urls
+		from pprint import pprint as pp
+		pp(self.kwargs)
+		nested_url_filters = {}
+		for key, value in self.kwargs.items():
+			field_lookup = '__pk' # TODO
+			nested_url_filters[key.replace('_pk', '__pk')] = value
+
+		pp(nested_url_filters)
+		# import pdb; pdb.set_trace()
+
+		# if nested_url_filters:
+		# 	queryset = queryset.filter(**nested_url_filters)
+
+
+
 		# TODO Filter permission ??
+
 		return queryset
 
 	# def get_object(self):

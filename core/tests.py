@@ -2,7 +2,7 @@ from django.urls import reverse, exceptions
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
-from core.helpers import get_resource_name
+from core.helpers import get_model_name, pluralize
 
 from copy import deepcopy
 from faker import Faker
@@ -226,7 +226,7 @@ class CRUDViewSetTestMixin(object):
 		if not self.model:
 			raise ValueError("Please specify the model")
 
-		self.resource_name = get_resource_name(self.model)
+		self.resource_name = pluralize(get_model_name(self.model))
 
 		# Get users
 		self.users = {

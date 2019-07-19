@@ -184,6 +184,12 @@ class OrderViewSet(ModelViewSet):
 			user_pk = self.kwargs['user_pk']
 			queryset = queryset.filter(owner__pk=user_pk)
 
+		print(self.kwargs)
+		# Filter per sale
+		if 'sales_pk' in self.kwargs:
+			sales_pk = self.kwargs['sales_pk']
+			queryset = queryset.filter(sale__pk=sales_pk)
+
 		return queryset
 
 	def create(self, request):
@@ -192,7 +198,7 @@ class OrderViewSet(ModelViewSet):
 			# TODO ajout de la limite de temps
 			# TODO ONGOING or BUYABLE LIST ???
 			order = Order.objects \
-				.filter(status=OrderStatus.ONGOING.value) \
+				.filter(status__in=OrderStatus.BUYABLE_STATUS_LIST.value) \
 				.get(sale=request.data['sale'], owner=request.user.id)
 
 			serializer = OrderSerializer(order)

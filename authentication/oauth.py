@@ -8,10 +8,9 @@ from authlib.client import OAuth2Session
 from authlib.common.errors import AuthlibBaseError
 
 from woolly_api.settings import OAUTH as OAuthConfig
-from django.contrib.auth import get_user_model
 from .helpers import find_or_create_user
 
-UserModel = get_user_model()
+UserModel = django_auth.get_user_model()
 
 class OAuthError(Exception):
 	"""

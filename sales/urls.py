@@ -1,14 +1,22 @@
 from rest_framework.urlpatterns import format_suffix_patterns
 from django.conf.urls import url, include
 
-from core.helpers import gen_url_set, merge_sets
-from woolly_api.settings import VIEWSET
+from core.helpers import build_nested_url, gen_url_set, merge_sets, gen_url_set_2 #TODO
 from authentication.views import *
 from .views import *
 
 
 # JSON API Resource routes
 urlpatterns = merge_sets(
+	
+	
+
+
+	gen_url_set_2([AssociationViewSet, OrderViewSet]),
+
+
+
+
 	# User
 	gen_url_set(['users', 'associations'], AssociationViewSet),
 	gen_url_set(['users', 'orders'], OrderViewSet),

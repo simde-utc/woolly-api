@@ -106,19 +106,6 @@ REST_FRAMEWORK = {
 	),
 }
 
-VIEWSET = {
-	'list': {
-		'get': 'list',
-		'post': 'create'
-	},
-	'detail': {
-		'get': 'retrieve',
-		'put': 'update',
-		'patch': 'partial_update',
-		'delete': 'destroy'
-	}
-}
-
 # --------------------------------------------------------------------------
 # 		Django Configuration
 # --------------------------------------------------------------------------
