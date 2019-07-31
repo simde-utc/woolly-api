@@ -30,15 +30,14 @@ class AssociationViewSet(ModelViewSet):
 	serializer_class = AssociationSerializer
 	permission_classes = (IsManagerOrReadOnly,)
 
-	def get_queryset(self):
-		queryset = super().get_queryset()
-
-		# user-association-list
-		if 'user_pk' in self.kwargs:
-			user_pk = self.kwargs['user_pk']
-			queryset = queryset.filter(members__pk=user_pk)
-
-		return queryset
+	def get_sub_urls_filters(self, queryset) -> dict:
+		"""
+		Override of core.viewsets.ModelViewSet for owner-user correspondance
+		"""
+		filters = super().get_sub_urls_filters(queryset)
+		if 'user__pk' in filters:
+			filters['members__pk'] = filters.pop('user__pk')
+		return filters
 
 class AssociationMemberViewSet(ModelViewSet):
 	"""
@@ -54,19 +53,6 @@ class AssociationMemberViewSet(ModelViewSet):
 			user_id = self.request.user.id,
 			association_id = self.kwargs['association_pk'],
 		)
-
-	def get_queryset(self):
-		queryset = self.queryset
-
-		if 'user_pk' in self.kwargs:
-			user_pk = self.kwargs['user_pk']
-			queryset = queryset.filter(user__pk=user_pk)
-
-		if 'association_pk' in self.kwargs:
-			association_pk = self.kwargs['association_pk']
-			queryset = queryset.filter(association__pk=association_pk)
-
-		return queryset
 	"""
 
 # ============================================
@@ -94,14 +80,10 @@ class SaleViewSet(ModelViewSet):
 
 		# TODO V2 : filtering
 		# filters = ('active', )
-		# filterQuery = self.request.query_params.get('filterQuery', None)
+		# filterQuery = self.request.GET.get('filterQuery', None)
 		# if filterQuery is not None:
 			# queryset = queryset.filter()
 			# pass
-
-		# Association detail route
-		if 'association_pk' in self.kwargs:
-			queryset = queryset.filter(association__pk=self.kwargs['association_pk'])
 
 		return queryset
 
@@ -166,29 +148,23 @@ class OrderViewSet(ModelViewSet):
 	serializer_class = OrderSerializer
 	permission_classes = (IsOrderOwnerOrAdmin,)
 
+	def get_sub_urls_filters(self, queryset) -> dict:
+		filters = super().get_sub_urls_filters(queryset)
+		if 'user__pk' in filters:
+			filters['owner__pk'] = filters.pop('user__pk')
+		return filters
+
 	def get_queryset(self):
 		queryset = super().get_queryset()
-		user = self.request.user
 
-		# Anonymous users see nothing
-		if not user.is_authenticated:
-			return None
+		# Get Params
+		user = self.request.user
+		only_owner = self.request.GET.get('only_owner', False)
 
 		# Admins see everything
 		# Otherwise automatically filter to only those owned by the user
-		if not user.is_admin:
+		if only_owner or not user.is_admin:
 			queryset = queryset.filter(owner=user)
-
-		# Filter per user
-		if 'user_pk' in self.kwargs:
-			user_pk = self.kwargs['user_pk']
-			queryset = queryset.filter(owner__pk=user_pk)
-
-		print(self.kwargs)
-		# Filter per sale
-		if 'sales_pk' in self.kwargs:
-			sales_pk = self.kwargs['sales_pk']
-			queryset = queryset.filter(sale__pk=sales_pk)
 
 		return queryset
 
@@ -239,20 +215,16 @@ class OrderLineViewSet(ModelViewSet):
 	permission_classes = (IsOrderOwnerOrAdmin,)
 
 	def get_queryset(self):
-		user = self.request.user
 		queryset = super().get_queryset()
 
-		# Anonymous users see nothing
-		if not user.is_authenticated:
-			return None
+		# Get params
+		user = self.request.user
+		only_owner = self.request.GET.get('only_owner', False)
 
-		# Admins see everything otherwise filter to see only those owned by the user
-		# if not user.is_admin:
-		# 	queryset = queryset.filter(order__owner=user)
-
-		if 'order_pk' in self.kwargs:
-			order_pk = self.kwargs['order_pk']
-			queryset = queryset.filter(order__pk=order_pk)
+		# Admins see everything
+		# Otherwise automatically filter to only those owned by the user
+		if only_owner or not user.is_admin:
+			queryset = queryset.filter(order__owner=user)
 
 		return queryset
 
@@ -359,14 +331,6 @@ class OrderLineFieldViewSet(ModelViewSet):
 	serializer_class = OrderLineFieldSerializer
 	permission_classes = (IsOrderOwnerReadUpdateOrAdmin,)
 
-	def get_queryset(self):
-		queryset = super().get_queryset()
-		if 'orderlineitem_pk' in self.kwargs:
-			orderlineitem_pk = self.kwargs['orderlineitem_pk']
-			queryset = queryset.filter(orderlineitem__pk=orderlineitem_pk)
-
-		return queryset
-
 	def partial_update(self, request, *args, **kwargs):
 		kwargs['partial'] = True
 		return self.update(request, *args, **kwargs)
@@ -374,6 +338,7 @@ class OrderLineFieldViewSet(ModelViewSet):
 	def update(self, request, *args, **kwargs):
 		partial = kwargs.pop('partial', False)
 		instance = self.get_object()
+		# Check if field is editable
 		if instance.isEditable() == True:
 			serializer = OrderLineFieldSerializer(instance, data={'value': request.data['value']}, partial=True)
 			serializer.is_valid(raise_exception=True)
@@ -382,10 +347,10 @@ class OrderLineFieldViewSet(ModelViewSet):
 			serializer = OrderLineFieldSerializer(instance)
 		return Response(serializer.data)
 
-# ============================================
-# 	Billet
-# ============================================
 
+# ============================================
+# 	Ticket
+# ============================================
 
 @api_view(['GET'])
 @authentication_classes([OAuthAuthentication])

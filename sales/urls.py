@@ -10,10 +10,7 @@ urlpatterns = merge_sets(
 	# Association
 	gen_url_set(AssociationViewSet),
 	gen_url_set([AssociationViewSet, SaleViewSet]),
-	# AssociationMember ????????????????????
-	# gen_url_set('associationmembers', AssociationMemberViewSet),
-	# gen_url_set(['associationmembers', 'associations'], AssociationViewSet),
-	# gen_url_set(['associations', 'associationmembers'], AssociationMemberViewSet),
+	gen_url_set([AssociationViewSet, UserViewSet]),
 
 	# Sale
 	gen_url_set(SaleViewSet),

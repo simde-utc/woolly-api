@@ -258,7 +258,7 @@ class OrderLineField(models.Model):
 	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='orderlinefields')
 	value = models.CharField(max_length=1000, blank=True, null= True, editable='isEditable') # TODO Working ??
 
-	def isEditable(self):
+	def isEditable(self) -> bool:
 		itemfield = ItemField.objects.get(field__pk=self.field.pk, item__pk=self.orderlineitem.orderline.item.pk)
 		return itemfield.editable
 
