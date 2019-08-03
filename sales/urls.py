@@ -60,7 +60,7 @@ urlpatterns = merge_sets(
 
 urlpatterns += [
 	# Generation du PDF
-	path('orders/(<int:pk>/pdf', generate_pdf),
+	path('orders/<int:pk>/pdf', generate_pdf),
 ]
 
 

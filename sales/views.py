@@ -159,7 +159,7 @@ class OrderViewSet(ModelViewSet):
 
 		# Get Params
 		user = self.request.user
-		only_owner = self.request.GET.get('only_owner', False)
+		only_owner = self.request.GET.get('only_owner') != 'false'
 
 		# Admins see everything
 		# Otherwise automatically filter to only those owned by the user
@@ -168,21 +168,24 @@ class OrderViewSet(ModelViewSet):
 
 		return queryset
 
-	def create(self, request):
-		"""Find if user has a Buyable Order or create"""
+	def create(self, request, *args, **kwargs):
+		"""
+		Find if user has a Buyable Order or create
+		"""
+
+		sale_pk = kwargs.get('sale_pk', request.data.get('sale'))
 		try:
 			# TODO ajout de la limite de temps
-			# TODO ONGOING or BUYABLE LIST ???
-			order = Order.objects \
+			order = self.get_queryset() \
 				.filter(status__in=OrderStatus.BUYABLE_STATUS_LIST.value) \
-				.get(sale=request.data['sale'], owner=request.user.id)
+				.get(sale=sale_pk, owner=request.user.id)
 
-			serializer = OrderSerializer(order)
+			serializer = self.get_serializer(instance=order)
 			httpStatus = status.HTTP_200_OK
 		except Order.DoesNotExist as err:
 			# Configure new Order
 			serializer = OrderSerializer(data={
-				'sale': request.data['sale'],
+				'sale': sale_pk,
 				'owner': request.user.id,
 				'orderlines': [],
 				'status': OrderStatus.ONGOING.value,
@@ -219,7 +222,7 @@ class OrderLineViewSet(ModelViewSet):
 
 		# Get params
 		user = self.request.user
-		only_owner = self.request.GET.get('only_owner', False)
+		only_owner = self.request.GET.get('only_owner') != 'false'
 
 		# Admins see everything
 		# Otherwise automatically filter to only those owned by the user
@@ -407,7 +410,7 @@ def generate_pdf(request, pk:int, **kwargs):
 	else:
 		pdf = render_to_pdf(template, data)
 		response = HttpResponse(pdf, content_type='application/pdf')
-		if request.GET.get('action', 'download') != 'view':
-			response['Content-Disposition'] = 'attachment;filename="commande_' + order.sale.name + '_' + order_pk + '.pdf"'
+		if request.GET.get('download', 'false') != 'false':
+			response['Content-Disposition'] = f'attachment;filename="commande_{order.sale.name}_{order.pk}.pdf"'
 			
 	return response

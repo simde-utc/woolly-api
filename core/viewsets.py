@@ -5,6 +5,11 @@ class ModelViewSet(viewsets.ModelViewSet):
 	Supercharged DRF ModelViewSet
 	- Automatic sub urls filterings (ex: assos/1/sales)
 	- Automatic included sub resources prefetching (ex: sales?include=items,items__group)
+
+	TODO:
+	- Filter permissions per objet
+	- Creation with nested urls
+	- Security checks
 	"""
 
 	def get_queryset(self):
