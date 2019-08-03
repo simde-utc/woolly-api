@@ -9,25 +9,21 @@ https://docs.djangoproject.com/en/1.11/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.11/ref/settings/
 """
-
 import os
 import sys
 from woolly_api import settings_confidential as confidentials
 
+
 # Build paths inside the project like this: use make_path helper or os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 
 def make_path(rel):
 	return os.path.join(BASE_DIR, rel.replace('/', os.path.sep))
 
+
 # --------------------------------------------------------------------------
 # 		Services Configuration
 # --------------------------------------------------------------------------
-
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = confidentials.SECRET_KEY
 
 # Payutc & Ginger config
 PAYUTC_KEY = confidentials.PAYUTC_KEY
@@ -38,49 +34,44 @@ GINGER_SERVER_URL = 'https://assos.utc.fr/ginger/v1/'
 # Portail des Assos config
 OAUTH = {
 	'portal': {
-		'client_id': 		confidentials.PORTAL['id'],
-		'client_secret': 	confidentials.PORTAL['key'],
-		'redirect_uri': 	confidentials.PORTAL['callback'],
-		'base_url': 		'https://assos.utc.fr/api/v1/',
-		'authorize_url': 	'https://assos.utc.fr/oauth/authorize',
+		'client_id':        confidentials.PORTAL['id'],
+		'client_secret':    confidentials.PORTAL['key'],
+		'redirect_uri':     confidentials.PORTAL['callback'],
+		'base_url':         'https://assos.utc.fr/api/v1/',
+		'authorize_url':    'https://assos.utc.fr/oauth/authorize',
 		'access_token_url': 'https://assos.utc.fr/oauth/token',
-		'login_url': 		'https://assos.utc.fr/login',
-		'logout_url': 		'https://assos.utc.fr/logout',
-		'scope': 			'user-get-info user-get-roles user-get-assos-members-joined-now'
-	}
+		'login_url':        'https://assos.utc.fr/login',
+		'logout_url':       'https://assos.utc.fr/logout',
+		'scope':            'user-get-info user-get-roles user-get-assos-members-joined-now'
+	},
 }
 
 # --------------------------------------------------------------------------
-# 		Cors & Debug
+# 		Debug & Security
 # --------------------------------------------------------------------------
 
-# SECURITY WARNING: don't run with debug turned on in production!
+# SECURITY WARNING: don't run with DEBUG turned on in production!
 DEBUG = confidentials.DEBUG
+SECRET_KEY = confidentials.SECRET_KEY
 ALLOWED_HOSTS = confidentials.ALLOWED_HOSTS
+HTTPS_ENABLED = getattr(confidentials, 'HTTPS_ENABLED', False)
 
-# CSRF_COOKIE_SECURE = True
-# SECURE_BROWSER_XSS_FILTER = True
-# SECURE_SSL_REDIRECT = True
+SECURE_SSL_REDIRECT = HTTPS_ENABLED
+SECURE_BROWSER_XSS_FILTER = True
 
 SESSION_COOKIE_SECURE = False # False to enable the use of cookies in ajax requests
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' # cache or cached_db
 
-# CORS headers config
-CORS_ORIGIN_ALLOW_ALL = True
-CORS_ALLOW_METHODS = (
-	'GET',
-	'POST',
-	'PUT',
-	'PATCH',
-	'OPTIONS',
-	'DELETE',
-)
-
-# necessary in addition to the whitelist for protected requests
-CORS_ALLOW_CREDENTIALS = True
-CSRF_COOKIE_HTTPONLY = False # False to enable the use of cookies in ajax requests
-CSRF_USE_SESSIONS = False  # Useful ??
+# Cross Site Request Foregery protection
+CSRF_COOKIE_SECURE = HTTPS_ENABLED
 CSRF_TRUSTED_ORIGINS = ALLOWED_HOSTS
+CSRF_COOKIE_HTTPONLY = False      # False to enable the use of cookies in ajax requests
+CSRF_USE_SESSIONS = False         # False to enable the use of cookies in ajax requests
+
+# Cross-Origin Resource Sharing protection
+CORS_ORIGIN_ALLOW_ALL = DEBUG
+CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_WHITELIST = confidentials.CORS_ORIGIN_WHITELIST
 
 
 # --------------------------------------------------------------------------
@@ -89,8 +80,7 @@ CSRF_TRUSTED_ORIGINS = ALLOWED_HOSTS
 
 REST_FRAMEWORK = {
 	'DEFAULT_AUTHENTICATION_CLASSES': (
-		'rest_framework.authentication.SessionAuthentication',
-		'authentication.auth.APIAuthentication',
+		'authentication.oauth.OAuthAuthentication',
 	),
 
 	'PAGE_SIZE': 10,
@@ -148,7 +138,6 @@ INSTALLED_APPS = [
 	# Django
 	'django.contrib.sessions',
 	'django.contrib.staticfiles',
-	'django.contrib.admin',
 	'django.contrib.auth',
 	'django.contrib.contenttypes',
 	'django.contrib.messages',
@@ -157,6 +146,7 @@ INSTALLED_APPS = [
 	'rest_framework',
 	'corsheaders',
 	# Woolly
+	'woolly_api.admin.AdminConfig', # Replace 'django.contrib.admin',
 	'core',
 	'authentication',
 	'sales',
@@ -168,23 +158,23 @@ ROOT_URLCONF = 'woolly_api.urls'
 WSGI_APPLICATION = 'woolly_api.wsgi.application'
 
 MIDDLEWARE = [
-	'django.contrib.sessions.middleware.SessionMiddleware',
 	'django.middleware.security.SecurityMiddleware',
+	'django.contrib.sessions.middleware.SessionMiddleware',
 	'corsheaders.middleware.CorsMiddleware',
-	'django.middleware.common.CommonMiddleware',
-	'django.middleware.clickjacking.XFrameOptionsMiddleware',
-	'django.middleware.csrf.CsrfViewMiddleware',
 	'django.contrib.auth.middleware.AuthenticationMiddleware',
+	'django.middleware.common.CommonMiddleware',
+	'django.middleware.csrf.CsrfViewMiddleware',
+	'django.middleware.clickjacking.XFrameOptionsMiddleware',
 	'django.contrib.messages.middleware.MessageMiddleware',
 ]
 
 # Authentication
+LOGIN_URL = 'login'
 AUTH_USER_MODEL = 'authentication.User'
 
 # Only to access web admin panel
 AUTHENTICATION_BACKENDS = (
-	# 'django.contrib.auth.backends.ModelBackend',
-	'authentication.auth.AdminSiteBackend',
+	'authentication.oauth.OAuthBackend',
 )
 
 # Password validation : https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators

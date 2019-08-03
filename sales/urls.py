@@ -70,7 +70,7 @@ urlpatterns = merge_sets(
 # Addtionnal API endpoints for Authentication
 urlpatterns += [
 	# Generation du PDF
-	url(r'^orders/(?P<order_pk>[0-9]+)/pdf/$', GeneratePdf.as_view()),
+	url(r'^orders/(?P<order_pk>[0-9]+)/pdf$', generate_pdf),
 ]
 
 

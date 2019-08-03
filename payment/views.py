@@ -1,10 +1,9 @@
 from django.utils import timezone
 from functools import reduce
 
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.decorators import *
-from django.http import JsonResponse
 from django.urls import reverse
 from core.helpers import errorResponse
 from django.core.mail import EmailMessage
@@ -14,13 +13,9 @@ from sales.models import *
 from sales.serializers import *
 from sales.permissions import *
 
-from .services.payutc import Payutc
 from woolly_api.settings import PAYUTC_KEY, PAYUTC_TRANSACTION_BASE_URL
-from authentication.auth import APIAuthentication
-
-
-# TODO Check if quantities exists first
-# orderline.item.group.max_per_user 
+from authentication.oauth import OAuthAuthentication
+from .services.payutc import Payutc
 
 
 # TODO
@@ -28,8 +23,8 @@ class PaymentView:
 	pass
 
 @api_view(['GET'])
-@authentication_classes((APIAuthentication,))
-# @permission_classes((IsOwner,))
+@authentication_classes([OAuthAuthentication])
+@permission_classes([IsOrderOwnerOrAdmin])
 def pay(request, pk):
 	"""
 	Permet le paiement d'une order
@@ -45,7 +40,7 @@ def pay(request, pk):
 	# 1. Retrieve Order
 	try:
 		# TODO ajout de la limite de temps
-		order = Order.objects.filter(owner=request.user) \
+		order = Order.objects.filter(owner__pk=request.user.pk) \
 					.filter(status__in=OrderStatus.BUYABLE_STATUS_LIST.value) \
 					.prefetch_related('sale', 'orderlines', 'owner') \
 					.get(pk=pk)
@@ -70,7 +65,7 @@ def pay(request, pk):
 		'items': str(itemsArray),
 		'mail': request.user.email,
 		'fun_id': order.sale.association.fun_id,
-		'return_url': request.GET.get('return_url', None),
+		'return_url': request.GET['return_url'],
 		'callback_url': request.build_absolute_uri(reverse('pay-callback', kwargs={'pk': order.pk}))
 	}
 
@@ -78,7 +73,9 @@ def pay(request, pk):
 	transaction = payutc.createTransaction(params)
 	if 'error' in transaction:
 		print(transaction)
-		return errorResponse(transaction['error']['message'])
+		# TODO Better feedback
+		errors = (f"{k}: {m}" for k, m in transaction['error']['data'].items())
+		return errorResponse(transaction['error']['message'], errors)
 
 	# 6. Save Transaction info and redirect
 	order.status = OrderStatus.NOT_PAID.value
@@ -90,7 +87,7 @@ def pay(request, pk):
 		'status': 'NOT_PAID',
 		'url': transaction['url']
 	}
-	return JsonResponse(resp, status=status.HTTP_200_OK)
+	return Response(resp, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -202,18 +199,19 @@ def verifyOrder(order, user):
 	# Check for each orderlines
 	for orderline in order.orderlines.filter(quantity__gt=0).all():
 
-		# Verif max_per_user // quantity
-		if orderline.quantity > orderline.item.max_per_user:
-			errors.append("Vous ne pouvez prendre que {} {} par personne." \
-				.format(orderline.item.max_per_user, orderline.item.name))
+		if orderline.item.max_per_user is not None:
+			# Verif max_per_user // quantity
+			if orderline.quantity > orderline.item.max_per_user:
+				errors.append("Vous ne pouvez prendre que {} {} par personne." \
+					.format(orderline.item.max_per_user, orderline.item.name))
 
-		# Verif max_per_user // user orders
-		if quantityByUser.get(orderline.item.pk, 0) + orderline.quantity > orderline.item.max_per_user:
-			errors.append("Vous avez déjà pris {} {} sur un total de {} par personne." \
-				.format(quantityByUser.get(orderline.item.pk, 0), orderline.item.name, orderline.item.max_per_user))
+			# Verif max_per_user // user orders
+			if quantityByUser.get(orderline.item.pk, 0) + orderline.quantity > orderline.item.max_per_user:
+				errors.append("Vous avez déjà pris {} {} sur un total de {} par personne." \
+					.format(quantityByUser.get(orderline.item.pk, 0), orderline.item.name, orderline.item.max_per_user))
 
-		# Verify quantity left // sale orders
-		if orderline.item.quantity != None:
+		if orderline.item.quantity is not None:
+			# Verify quantity left // sale orders
 			if orderline.item.quantity < quantityBySale.get(orderline.item.pk, 0) + orderline.quantity:
 				errors.append("Il reste moins de {} {}.".format(orderline.quantity, orderline.item.name))
 
@@ -255,7 +253,7 @@ def updateOrderStatus(order, transaction):
 			'status': OrderStatus.NOT_PAID.name,
 			'url': PAYUTC_TRANSACTION_BASE_URL + str(transaction['id'])
 		}
-	return JsonResponse(resp, status=status.HTTP_200_OK)
+	return Response(resp, status=status.HTTP_200_OK)
 
 
 # OrderLine
