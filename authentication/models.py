@@ -28,9 +28,6 @@ class UserType(models.Model):
 		ordering = ('id',)
 		verbose_name = "User Type"
 
-	class JSONAPIMeta:
-		resource_name = "usertypes"
-
 
 class UserManager(BaseUserManager):
 	def create_user(self, email, password=None, **other_fields):
@@ -55,7 +52,6 @@ class UserManager(BaseUserManager):
 		user.save(using=self._db)
 		return user
 
-
 class User(AbstractBaseUser):
 	# Properties
 	email = models.EmailField(unique=True)
@@ -66,7 +62,7 @@ class User(AbstractBaseUser):
 
 	# Relations
 	usertype = models.ForeignKey(UserType, on_delete=None, null=False, default=4, related_name='users')
-	# associations = models.ManyToManyField('sales.Association', through='sales.AssociationMember')
+	associations = models.ManyToManyField('sales.Association', through='sales.AssociationMember')
 
 	# Rights
 	is_active = models.BooleanField(default=True)
@@ -111,6 +107,3 @@ class User(AbstractBaseUser):
 
 	class Meta:
 		ordering = ('id',)
-
-	class JSONAPIMeta:
-		resource_name = "users"

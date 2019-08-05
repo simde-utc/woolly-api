@@ -1,11 +1,9 @@
 from django.utils import timezone
 from functools import reduce
 
-# from rest_framework_json_api import views
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.decorators import *
-from django.http import JsonResponse
 from django.urls import reverse
 from core.helpers import errorResponse
 from django.core.mail import EmailMessage
@@ -15,9 +13,9 @@ from sales.models import *
 from sales.serializers import *
 from sales.permissions import *
 
-from .services.payutc import Payutc
 from woolly_api.settings import PAYUTC_KEY, PAYUTC_TRANSACTION_BASE_URL
-from authentication.auth import APIAuthentication
+from authentication.oauth import OAuthAuthentication
+from .services.payutc import Payutc
 
 
 # TODO
@@ -25,8 +23,8 @@ class PaymentView:
 	pass
 
 @api_view(['GET'])
-@authentication_classes((APIAuthentication,))
-# @permission_classes((IsOwner,))
+@authentication_classes([OAuthAuthentication])
+@permission_classes([IsOrderOwnerOrAdmin])
 def pay(request, pk):
 	"""
 	Permet le paiement d'une order
@@ -42,7 +40,7 @@ def pay(request, pk):
 	# 1. Retrieve Order
 	try:
 		# TODO ajout de la limite de temps
-		order = Order.objects.filter(owner=request.user) \
+		order = Order.objects.filter(owner__pk=request.user.pk) \
 					.filter(status__in=OrderStatus.BUYABLE_STATUS_LIST.value) \
 					.prefetch_related('sale', 'orderlines', 'owner') \
 					.get(pk=pk)
@@ -67,7 +65,7 @@ def pay(request, pk):
 		'items': str(itemsArray),
 		'mail': request.user.email,
 		'fun_id': order.sale.association.fun_id,
-		'return_url': request.GET.get('return_url', None),
+		'return_url': request.GET['return_url'],
 		'callback_url': request.build_absolute_uri(reverse('pay-callback', kwargs={'pk': order.pk}))
 	}
 
@@ -75,7 +73,9 @@ def pay(request, pk):
 	transaction = payutc.createTransaction(params)
 	if 'error' in transaction:
 		print(transaction)
-		return errorResponse(transaction['error']['message'])
+		# TODO Better feedback
+		errors = (f"{k}: {m}" for k, m in transaction['error']['data'].items())
+		return errorResponse(transaction['error']['message'], errors)
 
 	# 6. Save Transaction info and redirect
 	order.status = OrderStatus.NOT_PAID.value
@@ -87,7 +87,7 @@ def pay(request, pk):
 		'status': 'NOT_PAID',
 		'url': transaction['url']
 	}
-	return JsonResponse(resp, status=status.HTTP_200_OK)
+	return Response(resp, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -103,6 +103,7 @@ def pay_callback(request, pk):
 	transaction = payutc.getTransactionInfo({ 'tra_id': order.tra_id, 'fun_id': order.sale.association.fun_id })
 	if 'error' in transaction:
 		print(transaction)
+		# TODO parse error
 		return errorResponse(transaction['error']['message'])
 
 	return updateOrderStatus(order, transaction)
@@ -198,18 +199,19 @@ def verifyOrder(order, user):
 	# Check for each orderlines
 	for orderline in order.orderlines.filter(quantity__gt=0).all():
 
-		# Verif max_per_user // quantity
-		if orderline.quantity > orderline.item.max_per_user:
-			errors.append("Vous ne pouvez prendre que {} {} par personne." \
-				.format(orderline.item.max_per_user, orderline.item.name))
+		if orderline.item.max_per_user is not None:
+			# Verif max_per_user // quantity
+			if orderline.quantity > orderline.item.max_per_user:
+				errors.append("Vous ne pouvez prendre que {} {} par personne." \
+					.format(orderline.item.max_per_user, orderline.item.name))
 
-		# Verif max_per_user // user orders
-		if quantityByUser.get(orderline.item.pk, 0) + orderline.quantity > orderline.item.max_per_user:
-			errors.append("Vous avez déjà pris {} {} sur un total de {} par personne." \
-				.format(quantityByUser.get(orderline.item.pk, 0), orderline.item.name, orderline.item.max_per_user))
+			# Verif max_per_user // user orders
+			if quantityByUser.get(orderline.item.pk, 0) + orderline.quantity > orderline.item.max_per_user:
+				errors.append("Vous avez déjà pris {} {} sur un total de {} par personne." \
+					.format(quantityByUser.get(orderline.item.pk, 0), orderline.item.name, orderline.item.max_per_user))
 
-		# Verify quantity left // sale orders
-		if orderline.item.quantity != None:
+		if orderline.item.quantity is not None:
+			# Verify quantity left // sale orders
 			if orderline.item.quantity < quantityBySale.get(orderline.item.pk, 0) + orderline.quantity:
 				errors.append("Il reste moins de {} {}.".format(orderline.quantity, orderline.item.name))
 
@@ -251,22 +253,21 @@ def updateOrderStatus(order, transaction):
 			'status': OrderStatus.NOT_PAID.name,
 			'url': PAYUTC_TRANSACTION_BASE_URL + str(transaction['id'])
 		}
-	return JsonResponse(resp, status=status.HTTP_200_OK)
+	return Response(resp, status=status.HTTP_200_OK)
 
 
 # OrderLine
 def getFieldDefaultValue(default, order):
-	if default is None:
-		return None
 	return {
 		'owner.first_name': order.owner.first_name,
 		'owner.last_name': order.owner.last_name,
-	}[default]
+	}.get(default, default)
 
 def createOrderLineItemsAndFields(order):
 
 	# Create OrderLineItems
 	orderlines = order.orderlines.filter(quantity__gt=0).prefetch_related('item', 'orderlineitems').all()
+	total = 0
 	for orderline in orderlines:
 		qte = orderline.quantity - len(orderline.orderlineitems.all())
 		while qte > 0:
@@ -294,7 +295,10 @@ def createOrderLineItemsAndFields(order):
 				})
 				orderlinefield.is_valid(raise_exception=True)
 				orderlinefield.save()
+			total += 1
 			qte -= 1
+			
+	return total
 
 
 def orderErrorResponse(errors):
@@ -303,21 +307,22 @@ def orderErrorResponse(errors):
 
 
 def sendConfirmationMail(order):
-	# TODO : généraliser
-	nb_places = reduce(lambda acc, orderline: acc + orderline.quantity, order.orderlines.all(), 0)
+	# TODO : généraliser + markdown
+
+	link_order = "http://assos.utc.fr/picasso/degustations/commandes/" + str(order.pk)
 	message = "Bonjour " + order.owner.get_full_name() + ",\n\n" \
-			+ "Nous vous confirmons avoir cotisé pour " + str(nb_places) + " place(s) " \
-			+ "pour participer à la course de baignoires le dimanche 30 septembre.\n" \
-			+ "Vous êtes désormais officiellement inscrit comme participant à la course !\n" \
-			+ "Téléchargez vos billets ici : http://assos.utc.fr/baignoirutc/billetterie/commandes/" + str(order.pk) + "\n\n" \
-			+ "Rendez vous le 30 septembre !!"
+					+ "Votre commande n°" + str(order.pk) + " vient d'être confirmée.\n" \
+					+ "Vous avez commandé:\n" \
+					+ "".join([ " - " + str(ol.quantity) + " " + ol.item.name + "\n" for ol in order.orderlines.all() ]) \
+					+ "Vous pouvez télécharger vos billets ici : " + link_order + "\n\n" \
+					+ "Merci d'avoir utilisé Woolly"
 
 	email = EmailMessage(
-		subject = "Confirmation Côtisation - Baignoires dans l'Oise",
-		body = message,
-		from_email = "sales@woolly.etu-utc.fr", # "woolly@assos.utc.fr",
-		to = [order.owner.email],
-		reply_to = ["baignoirutc@assos.utc.fr"],
+		subject="Woolly - Confirmation de commande",
+		body=message,
+		from_email="woolly@assos.utc.fr",
+		to=[order.owner.email],
+		reply_to=["woolly@assos.utc.fr"],
 	)
 	email.send()
 

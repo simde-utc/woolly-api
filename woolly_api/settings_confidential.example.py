@@ -1,10 +1,11 @@
 DEBUG = False
-ALLOWED_HOSTS = (
-	'woolly.etu-utc.fr',
-	'assos.utc.fr',
-	'localhost',
-)
 HTTPS_ENABLED = True
+ALLOWED_HOSTS = (
+	'assos.utc.fr',
+)
+CORS_ORIGIN_WHITELIST = (
+	'https://assos.utc.fr',
+)
 
 # Secret Keys
 SECRET_KEY = ''
