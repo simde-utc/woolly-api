@@ -62,7 +62,7 @@ class User(AbstractBaseUser):
 
 	# Relations
 	usertype = models.ForeignKey(UserType, on_delete=None, null=False, default=4, related_name='users')
-	# associations = models.ManyToManyField('sales.Association', through='sales.AssociationMember')
+	associations = models.ManyToManyField('sales.Association', through='sales.AssociationMember')
 
 	# Rights
 	is_active = models.BooleanField(default=True)
