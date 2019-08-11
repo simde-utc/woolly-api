@@ -77,7 +77,7 @@ class ApiQuerySet(QuerySet):
 
 		# Return list of models instance
 		return list(results.values()) + to_create
-	
+
 class ApiManager(BaseManager.from_queryset(ApiQuerySet)):
 	pass
 
@@ -120,6 +120,13 @@ class ApiModel(Model):
 	def get_with_api_data(self, oauth_client=None):
 		self.sync_data(None, oauth_client, save=True)
 		return self
+
+	def pk_to_url(self, pk) -> str:
+		if hasattr(pk, '__len__'):
+			return f"[{','.join(str(_pk) for _pk in pk)}]"
+		else:
+			return str(pk)
+
 
 
 	@classmethod
