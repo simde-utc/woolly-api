@@ -10,14 +10,20 @@ from authlib.common.errors import AuthlibBaseError
 from woolly_api.settings import OAUTH as OAuthConfig
 from .helpers import find_or_create_user
 
+OAUTH_TOKEN_NAME = 'oauth_token'
 UserModel = django_auth.get_user_model()
+
 
 class OAuthError(Exception):
 	"""
 	OAuth Error
-	(TODO Will be) Useful to send error responses
 	"""
-	pass
+	def __init__(self, message: str=None, response=None):
+		if not message and response is not None:
+			message = response.json().get('message', 'Unknown error')
+
+		super().__init__(message)
+		self.response = response
 
 def get_user_from_request(request):
 	"""
@@ -46,20 +52,24 @@ class OAuthAPI:
 	Utile pour la connexion, la récupération des droits
 	"""
 
-	def __init__(self, provider: str='portal', config: dict=None):
+	def __init__(self, provider: str='portal', config: dict=None, token: dict=None, session=None):
 		"""
 		OAuth2 Client initialisation
 		"""
 		self.provider = provider
-		self.config = config or OAuthConfig[provider]
-		self.oauth_client = OAuth2Session(**self.config)
+		self.config = config or OAuthConfig[provider].copy()
+		if token:
+			self.config['token'] = token
+		elif session:
+			self.config['token'] = session.get(OAUTH_TOKEN_NAME)
+		self.client = OAuth2Session(**self.config)
 
 	def get_auth_url(self, redirection: str) -> str:
 		"""
 		Return authorization url
 		"""
 		# Get url and state from OAuth server
-		url, state = self.oauth_client.create_authorization_url(self.config['authorize_url'])
+		url, state = self.client.create_authorization_url(self.config['authorize_url'])
 		
 		# Cache front url with state for 5mins
 		cache.set(state, redirection, 300)
@@ -75,7 +85,7 @@ class OAuthAPI:
 
 		# Get token from code
 		try:
-			oauthToken = self.oauth_client.fetch_access_token(self.config['access_token_url'], code=code)
+			token = self.client.fetch_access_token(self.config['access_token_url'], code=code)
 		except AuthlibBaseError as error:
 			raise OAuthError(error)
 
@@ -89,7 +99,7 @@ class OAuthAPI:
 		request.user = user
 		django_auth.login(request, user)
 		request.session['user_id'] = user.pk
-		request.session['portal_token'] = oauthToken
+		request.session[OAUTH_TOKEN_NAME] = token
 
 		# Get front redirection from cached state
 		redirection = cache.get(state)
@@ -100,6 +110,11 @@ class OAuthAPI:
 		"""
 		Logout the user from Woolly and redirect to the provider's logout
 		"""
+		# Revoke user token ??? POSSIBLE TODO
+		# token = request.session.get(OAUTH_TOKEN_NAME)
+		# if token:
+		# 	self.client.revoke_token(url, token)
+
 		# Logout from Django
 		django_auth.logout(request)
 
@@ -110,12 +125,11 @@ class OAuthAPI:
 		"""
 		Return infos from the API if 200 else an OAuthError
 		"""
-		resp = self.oauth_client.get(self.config['base_url'] + query)
+		resp = self.client.get(self.config['base_url'] + query)
 		if resp.status_code == 200:
 			return resp.json()
-		elif resp.status_code == 404:
-			raise OAuthError('Resource not found')
-		raise OAuthError('Unknown error')
+		else:
+			raise OAuthError(response=resp)
 
 
 class OAuthBackend(ModelBackend):

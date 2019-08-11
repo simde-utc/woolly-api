@@ -73,20 +73,6 @@ class AssociationSerializer(ModelSerializer):
 		fields = '__all__' 		# DEBUG
 		# fields = ('id', 'name', 'bank_account', 'sales', 'foundation_id')
 
-class AssociationMemberSerializer(ModelSerializer):
-	association = RelatedField(queryset=Association.objects)
-	user        = RelatedField(queryset=User.objects)
-
-	included_serializers = {
-		'association': AssociationSerializer,
-		'user': UserSerializer,
-	}
-
-	class Meta:
-		model = AssociationMember
-		fields = '__all__' 		# DEBUG
-		# fields = ('id', 'association', 'role', 'rights')
-
 
 # ============================================
 # 	Orders

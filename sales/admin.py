@@ -9,10 +9,6 @@ from core.helpers import custom_editable_fields
 # 	Inlines
 # ============================================
 
-class AssociationMemberInline(admin.TabularInline):
-	model = AssociationMember
-	extra = 0
-
 class ItemFieldInline(admin.TabularInline):
 	model = ItemField
 	extra = 0
@@ -33,22 +29,10 @@ class OrderLineFieldInline(admin.TabularInline):
 # ============================================
 
 class AssociationAdmin(admin.ModelAdmin):
-	def get_queryset(self, request):
-		queryset = super().get_queryset(request)
-		queryset = queryset.annotate(
-			_members_count = Count("members", distinct=True),
-		)
-		return queryset
-
-	# Displayers
-	def number_of_members(self, obj):
-		return obj._members_count
-
-	list_display = ('name', 'fun_id', 'number_of_members')
-	inlines = (AssociationMemberInline,)
+	list_display = ('shortname', 'fun_id')
 	exclude = ('members',)
-	search_fields = ('name', 'fun_id')
-	ordering = ('name',)
+	search_fields = ('shortname', 'fun_id')
+	ordering = ('shortname',)
 
 class SaleAdmin(admin.ModelAdmin):
 	def get_queryset(self, request):
@@ -222,7 +206,6 @@ class OrderLineFieldAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Association, AssociationAdmin)
-# admin.site.register(AssociationMember)
 admin.site.register(Sale, SaleAdmin)
 
 admin.site.register(Item, ItemAdmin)

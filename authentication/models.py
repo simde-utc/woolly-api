@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser
 from django.db import models
 import datetime
 
@@ -28,52 +28,19 @@ class UserType(models.Model):
 		ordering = ('id',)
 		verbose_name = "User Type"
 
-
-class UserManager(BaseUserManager):
-	def create_user(self, email, password=None, **other_fields):
-		if not email:
-			raise ValueError('Users must have an email address')
-
-		# Create and Save User
-		user = self.model(
-			email = self.normalize_email(email),
-			**other_fields
-		)
-		user.set_password(password)
-		user.save(using=self._db)
-		return user
-
-	def create_superuser(self, email, **other_fields):
-		# TODO Create a hash password and set it by email
-		password = "hash"
-
-		user = self.create_user(email, password=password, **other_fields)
-		user.is_admin = True
-		user.save(using=self._db)
-		return user
-
 class User(AbstractBaseUser):
 	# Properties
+	id = models.UUIDField(primary_key=True, editable=False)
 	email = models.EmailField(unique=True)
-	login = models.CharField(max_length=253, unique=True, blank=True, null=True)  # TODO : virer	
 	first_name = models.CharField(max_length=100)
 	last_name = models.CharField(max_length=100)
-	birthdate = models.DateField(default=datetime.date.today)
+	# birthdate = models.DateField(default=datetime.date.today)
 
 	# Relations
 	usertype = models.ForeignKey(UserType, on_delete=None, null=False, default=4, related_name='users')
-	associations = models.ManyToManyField('sales.Association', through='sales.AssociationMember')
 
 	# Rights
-	is_active = models.BooleanField(default=True)
 	is_admin = models.BooleanField(default=False)
-
-	@property
-	def is_staff(self):
-		return self.is_admin
-
-	# Django utils
-	objects = UserManager()
 
 	USERNAME_FIELD = 'email'
 	EMAIL_FIELD = 'email'
@@ -81,7 +48,6 @@ class User(AbstractBaseUser):
 	# Display
 	def __str__(self):
 		return self.email
-		# return '%s %s %s' % (self.email, self.first_name, self.usertype.name)
 
 	def get_full_name(self):
 		return self.first_name + ' ' + self.last_name
@@ -90,6 +56,15 @@ class User(AbstractBaseUser):
 		return self.first_name
 
 	# required by Django.admin
+	
+	@property
+	def is_active(self):
+		return True
+
+	@property
+	def is_staff(self):
+		return self.is_admin
+
 	def has_perm(self, perm, obj=None):
 		return True		# ???
 

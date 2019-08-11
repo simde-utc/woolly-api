@@ -1,6 +1,6 @@
 from rest_framework import viewsets
 
-class ModelViewSet(viewsets.ModelViewSet):
+class ModelViewSetMixin(object):
 	"""
 	Supercharged DRF ModelViewSet
 	- Automatic sub urls filterings (ex: assos/1/sales)
@@ -43,7 +43,6 @@ class ModelViewSet(viewsets.ModelViewSet):
 	# def get_object(self):
 	# 	return super().get_object()
 
-
 	def get_serializer_context(self) -> dict:
 		"""
 		Pass the include_map to the 
@@ -85,3 +84,15 @@ class ModelViewSet(viewsets.ModelViewSet):
 	# 	return super().handle_exception(exc)
 
 
+class ModelViewSet(viewsets.ModelViewSet, ModelViewSetMixin):
+	pass
+
+class ApiModelViewsSet(viewsets.ReadOnlyModelViewSet, ModelViewSetMixin):
+	_oauth_client = None
+
+	@property
+	def oauth_client(self):
+		if self._oauth_client is None:
+			from authentication.oauth import OAuthAPI
+			self._oauth_client = OAuthAPI(session=self.request.session)
+		return self._oauth_client

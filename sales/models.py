@@ -1,43 +1,41 @@
 from django.db import models
+from core.models import ApiModel
 from authentication.models import User, UserType
 from enum import Enum
 import uuid
 from core.helpers import custom_editable_fields
 
+
 # ============================================
-# 	Association & Member
+# 	Association
 # ============================================
 
-class Association(models.Model):
+class Association(ApiModel):
 	"""
 	Defines an Association
 	"""
-	name 	= models.CharField(max_length=200)
-	members = models.ManyToManyField(User, through='AssociationMember')
-	fun_id 	= models.PositiveSmallIntegerField()			# TODO V2 : abstraire payment
-	# bank_account = models.CharField(max_length=30)		# Why ?
+	id = models.UUIDField(primary_key=True, editable=False)
+	shortname 	= models.CharField(max_length=200)
+	fun_id 	= models.PositiveSmallIntegerField(null=True, blank=True)			# TODO V2 : abstraire payment
+
+	@classmethod
+	def get_api_endpoint(cls, **params) -> str:
+		url = []
+		url.append('assos')
+		if 'pk' in params:
+			pk = params['pk']
+			if hasattr(pk, '__len__'): # TODO
+				url.append(f"[{','.join(str(_pk) for _pk in pk)}]")
+			else:
+				url.append(str(pk)) # ??
+		return '/'.join(url)
 
 	def __str__(self):
-		return self.name
+		return self.shortname
 
 	class Meta:
-		ordering = ('id',)
-
-class AssociationMember(models.Model):
-	"""
-	Links an User to an Association
-	"""
-	user 		= models.ForeignKey(User, on_delete=models.CASCADE, related_name='associationmembers')
-	association = models.ForeignKey(Association, on_delete=models.CASCADE, related_name='associationmembers')
-	role 		= models.CharField(max_length=50)
-	rights 		= models.CharField(max_length=50)
-
-	def __str__(self):
-		return "%s, %s @ %s" % (self.user, self.role, self.association)
-
-	class Meta:
-		ordering = ('id',)
-
+		ordering = ('shortname',)
+		# index
 
 # ============================================
 # 	Sale

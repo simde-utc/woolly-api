@@ -35,25 +35,10 @@ class AssociationViewSet(ModelViewSet):
 		Override of core.viewsets.ModelViewSet for owner-user correspondance
 		"""
 		filters = super().get_sub_urls_filters(queryset)
+		# TODO
 		if 'user__pk' in filters:
 			filters['members__pk'] = filters.pop('user__pk')
 		return filters
-
-class AssociationMemberViewSet(ModelViewSet):
-	"""
-	Defines the behavior link to the association member view
-	"""
-	queryset = AssociationMember.objects.all()
-	serializer_class = AssociationMemberSerializer
-	permission_classes = (IsManager,)
-
-	"""
-	def perform_create(self, serializer):
-		serializer.save(
-			user_id = self.request.user.id,
-			association_id = self.kwargs['association_pk'],
-		)
-	"""
 
 # ============================================
 # 	Sale

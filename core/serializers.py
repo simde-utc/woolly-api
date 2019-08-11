@@ -66,3 +66,25 @@ class ModelSerializer(serializers.ModelSerializer):
 
 		# Return updated fields
 		return fields
+
+class ApiModelSerializer(ModelSerializer):
+	pass
+
+class Fake:
+
+	@property
+	def data(self):
+		data = super().data
+		# TODO
+		if self.instance:
+			if isinstance(self.instance, QuerySet):
+				getattr(obj, 'fetched_data', None)
+			data = {
+				**data,
+				**self.instance.fetched_data,
+			}
+		return data
+
+	# update
+	# create
+	pass

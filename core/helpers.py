@@ -4,12 +4,21 @@ from django.urls import path
 from django.db import models
 
 from rest_framework.viewsets import ModelViewSet
-from typing import Sequence, Dict, Union, Tuple
+from typing import Sequence, Dict, Union, Tuple, Iterable, Callable
 
 
 def filter_dict_keys(obj: dict, whitelist: Sequence):
 	return { k: v for k, v in obj.items() if k in whitelist }
 
+def iterable_to_map(iterable: Iterable, prop: str=None, attr: str=None, get_key: Callable=None) -> dict:
+	if not get_key:
+		if prop:
+			get_key = lambda obj: obj[prop]
+		elif attr:
+			get_key = lambda obj: getattr(obj, attr)
+		else:
+			raise ValueError("At least one of 'prop', 'attr' or 'get_key' must be provided")
+	return { get_key(obj): obj for obj in iterable }
 
 def errorResponse(message, errors=tuple(), httpStatus=status.HTTP_400_BAD_REQUEST):
 	resp = {
