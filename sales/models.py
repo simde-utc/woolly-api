@@ -3,7 +3,6 @@ from core.models import ApiModel
 from authentication.models import User, UserType
 from enum import Enum
 import uuid
-from core.helpers import custom_editable_fields
 
 
 # ============================================
@@ -15,62 +14,48 @@ class Association(ApiModel):
 	Defines an Association
 	"""
 	id = models.UUIDField(primary_key=True, editable=False)
-	shortname 	= models.CharField(max_length=200)
-	fun_id 	= models.PositiveSmallIntegerField(null=True, blank=True)			# TODO V2 : abstraire payment
+	shortname = models.CharField(max_length=200)
+	fun_id    = models.PositiveSmallIntegerField(null=True, blank=True)			# TODO V2 : abstraire payment
 
 	@classmethod
 	def get_api_endpoint(cls, **params) -> str:
 		url = []
 		url.append('assos')
 		if 'pk' in params:
-			pk = params['pk']
-			if hasattr(pk, '__len__'): # TODO
-				url.append(f"[{','.join(str(_pk) for _pk in pk)}]")
-			else:
-				url.append(str(pk)) # ??
+			url.append(self.pk_to_url(params['pk']))
 		return '/'.join(url)
 
 	def __str__(self):
 		return self.shortname
 
-	class Meta:
-		ordering = ('shortname',)
-		# index
-
-# ============================================
-# 	Sale
-# ============================================
-		
 class Sale(models.Model):
 	"""
 	Defines a Sale
 	"""
 	# Description
-	name 		= models.CharField(max_length=200)
+	# slud
+	name        = models.CharField(max_length=200)
 	description = models.CharField(max_length=1000)
 	association = models.ForeignKey(Association, on_delete=None, related_name='sales') # editable=False
+	# cgv = TODO
 	
 	# Visibility
-	is_active 	= models.BooleanField(default=True)
-	public 		= models.BooleanField(default=True)
+	is_active   = models.BooleanField(default=True)
+	public      = models.BooleanField(default=True)
 
 	# Timestamps
-	created_at 	= models.DateTimeField(auto_now_add=True, editable=False)
-	begin_at 	= models.DateTimeField()
-	end_at 		= models.DateTimeField()
+	created_at  = models.DateTimeField(auto_now_add=True, editable=False)
+	begin_at    = models.DateTimeField()
+	end_at      = models.DateTimeField()
 
-	max_item_quantity = models.IntegerField(blank=True, null=True)
-	max_payment_date  = models.DateTimeField()
+	max_item_quantity = models.PositiveIntegerField(blank=True, null=True)
+	max_payment_date  = models.DateTimeField() # TODO
 
 	# TODO v2
 	# paymentmethods = models.ManyToManyField(PaymentMethod)
-	# payment_delay = models.DateTimeField()
 
 	def __str__(self):
 		return "%s par %s" % (self.name, self.association)
-
-	class Meta:
-		ordering = ('id',)
 
 
 # ============================================
@@ -80,17 +65,15 @@ class Sale(models.Model):
 class ItemGroup(models.Model):
 	"""
 	Gathers items under a common group
+	for better display or management
 	"""
 	name 	 = models.CharField(max_length = 200)
-	quantity = models.IntegerField(blank=True, null=True)
-	max_per_user = models.IntegerField(blank=True, null=True)		# TODO V2 : moteur de contraintes
+	quantity = models.PositiveIntegerField(blank=True, null=True)
+	max_per_user = models.PositiveIntegerField(blank=True, null=True)		# TODO V2 : moteur de contraintes
 	# sale 		 = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
 
 	def __str__(self):
 		return self.name
-
-	class Meta:
-		ordering = ('id',)
 
 class Item(models.Model):
 	"""
@@ -104,11 +87,11 @@ class Item(models.Model):
 	
 	# Specification
 	is_active 	= models.BooleanField(default=True)
-	quantity 	= models.IntegerField(blank=True, null=True)		# Null quand pas de restrinction sur l'item
+	quantity 	= models.PositiveIntegerField(blank=True, null=True)		# Null quand pas de restrinction sur l'item
 	usertype 	= models.ForeignKey(UserType, on_delete=models.PROTECT)			# UserType ?
 	price 		= models.FloatField()
 	nemopay_id 	= models.CharField(max_length=30, blank=True, null=True)		# TODO V2 : abstraire payment
-	max_per_user = models.IntegerField(blank=True, null=True)		# TODO V2 : moteur de contraintes
+	max_per_user = models.PositiveIntegerField(blank=True, null=True)		# TODO V2 : moteur de contraintes
 
 	fields 	= models.ManyToManyField('Field', through='ItemField', through_fields=('item','field')) #, related_name='fields')
 
@@ -179,7 +162,6 @@ class Order(models.Model):
 	class Meta:
 		ordering = ('id',)
 
-
 class OrderLine(models.Model):
 	"""
 	Links an Order to an Item with a quantity
@@ -190,6 +172,20 @@ class OrderLine(models.Model):
 
 	def __str__(self):
 		return "%s - %dx %s (Order %s)" % (self.id, self.quantity, self.item.name, self.order)
+
+	class Meta:
+		ordering = ('id',)
+
+class OrderLineItem(models.Model):
+	"""
+	Represents a single OrderLine.item with a unique id for ticketing
+	May have specifications with related OrderLineFields
+	"""
+	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+	orderline = models.ForeignKey(OrderLine, on_delete=models.CASCADE, related_name="orderlineitems")
+
+	def __str__(self):
+		return "%s - %s" % (self.id, self.orderline)
 
 	class Meta:
 		ordering = ('id',)
@@ -229,21 +225,6 @@ class ItemField(models.Model):
 
 	def __str__(self):
 		return "%s - %s)" % (self.item, self.field)
-
-	class Meta:
-		ordering = ('id',)
-
-
-class OrderLineItem(models.Model):
-	"""
-	Represents a single OrderLine.item
-	May have specifications with OrderLine Fields
-	"""
-	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-	orderline = models.ForeignKey(OrderLine, on_delete=models.CASCADE, related_name="orderlineitems")
-
-	def __str__(self):
-		return "%s - %s" % (self.id, self.orderline)
 
 	class Meta:
 		ordering = ('id',)

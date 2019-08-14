@@ -8,7 +8,7 @@ from authlib.client import OAuth2Session
 from authlib.common.errors import AuthlibBaseError
 
 from woolly_api.settings import OAUTH as OAuthConfig
-from .helpers import find_or_create_user
+# from .helpers import find_or_create_user
 
 OAUTH_TOKEN_NAME = 'oauth_token'
 UserModel = django_auth.get_user_model()
@@ -40,11 +40,19 @@ def get_user_from_request(request):
 	user_id = request.session.get('user_id')
 	if not user_id:
 		return None
+
+	import pdb; pdb.set_trace() # DEBUG
+	request.user # ??????????
+
 	try:
 		return UserModel.objects.get(pk=user_id)
 	except UserModel.DoesNotExist:
 		raise AuthenticationFailed("user_id does not match a user")
 
+
+def get_user(user_id):
+	"""Get user from cache or fetch it"""
+	pass
 
 class OAuthAPI:
 	"""
@@ -63,6 +71,20 @@ class OAuthAPI:
 		elif session:
 			self.config['token'] = session.get(OAUTH_TOKEN_NAME)
 		self.client = OAuth2Session(**self.config)
+
+	def fetch_user(self):
+		data = self.fetch_resource('user/?types=*')  # TODO restreindre
+		# TODO Checks
+
+		# Get or create user
+		try:
+			user = UserModel.objects.get(pk=data['id'])
+		except UserModel.DoesNotExist:
+			user = UserModel(**filter_dict_keys(data, UserModel.field_names()))
+		
+		# Update with fetched data and return
+		user.sync_data(data, save=True)
+		return user
 
 	def get_auth_url(self, redirection: str) -> str:
 		"""
@@ -89,16 +111,10 @@ class OAuthAPI:
 		except AuthlibBaseError as error:
 			raise OAuthError(error)
 
-		# Retrieve user infos from the Portal
-		auth_user_infos = self.fetch_resource('user/?types=*')  # TODO restreindre
-
-		# Find or create User
-		user = find_or_create_user(auth_user_infos)
-
-		# Login user into Django and Create session
-		request.user = user
+		# Fetch and login user into Django, then create session
+		request.user = self.fetch_user()
 		django_auth.login(request, user)
-		request.session['user_id'] = user.pk
+		request.session['user_id'] = request.user.pk
 		request.session[OAUTH_TOKEN_NAME] = token
 
 		# Get front redirection from cached state

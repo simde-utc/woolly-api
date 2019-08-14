@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractBaseUser
 from django.db import models
+from core.models import ApiModel
 import datetime
 
 
@@ -28,10 +29,13 @@ class UserType(models.Model):
 		ordering = ('id',)
 		verbose_name = "User Type"
 
-class User(AbstractBaseUser):
-	# Properties
+class User(AbstractBaseUser, ApiModel):
+	"""
+	Woolly User, directly linked to the Portail
+	"""
+
 	id = models.UUIDField(primary_key=True, editable=False)
-	email = models.EmailField(unique=True)
+	email = models.EmailField(unique=True) # TODO
 	first_name = models.CharField(max_length=100)
 	last_name = models.CharField(max_length=100)
 	# birthdate = models.DateField(default=datetime.date.today)
@@ -40,14 +44,18 @@ class User(AbstractBaseUser):
 	usertype = models.ForeignKey(UserType, on_delete=None, null=False, default=4, related_name='users')
 
 	# Rights
+	# TODO
 	is_admin = models.BooleanField(default=False)
 
-	USERNAME_FIELD = 'email'
-	EMAIL_FIELD = 'email'
 
-	# Display
+	# Remove unused AbstractBaseUser.fields
+	password = None
+
+	USERNAME_FIELD = 'id'
+	EMAIL_FIELD = 'email' # TODO ???
+
 	def __str__(self):
-		return self.email
+		return self.get_full_name()
 
 	def get_full_name(self):
 		return self.first_name + ' ' + self.last_name
@@ -55,12 +63,8 @@ class User(AbstractBaseUser):
 	def get_short_name(self):
 		return self.first_name
 
-	# required by Django.admin
+	# required by Django.admin TODO
 	
-	@property
-	def is_active(self):
-		return True
-
 	@property
 	def is_staff(self):
 		return self.is_admin
@@ -71,14 +75,5 @@ class User(AbstractBaseUser):
 	def has_module_perms(self, app_label):
 		return True		# ???
 
-	"""
-	def save(self, *args, **kwargs):
-		if not self.login:
-			self.login = None
-		# if not self.pk and self.has_usable_password() is False:
-			# self.set_password(self.password)
-		super(User, self).save(*args, **kwargs)
-	"""
-
-	class Meta:
-		ordering = ('id',)
+	# def save(self, *args, **kwargs):
+		# TODO type

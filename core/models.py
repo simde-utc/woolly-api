@@ -83,9 +83,9 @@ class ApiManager(BaseManager.from_queryset(ApiQuerySet)):
 
 class ApiModel(Model):
 
+	objects = ApiManager()
 	fetched_data = None
 	fetch_api_data = classmethod(fetch_data_from_api)
-	objects = ApiManager()
 
 	@abstractmethod
 	def get_api_endpoint(cls, **params) -> str:
@@ -121,13 +121,12 @@ class ApiModel(Model):
 		self.sync_data(None, oauth_client, save=True)
 		return self
 
+
 	def pk_to_url(self, pk) -> str:
 		if hasattr(pk, '__len__'):
 			return f"[{','.join(str(_pk) for _pk in pk)}]"
 		else:
 			return str(pk)
-
-
 
 	@classmethod
 	def field_names(cls):
