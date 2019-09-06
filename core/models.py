@@ -87,33 +87,45 @@ class ApiModel(Model):
 	fetched_data = None
 	fetch_api_data = classmethod(fetch_data_from_api)
 
+	def __getattr__(self, attr):
+		"""
+		Try getting data from fetched_data if possible
+		"""
+		try:
+			# Try getting real attribute first
+			return super().__getattr__(self, attr)
+		except AttributeError as error:
+			# Then, search in fetched data
+			if self.fetched_data and attr in self.fetched_data:
+				return self.fetched_data[attr]
+			raise error
+
+
 	@abstractmethod
 	def get_api_endpoint(cls, **params) -> str:
 		pass
 
 	def sync_data(self, data: dict=None, oauth_client=None, save: bool=True) -> Set[str]:
 		"""
-		Update instance attributes with provided or fetched data
+		Update instance attributes with patched provided or fetched data
 		"""
-		# Fetch data if not provided
+		# Fetch data if not provided, patch and link
 		if data is None:
-			self.fetched_data = self.fetch_api_data(oauth_client, { 'pk': self.pk })
-		else:
-			self.fetched_data = data
+			data = self.fetch_api_data(oauth_client, { 'pk': self.pk })
+		self.fetched_data = data
 
+		# Update fields attributes
 		updated_fields = set()
-		if self.id:
-			# Update instance attributes
-			for attr, value in self.fetched_data.items():
-				# TODO
-				if attr != 'id' and getattr(self, attr, '__NOT_THERE__') != value:
-					if hasattr(self, attr):
-						updated_fields.add(attr)
-					setattr(self, attr, self.fetched_data[attr])
+		for attr in self.field_names():
+			if attr != 'id' and attr in self.fetched_data:
+				value = self.fetched_data[attr]
+				if getattr(self, attr) != value:
+					setattr(self, attr, value)
+					updated_fields.add(attr)
 
-			# Save if required
-			if updated_fields and save:
-				self.save()
+		# Save if required
+		if save and updated_fields:
+			self.save()
 
 		return updated_fields
 

@@ -15,19 +15,19 @@ class UserTypeSerializer(ModelSerializer):
 
 class UserSerializer(ModelSerializer):
 
-	usertype     = RelatedField(read_only=True, required=False)
+	# usertype     = RelatedField(read_only=True, required=False)
 	# associations = RelatedField(queryset=AssociationMember.objects, many=True, required=False)
 	# TODO
 	orders       = RelatedField(queryset=Order.objects, many=True, required=False)
 
 	included_serializers = {
-		'usertype': UserTypeSerializer,
+		# 'usertype': UserTypeSerializer,
 		'orders': 'sales.serializers.OrderSerializer',
 		'associations': 'sales.serializers.AssociationSerializer',
 	}
 
 	class Meta:
 		model = User
-		exclude = ('password',)
+		fields = '__all__'
 		# read_only_fields = tuple()
 

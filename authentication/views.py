@@ -73,7 +73,7 @@ class AuthView:
 		else:
 			include_query = request.GET.get('include')
 			include_map = ModelViewSet.get_include_map(include_query)
-			user = UserSerializer(me, context={ 'include_map': include_map}).data
+			user = UserSerializer(me, context={ 'include_map': include_map }).data
 		return Response({
 			'authenticated': me.is_authenticated,
 			'user': user

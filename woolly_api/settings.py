@@ -28,8 +28,6 @@ def make_path(rel):
 # Payutc & Ginger config
 PAYUTC_KEY = confidentials.PAYUTC_KEY
 PAYUTC_TRANSACTION_BASE_URL = 'https://payutc.nemopay.net/validation?tra_id='
-GINGER_KEY = confidentials.GINGER_KEY
-GINGER_SERVER_URL = 'https://assos.utc.fr/ginger/v1/'
 
 # Portail des Assos config
 OAUTH = {

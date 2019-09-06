@@ -368,13 +368,18 @@ def generate_pdf(request, pk:int, **kwargs):
 			qr_code = base64.b64encode(qr_buffer.getvalue()).decode("utf-8")
 
 			# Add Nom et Prénom to orderline
+			first_name = last_name = None
 			for orderlinefield in orderlineitem.orderlinefields.all():
 				if orderlinefield.field.name == 'Nom':
 					first_name = orderlinefield.value
-					continue
-				if orderlinefield.field.name == 'Prénom':
+				elif orderlinefield.field.name == 'Prénom':
 					last_name = orderlinefield.value
-			
+				
+			if first_name is None:
+				first_name = order.owner.first_name
+			if last_name is None:
+				last_name = order.owner.last_name
+
 			# Add a ticket with this data
 			tickets.append({
 				'nom': first_name,

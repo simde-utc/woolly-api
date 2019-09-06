@@ -7,6 +7,7 @@ from django.core.cache import cache
 from authlib.client import OAuth2Session
 from authlib.common.errors import AuthlibBaseError
 
+from core.helpers import filter_dict_keys
 from woolly_api.settings import OAUTH as OAuthConfig
 # from .helpers import find_or_create_user
 
@@ -41,7 +42,7 @@ def get_user_from_request(request):
 	if not user_id:
 		return None
 
-	import pdb; pdb.set_trace() # DEBUG
+	import ipdb; ipdb.set_trace() # DEBUG
 	request.user # ??????????
 
 	try:
@@ -72,19 +73,32 @@ class OAuthAPI:
 			self.config['token'] = session.get(OAUTH_TOKEN_NAME)
 		self.client = OAuth2Session(**self.config)
 
-	def fetch_user(self):
-		data = self.fetch_resource('user/?types=*')  # TODO restreindre
-		# TODO Checks
+	def fetch_user(self, user_id: str=None):
+		"""
+		Get specified or current user
+		"""
+		# Get and patch data from API
+		url = (f"users/{user_id}" if user_id else "user") + "/?types=*"
+		data = self.patch_user_data(self.fetch_resource(url))
 
-		# Get or create user
+		# Get or create user from db
+		new_user = False
 		try:
 			user = UserModel.objects.get(pk=data['id'])
+			print("Got user")
 		except UserModel.DoesNotExist:
 			user = UserModel(**filter_dict_keys(data, UserModel.field_names()))
+			new_user = True
+			print("New user")
 		
 		# Update with fetched data and return
-		user.sync_data(data, save=True)
+		updated_fields = user.sync_data(data, save=False)
+		if updated_fields or new_user:
+			user.save()
+
 		return user
+
+	# OAuth
 
 	def get_auth_url(self, redirection: str) -> str:
 		"""
@@ -92,7 +106,7 @@ class OAuthAPI:
 		"""
 		# Get url and state from OAuth server
 		url, state = self.client.create_authorization_url(self.config['authorize_url'])
-		
+
 		# Cache front url with state for 5mins
 		cache.set(state, redirection, 300)
 		return url
@@ -102,6 +116,7 @@ class OAuthAPI:
 		Get token, user informations, store these and redirect
 		"""
 		# Get code and state from request
+		# TODO Checks
 		code = request.GET['code']
 		state = request.GET['state']
 
@@ -112,9 +127,10 @@ class OAuthAPI:
 			raise OAuthError(error)
 
 		# Fetch and login user into Django, then create session
-		request.user = self.fetch_user()
+		user = self.fetch_user()
+		request.user = user
 		django_auth.login(request, user)
-		request.session['user_id'] = request.user.pk
+		request.session['user_id'] = str(user.id)
 		request.session[OAUTH_TOKEN_NAME] = token
 
 		# Get front redirection from cached state
