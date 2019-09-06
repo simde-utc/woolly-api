@@ -104,16 +104,27 @@ class User(AbstractBaseUser, ApiModel):
 		# TODO Checks
 		data['first_name'] = data.pop('firstname')
 		data['last_name'] = data.pop('lastname')
-		data['is_admin'] = data['types']['is_admin']
+		data['is_admin'] = data['types']['admin']
 		return data
 
-	def sync_data(self, *args, usertypes: 'UserTypes'=None, **kwargs):
+	def sync_data(self, *args, usertypes: 'UserTypes'=None, save: bool=True, **kwargs):
 		"""
-		Sync data and also types
+		Sync data, keep manually-set admin and also types
 		"""
-		result = super().sync_data(*args, **kwargs)
+		is_admin = self.is_admin
+		# Sync data and types
+		updated_fields = super().sync_data(*args, save=False, **kwargs)
 		self.sync_types(usertypes)
-		return result
+
+		# Keep admin if set manually
+		if is_admin and not self.is_admin:
+			self.is_admin = True
+
+		# Save if needed
+		if save and updated_fields:
+			self.save()
+
+		return updated_fields
 
 	def sync_types(self, usertypes: 'UserType'=None):
 		if not self.fetched_data:

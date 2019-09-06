@@ -73,33 +73,6 @@ class OAuthAPI:
 			self.config['token'] = session.get(OAUTH_TOKEN_NAME)
 		self.client = OAuth2Session(**self.config)
 
-	def fetch_user(self, user_id: str=None):
-		"""
-		Get specified or current user
-		"""
-		# Get and patch data from API
-		url = (f"users/{user_id}" if user_id else "user") + "/?types=*"
-		data = self.patch_user_data(self.fetch_resource(url))
-
-		# Get or create user from db
-		new_user = False
-		try:
-			user = UserModel.objects.get(pk=data['id'])
-			print("Got user")
-		except UserModel.DoesNotExist:
-			user = UserModel(**filter_dict_keys(data, UserModel.field_names()))
-			new_user = True
-			print("New user")
-		
-		# Update with fetched data and return
-		updated_fields = user.sync_data(data, save=False)
-		if updated_fields or new_user:
-			user.save()
-
-		return user
-
-	# OAuth
-
 	def get_auth_url(self, redirection: str) -> str:
 		"""
 		Return authorization url
@@ -162,6 +135,33 @@ class OAuthAPI:
 			return resp.json()
 		else:
 			raise OAuthError(response=resp)
+
+	def fetch_user(self, user_id: str=None) -> UserModel:
+		"""
+		Get specified or current user
+		"""
+		# Get and patch data from API
+		url = (f"users/{user_id}" if user_id else "user") + "/?types=*"
+		data = self.fetch_resource(url)
+		if hasattr(UserModel, 'patch_fetched_data'):
+			data = UserModel.patch_fetched_data(data)
+
+		# Get or create user from db
+		new_user = False
+		try:
+			user = UserModel.objects.get(pk=data['id'])
+		except UserModel.DoesNotExist:
+			fields_data = filter_dict_keys(data, UserModel.field_names())
+			user = UserModel(**fields_data)
+			new_user = True
+		
+		# Update with fetched data and return
+		updated_fields = user.sync_data(data, save=False)
+		if updated_fields or new_user:
+			user.save()
+
+		return user
+
 
 
 class OAuthBackend(ModelBackend):
