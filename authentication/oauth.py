@@ -7,6 +7,7 @@ from django.core.cache import cache
 from authlib.client import OAuth2Session
 from authlib.common.errors import AuthlibBaseError
 
+from core.models import gen_model_key
 from core.helpers import filter_dict_keys
 from woolly_api.settings import OAUTH as OAuthConfig
 # from .helpers import find_or_create_user
@@ -33,7 +34,7 @@ def get_user_from_request(request):
 	> return UserModel(email='test@woolly.com') # DEBUG
 	"""
 	# Try to get the user logged in the request
-	user = (getattr(request, '_request', request)).user
+	user = getattr(request, '_request', request).user
 	if user.is_authenticated:
 		return user
 
@@ -42,18 +43,12 @@ def get_user_from_request(request):
 	if not user_id:
 		return None
 
-	import ipdb; ipdb.set_trace() # DEBUG
-	request.user # ??????????
-
 	try:
-		return UserModel.objects.get(pk=user_id)
+		oauth_client = OAuthAPI(session=request.session)
+		return UserModel.objects.get_with_api_data(oauth_client, pk=user_id)
 	except UserModel.DoesNotExist:
 		raise AuthenticationFailed("user_id does not match a user")
 
-
-def get_user(user_id):
-	"""Get user from cache or fetch it"""
-	pass
 
 class OAuthAPI:
 	"""
@@ -163,7 +158,6 @@ class OAuthAPI:
 		return user
 
 
-
 class OAuthBackend(ModelBackend):
 	"""
 	django.contrib.auth custom Backend with OAuth
@@ -176,6 +170,14 @@ class OAuthBackend(ModelBackend):
 		return get_user_from_request(request)
 
 	def get_user(self, user_id):
+		# Try to get user from cache
+		key = gen_model_key(UserModel, pk=user_id)
+		cached_user = cache.get(key, None)
+		if cached_user is not None:
+			print("Got user from cache")
+			return cached_user
+
+		# Return simple user
 		try:
 			return UserModel.objects.get(pk=user_id)
 		except UserModel.DoesNotExist:

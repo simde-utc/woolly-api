@@ -58,7 +58,7 @@ SECURE_SSL_REDIRECT = HTTPS_ENABLED
 SECURE_BROWSER_XSS_FILTER = True
 
 SESSION_COOKIE_SECURE = False # False to enable the use of cookies in ajax requests
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache' # cache or cached_db
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' # cache or cached_db
 
 # Cross Site Request Foregery protection
 CSRF_COOKIE_SECURE = HTTPS_ENABLED

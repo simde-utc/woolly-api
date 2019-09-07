@@ -76,7 +76,7 @@ class AuthView:
 			user = UserSerializer(me, context={ 'include_map': include_map }).data
 		return Response({
 			'authenticated': me.is_authenticated,
-			'user': user
+			'user': user,
 		})
 
 	@classmethod

@@ -92,12 +92,18 @@ class User(AbstractBaseUser, ApiModel):
 
 	# OAuth API methods
 
+	@classmethod
 	def get_api_endpoint(cls, **params) -> str:
-		# if params.get('me', False):
-		# 	return 
-		# return (f"users/{user_id}" if user_id else "user") + "/?types=*"
-
-		pass
+		print(params)
+		if params.get('me', False):
+			url = 'user'
+		elif 'pk' in params:
+			url = f"users/{params['pk']}"
+		else:
+			url = 'users'
+		if params.get('with_types', True):
+			url += '/?types=*'
+		return url
 
 	@staticmethod
 	def patch_fetched_data(data: dict) -> dict:
