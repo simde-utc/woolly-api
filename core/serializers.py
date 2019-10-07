@@ -68,23 +68,16 @@ class ModelSerializer(serializers.ModelSerializer):
 		return fields
 
 class ApiModelSerializer(ModelSerializer):
-	pass
+	"""
+	ModelSerializer that can display additional data from APIModels
+	"""
 
-class Fake:
-
-	@property
-	def data(self):
-		data = super().data
-		# TODO
-		if self.instance:
-			if isinstance(self.instance, QuerySet):
-				getattr(obj, 'fetched_data', None)
-			data = {
+	def to_representation(self, instance) -> dict:
+		data = super().to_representation(instance)
+		fetched_data = getattr(instance, 'fetched_data', None)
+		if fetched_data:
+			return {
 				**data,
-				**self.instance.fetched_data,
+				**fetched_data,
 			}
 		return data
-
-	# update
-	# create
-	pass

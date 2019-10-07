@@ -10,7 +10,6 @@ from authlib.common.errors import AuthlibBaseError
 from core.models import gen_model_key
 from core.helpers import filter_dict_keys
 from woolly_api.settings import OAUTH as OAuthConfig
-# from .helpers import find_or_create_user
 
 OAUTH_TOKEN_NAME = 'oauth_token'
 UserModel = django_auth.get_user_model()
@@ -36,7 +35,12 @@ def get_user_from_request(request):
 	# Try to get the user logged in the request
 	user = getattr(request, '_request', request).user
 	if user.is_authenticated:
-		return user
+		if user.fetched_data:
+			return user
+
+		# Add api data and return user
+		oauth_client = OAuthAPI(session=request.session)
+		return user.get_with_api_data(oauth_client)
 
 	# Get the user from the session
 	user_id = request.session.get('user_id')
@@ -165,19 +169,18 @@ class OAuthBackend(ModelBackend):
 
 	def authenticate(self, request, **kwargs):
 		"""
-		For rest_framework authentication
+		For django authentication
 		"""
 		return get_user_from_request(request)
 
 	def get_user(self, user_id):
-		# Try to get user from cache
+		# Try to get full user from cache
 		key = gen_model_key(UserModel, pk=user_id)
 		cached_user = cache.get(key, None)
 		if cached_user is not None:
-			print("Got user from cache")
 			return cached_user
 
-		# Return simple user
+		# Return simple user as a fallback
 		try:
 			return UserModel.objects.get(pk=user_id)
 		except UserModel.DoesNotExist:

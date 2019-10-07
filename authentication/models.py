@@ -94,7 +94,6 @@ class User(AbstractBaseUser, ApiModel):
 
 	@classmethod
 	def get_api_endpoint(cls, **params) -> str:
-		print(params)
 		if params.get('me', False):
 			url = 'user'
 		elif 'pk' in params:

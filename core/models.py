@@ -70,10 +70,8 @@ class ApiQuerySet(QuerySet):
 		# Try cache
 		key = gen_model_key(self.model, **params)
 		results = cache.get(key, None)
-		print(f"getting {key}")
 
 		if results is not None:
-			print("Got from cache !")
 			return results
 
 		# Get database results, fetched data and some params
@@ -187,7 +185,7 @@ class ApiModel(Model):
 			return cached
 
 		# Else fetched and sync data
-		self.sync_data(None, oauth_client, save)
+		self.sync_data(None, oauth_client, save=save)
 		return self
 
 	def save(self, *args, **kwargs):
