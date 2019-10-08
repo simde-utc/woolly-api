@@ -67,7 +67,6 @@ class User(AbstractBaseUser, ApiModel):
 	email = models.EmailField(unique=True) # TODO
 	first_name = models.CharField(max_length=100)
 	last_name = models.CharField(max_length=100)
-	# birthdate = models.DateField(default=datetime.date.today)
 
 	# Relations
 	types = None
@@ -81,13 +80,13 @@ class User(AbstractBaseUser, ApiModel):
 	USERNAME_FIELD = 'id'
 	EMAIL_FIELD = 'email' # TODO ???
 
-	def __str__(self):
+	def __str__(self) -> str:
 		return self.get_full_name()
 
-	def get_full_name(self):
+	def get_full_name(self) -> str:
 		return f"{self.first_name} {self.last_name}"
 
-	def get_short_name(self):
+	def get_short_name(self) -> str:
 		return self.first_name
 
 	# OAuth API methods
@@ -97,11 +96,11 @@ class User(AbstractBaseUser, ApiModel):
 		if params.get('me', False):
 			url = 'user'
 		elif 'pk' in params:
-			url = f"users/{params['pk']}"
+			url = f"users{cls.pk_to_url(params['pk'])}"
 		else:
 			url = 'users'
 		if params.get('with_types', True):
-			url += '/?types=*'
+			url += '?types=*'
 		return url
 
 	@staticmethod
@@ -116,13 +115,13 @@ class User(AbstractBaseUser, ApiModel):
 		"""
 		Sync data, keep manually-set admin and also types
 		"""
-		is_admin = self.is_admin
+		was_admin = self.is_admin
 		# Sync data and types
 		updated_fields = super().sync_data(*args, save=False, **kwargs)
 		self.sync_types(usertypes)
 
 		# Keep admin if set manually
-		if is_admin and not self.is_admin:
+		if was_admin and not self.is_admin:
 			self.is_admin = True
 
 		# Save if needed

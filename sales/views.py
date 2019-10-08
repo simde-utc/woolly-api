@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from django.http import HttpResponse
 
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from core.viewsets import ModelViewSet
+from core.viewsets import ModelViewSet, ApiModelViewSet
 from core.helpers import errorResponse
 from core.permissions import *
 from .serializers import *
@@ -22,7 +22,7 @@ import base64
 # 	Association
 # ============================================
 
-class AssociationViewSet(ModelViewSet):
+class AssociationViewSet(ApiModelViewSet):
 	"""
 	Defines the behavior of the association view
 	"""

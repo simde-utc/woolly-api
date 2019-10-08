@@ -57,12 +57,6 @@ class ApiQuerySet(QuerySet):
 		"""
 		Execute query and add extra data from the API
 		"""
-		# Return empty list if no results
-		if self.query.has_filters() and not self:
-			# if single_result:
-				# raise 
-			return []
-
 		# Set single_result automatically if only one result is expected
 		if 'pk' in params and not hasattr(params['pk'], '__len__'):
 			single_result = True
@@ -70,7 +64,6 @@ class ApiQuerySet(QuerySet):
 		# Try cache
 		key = gen_model_key(self.model, **params)
 		results = cache.get(key, None)
-
 		if results is not None:
 			return results
 
@@ -129,7 +122,7 @@ class ApiModel(Model):
 
 	def __getattr__(self, attr):
 		"""
-		Try getting data from fetched_data if possible
+		Try getting data from fetched_data if possible to act as a model field
 		"""
 		try:
 			# Try getting real attribute first
@@ -144,11 +137,12 @@ class ApiModel(Model):
 	def get_api_endpoint(cls, **params) -> str:
 		raise NotImplementedError("get_api_endpoint must be implemented")
 
-	def pk_to_url(self, pk) -> str:
+	@classmethod
+	def pk_to_url(cls, pk) -> str:
 		if hasattr(pk, '__len__'):
-			return f"[{','.join(str(_pk) for _pk in pk)}]"
+			return f"/[{','.join(str(_pk) for _pk in pk)}]"
 		else:
-			return str(pk)
+			return f"/{pk}" if pk else ''
 
 	def sync_data(self, data: dict=None, oauth_client=None, save: bool=True) -> Set[str]:
 		"""

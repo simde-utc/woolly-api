@@ -40,7 +40,7 @@ OAUTH = {
 		'access_token_url': 'https://assos.utc.fr/oauth/token',
 		'login_url':        'https://assos.utc.fr/login',
 		'logout_url':       'https://assos.utc.fr/logout',
-		'scope':            'user-get-info user-get-roles user-get-assos-members-joined-now'
+		'scope':            'user-get-assos user-get-info user-get-roles', # user-get-assos-members-joined-now',
 	},
 }
 
@@ -52,7 +52,7 @@ OAUTH = {
 DEBUG = confidentials.DEBUG
 SECRET_KEY = confidentials.SECRET_KEY
 ALLOWED_HOSTS = confidentials.ALLOWED_HOSTS
-HTTPS_ENABLED = getattr(confidentials, 'HTTPS_ENABLED', False)
+HTTPS_ENABLED = getattr(confidentials, 'HTTPS_ENABLED', True)
 
 SECURE_SSL_REDIRECT = HTTPS_ENABLED
 SECURE_BROWSER_XSS_FILTER = True

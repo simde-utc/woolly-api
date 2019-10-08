@@ -19,11 +19,10 @@ class Association(ApiModel):
 
 	@classmethod
 	def get_api_endpoint(cls, **params) -> str:
-		url = []
-		url.append('assos')
+		url = 'assos'
 		if 'pk' in params:
-			url.append(self.pk_to_url(params['pk']))
-		return '/'.join(url)
+			url += cls.pk_to_url(params['pk'])
+		return url
 
 	def __str__(self):
 		return self.shortname

@@ -1,4 +1,7 @@
+from rest_framework.response import Response
 from rest_framework import viewsets
+from django.core.cache import cache
+from core.models import gen_model_key
 
 class ModelViewSetMixin(object):
 	"""
@@ -87,8 +90,41 @@ class ModelViewSetMixin(object):
 class ModelViewSet(viewsets.ModelViewSet, ModelViewSetMixin):
 	pass
 
-class ApiModelViewsSet(viewsets.ReadOnlyModelViewSet, ModelViewSetMixin):
+class ApiModelViewSet(viewsets.ReadOnlyModelViewSet, ModelViewSetMixin):
+	"""
+	Supercharged ReadOnlyModelViewSet linked to an external OAuth API
+	"""
+
 	_oauth_client = None
+
+	def list(self, request, *args, **kwargs):
+		"""
+		List and paginate ApiModel with additional data
+		"""
+		queryset = self.filter_queryset(self.get_queryset())
+		queryset = queryset.get_with_api_data(self.oauth_client, **kwargs)
+		page = self.paginate_queryset(queryset)
+		if page is not None:
+			serializer = self.get_serializer(page, many=True)
+			return self.get_paginated_response(serializer.data)
+
+		serializer = self.get_serializer(queryset, many=True)
+		return Response(serializer.data)
+
+	def retrieve(self, request, *args, **kwargs):
+		"""
+		Try to retrieve ApiModel from cache
+		else fetch it with additional data
+		"""
+		key = gen_model_key(self.queryset.model, **kwargs)
+		instance = cache.get(key, None)
+
+		if not instance or instance.fetched_data:
+			instance = self.get_object()
+			instance.get_with_api_data(self.oauth_client)
+
+		serializer = self.get_serializer(instance)
+		return Response(serializer.data)
 
 	@property
 	def oauth_client(self):
