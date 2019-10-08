@@ -1,20 +1,22 @@
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from typing import Sequence, Dict, Union, Tuple
 from core.helpers import pluralize, get_model_name
 from django.urls import path
 from django.db import models
 
+ModelViewSetType = Union[ModelViewSet, ReadOnlyModelViewSet]
+
 VIEWSET_METHODS = {
 	'list': {
 		'get': 'list',
-		'post': 'create'
+		'post': 'create',
 	},
 	'detail': {
 		'get': 'retrieve',
 		'put': 'update',
 		'patch': 'partial_update',
-		'delete': 'destroy'
-	}
+		'delete': 'destroy',
+	},
 }
 
 CONVERTERS_MAP = {
@@ -33,7 +35,7 @@ def _get_names_and_model(step) -> str:
 	if type(step) is str:
 		singular = step
 	else:
-		if isinstance(step, type) and issubclass(step, ModelViewSet):
+		if isinstance(step, type) and issubclass(step, (ModelViewSet, ReadOnlyModelViewSet)):
 			model = step.queryset.model
 		else:
 			model = step
@@ -66,8 +68,15 @@ def build_nested_url(path, converters: Dict[str, str]={}) -> Tuple[str, str]:
 
 	return '/'.join(url), '-'.join(name)
 
-def gen_url_set(viewsets: Union[ModelViewSet, Sequence[ModelViewSet]],
-								converters: Dict[str, str]={}, path_options: dict={}):
+def filter_viewset_methods(route_type: str, viewset: ModelViewSetType) -> Dict[str, str]:
+	"""Helper to filter viewset methods for viewset.as_view usage"""
+	return {
+		method: action for method, action in VIEWSET_METHODS[route_type].items()
+		               if hasattr(viewset, action)
+	}
+
+def gen_url_set(viewsets: Union[ModelViewSetType, Sequence[ModelViewSetType]],
+                converters: Dict[str, str]={}, path_options: dict={}):
 	"""
 	Generate a set of URLs with the right paths and names
 	from the list of nested viewsets
@@ -80,13 +89,13 @@ def gen_url_set(viewsets: Union[ModelViewSet, Sequence[ModelViewSet]],
 	list_params = {
 		'route': url.rsplit('/', 1)[0], 	# Remove last model_pk 
 		'name': f"{name}-list",
-		'view': viewset.as_view(VIEWSET_METHODS['list']),
+		'view': viewset.as_view(filter_viewset_methods('list', viewset)),
 		**path_options.get('list', path_options),
 	}
 	detail_params = {
 		'route': url,
 		'name': f"{name}-detail",
-		'view': viewset.as_view(VIEWSET_METHODS['detail']),
+		'view': viewset.as_view(filter_viewset_methods('detail', viewset)),
 		**path_options.get('detail', path_options),
 	}
 
