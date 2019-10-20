@@ -78,7 +78,7 @@ class OrderViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 
 	def _get_expected_status_code(self, method, allowed, user):
 		if not allowed:
-			return status.HTTP_403_FORBIDDEN
+			return (status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND)
 		if method == 'post':
 			return status.HTTP_200_OK if user == 'user' else status.HTTP_201_CREATED
 		if method == 'delete':

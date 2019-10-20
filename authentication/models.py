@@ -1,116 +1,154 @@
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser
 from django.db import models
+from core.models import ApiModel
 import datetime
 
 
 class UserType(models.Model):
-	name = models.CharField(max_length=50, unique=True)
-	# description = models.CharField(max_length=180, unique=True)
-	# item = models.ManyToManyField('sales.Item')
-
-	# TODO : revoir ça ?
-	COTISANT 	 = 'Cotisant BDE'
-	NON_COTISANT = 'UTC Non Cotisant'
-	TREMPLIN 	 = 'Tremplin UTC'
-	EXTERIEUR 	 = 'Extérieur'
+	id = models.CharField(max_length=25, primary_key=True)
+	name = models.CharField(max_length=50)
+	validation = models.CharField(max_length=250)
 
 	@staticmethod
-	def init_values():
-		"""Initialize the different default UserTypes in DB"""
-		types = (UserType.COTISANT, UserType.NON_COTISANT, UserType.TREMPLIN, UserType.EXTERIEUR)
-		for value in types:
-			UserType(name=value).save()
+	def init_defaults():
+		"""
+		Initialize the different default UserTypes in DB
+		"""
+		DEFAULT_USER_TYPES = [
+			{
+				'id': 'cotisant_bde',
+				'name': 'Cotisant BDE',
+				'validation': 'user.fetched_data["types"]["contributorBde"]',
+			},
+			{
+				'id': 'utc',
+				'name': 'UTC',
+				'validation': 'user.fetched_data["types"]["cas"]',
+			},
+			{
+				'id': 'tremplin',
+				'name': 'Tremplin UTC',
+				'validation': 'user',
+			},
+			{
+				'id': 'exterieur',
+				'name': 'Extérieur',
+				'validation': 'True',
+			},
+		]
+		created = []
+		for type_data in DEFAULT_USER_TYPES:
+			pk = type_data.pop('id')
+			if UserType.objects.get_or_create(defaults=type_data, pk=pk)[1]:
+				created.append(pk)
+
+		if created:
+			print(f"Created {', '.join(created)}")
+
+	def check_user(self, user: 'User') -> bool:
+		"""
+		Check if the user has the current type
+		"""
+		if not isinstance(user, User):
+			raise ValueError("Provided user must be an instance of authentication.User")
+		return eval(self.validation)
 
 	def __str__(self):
 		return self.name
 
 	class Meta:
-		ordering = ('id',)
 		verbose_name = "User Type"
 
-	class JSONAPIMeta:
-		resource_name = "usertypes"
-
-
-class UserManager(BaseUserManager):
-	def create_user(self, email, password=None, **other_fields):
-		if not email:
-			raise ValueError('Users must have an email address')
-
-		# Create and Save User
-		user = self.model(
-			email = self.normalize_email(email),
-			**other_fields
-		)
-		user.set_password(password)
-		user.save(using=self._db)
-		return user
-
-	def create_superuser(self, email, **other_fields):
-		# TODO Create a hash password and set it by email
-		password = "hash"
-
-		user = self.create_user(email, password=password, **other_fields)
-		user.is_admin = True
-		user.save(using=self._db)
-		return user
-
-
-class User(AbstractBaseUser):
-	# Properties
-	email = models.EmailField(unique=True)
-	login = models.CharField(max_length=253, unique=True, blank=True, null=True)  # TODO : virer	
+class User(AbstractBaseUser, ApiModel):
+	"""
+	Woolly User, directly linked to the Portail
+	"""
+	id = models.UUIDField(primary_key=True, editable=False)
+	email = models.EmailField(unique=True) # TODO
 	first_name = models.CharField(max_length=100)
 	last_name = models.CharField(max_length=100)
-	birthdate = models.DateField(default=datetime.date.today)
 
 	# Relations
-	usertype = models.ForeignKey(UserType, on_delete=None, null=False, default=4, related_name='users')
-	# associations = models.ManyToManyField('sales.Association', through='sales.AssociationMember')
+	types = None
 
 	# Rights
-	is_active = models.BooleanField(default=True)
 	is_admin = models.BooleanField(default=False)
 
+	# Remove unused AbstractBaseUser.fields
+	password = None
+
+	USERNAME_FIELD = 'id'
+	EMAIL_FIELD = 'email' # TODO ???
+
+	def __str__(self) -> str:
+		return self.get_full_name()
+
+	def get_full_name(self) -> str:
+		return f"{self.first_name} {self.last_name}"
+
+	def get_short_name(self) -> str:
+		return self.first_name
+
+	# OAuth API methods
+
+	@classmethod
+	def get_api_endpoint(cls, params: dict) -> str:
+		if params.get('me', False):
+			url = 'user'
+		elif 'pk' in params:
+			url = f"users{cls.pk_to_url(params['pk'])}"
+		else:
+			url = 'users'
+		if params.get('with_types', True):
+			url += '/?types=*'
+		return url
+
+	@staticmethod
+	def patch_fetched_data(data: dict) -> dict:
+		# TODO Checks
+		data['first_name'] = data.pop('firstname')
+		data['last_name'] = data.pop('lastname')
+		data['is_admin'] = data['types']['admin']
+		return data
+
+	def sync_data(self, *args, usertypes: 'UserTypes'=None, save: bool=True, **kwargs):
+		"""
+		Sync data, keep manually-set admin and also types
+		"""
+		was_admin = self.is_admin
+		# Sync data and types
+		updated_fields = super().sync_data(*args, save=False, **kwargs)
+		self.sync_types(usertypes)
+
+		# Keep admin if set manually
+		if was_admin and not self.is_admin:
+			self.is_admin = True
+
+		# Save if needed
+		if save and updated_fields:
+			self.save()
+
+		return updated_fields
+
+	def sync_types(self, usertypes: 'UserType'=None):
+		if not self.fetched_data:
+			raise ValueError('Must fetch data from API first')
+		if usertypes is None:
+			usertypes = UserType.objects.all()
+
+		self.types = {
+			utype.id: utype.check_user(self)
+			for utype in usertypes
+		}
+
+	# required by Django.admin TODO
+	
 	@property
 	def is_staff(self):
 		return self.is_admin
 
-	# Django utils
-	objects = UserManager()
-
-	USERNAME_FIELD = 'email'
-	EMAIL_FIELD = 'email'
-
-	# Display
-	def __str__(self):
-		return self.email
-		# return '%s %s %s' % (self.email, self.first_name, self.usertype.name)
-
-	def get_full_name(self):
-		return self.first_name + ' ' + self.last_name
-
-	def get_short_name(self):
-		return self.first_name
-
-	# required by Django.admin
 	def has_perm(self, perm, obj=None):
 		return True		# ???
 
 	def has_module_perms(self, app_label):
 		return True		# ???
-
-	"""
-	def save(self, *args, **kwargs):
-		if not self.login:
-			self.login = None
-		# if not self.pk and self.has_usable_password() is False:
-			# self.set_password(self.password)
-		super(User, self).save(*args, **kwargs)
-	"""
-
-	class Meta:
-		ordering = ('id',)
-
-	class JSONAPIMeta:
-		resource_name = "users"

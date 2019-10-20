@@ -9,10 +9,6 @@ from core.helpers import custom_editable_fields
 # 	Inlines
 # ============================================
 
-class AssociationMemberInline(admin.TabularInline):
-	model = AssociationMember
-	extra = 0
-
 class ItemFieldInline(admin.TabularInline):
 	model = ItemField
 	extra = 0
@@ -22,28 +18,21 @@ class OrderLineItemInline(admin.TabularInline):
 	extra = 0
 	readonly_fields = ('id',)
 
+class OrderLineFieldInline(admin.TabularInline):
+	model = OrderLineField
+	extra = 0
+	readonly_fields = ('id',)
+
 
 # ============================================
 # 	Association & Sale
 # ============================================
 
 class AssociationAdmin(admin.ModelAdmin):
-	def get_queryset(self, request):
-		queryset = super().get_queryset(request)
-		queryset = queryset.annotate(
-			_members_count = Count("members", distinct=True),
-		)
-		return queryset
-
-	# Displayers
-	def number_of_members(self, obj):
-		return obj._members_count
-
-	list_display = ('name', 'fun_id', 'number_of_members')
-	inlines = (AssociationMemberInline,)
+	list_display = ('shortname', 'fun_id')
 	exclude = ('members',)
-	search_fields = ('name', 'fun_id')
-	ordering = ('name',)
+	search_fields = ('shortname', 'fun_id')
+	ordering = ('shortname',)
 
 class SaleAdmin(admin.ModelAdmin):
 	def get_queryset(self, request):
@@ -78,7 +67,7 @@ class SaleAdmin(admin.ModelAdmin):
 # ============================================
 
 class ItemAdmin(admin.ModelAdmin):
-	list_display = ('name', 'sale', 'group', 'is_active', 'quantity', 'usertype', 'price', 'max_per_user')
+	list_display = ('name', 'sale', 'group', 'is_active', 'quantity', 'quantity_left', 'usertype', 'price', 'max_per_user')
 	list_filter = ('is_active', 'sale', 'group', 'usertype')
 	list_editable = tuple()
 
@@ -145,7 +134,15 @@ class OrderLineAdmin(admin.ModelAdmin):
 	def owner(self, obj):
 		return obj.order.owner
 
-	list_display = ('id', 'order_id', 'order_status', 'owner', 'sale_name', 'item_name', 'quantity')
+	def get_uuids(self, orderline):
+		return mark_safe("<br>".join(str(orderlineitem.id) \
+			for orderlineitem in orderline.orderlineitems.all()
+		))
+	get_uuids.short_description = 'UUIDs'
+	get_uuids.admin_order_field = 'uuids'
+
+
+	list_display = ('id', 'order_id', 'order_status', 'owner', 'sale_name', 'item_name', 'get_uuids', 'quantity')
 	def get_readonly_fields(self, request, obj=None):
 		return custom_editable_fields(request, obj, ('order', 'item'))
 
@@ -155,6 +152,7 @@ class OrderLineAdmin(admin.ModelAdmin):
 	)
 
 	search_fields = ('item__name', 'order__owner__email', 'order__sale__name')
+	list_filter = ('order__status', 'order__sale__name')
 
 
 # ============================================
@@ -184,6 +182,7 @@ class OrderLineItemAdmin(admin.ModelAdmin):
 
 	list_display = ('id', 'orderline_id', 'order_id', 'owner', 'sale')
 	list_filter = ('orderline__order__sale',) # TODO Not working
+	inlines = (OrderLineFieldInline,)
 
 	def get_readonly_fields(self, request, obj=None):
 		return custom_editable_fields(request, obj, ('orderline',), ('id',))
@@ -207,7 +206,6 @@ class OrderLineFieldAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Association, AssociationAdmin)
-# admin.site.register(AssociationMember)
 admin.site.register(Sale, SaleAdmin)
 
 admin.site.register(Item, ItemAdmin)

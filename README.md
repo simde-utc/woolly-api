@@ -74,9 +74,9 @@ You can find (the documentation of the API here)[./documentation/api.md].
 
 ## Deployment
 
-Check this deployment checklist : https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
+Check this deployment checklist : https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
-Deploy server using : https://docs.djangoproject.com/en/2.1/howto/deployment/wsgi/
+Deploy server using : https://docs.djangoproject.com/en/2.2/howto/deployment/wsgi/
 
 Here, on deployment with use Apache to run the server.
 Install `mod_wsgi` : `sudo apt-get install libapache2-mod-wsgi-py3`
