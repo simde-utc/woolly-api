@@ -18,10 +18,12 @@ class Association(ApiModel):
 	fun_id    = models.PositiveSmallIntegerField(null=True, blank=True)			# TODO V2 : abstraire payment
 
 	@classmethod
-	def get_api_endpoint(cls, **params) -> str:
+	def get_api_endpoint(cls, params: dict) -> str:
 		url = 'assos'
 		if 'pk' in params:
 			url += cls.pk_to_url(params['pk'])
+		if 'user_pk' in params:
+			url = f"users/{params['user_pk']}/{url}"
 		return url
 
 	def __str__(self):

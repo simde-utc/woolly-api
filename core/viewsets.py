@@ -97,6 +97,13 @@ class ApiModelViewSet(viewsets.ReadOnlyModelViewSet, ModelViewSetMixin):
 
 	_oauth_client = None
 
+	@property
+	def oauth_client(self):
+		if self._oauth_client is None:
+			from authentication.oauth import OAuthAPI
+			self._oauth_client = OAuthAPI(session=self.request.session)
+		return self._oauth_client
+
 	def list(self, request, *args, **kwargs):
 		"""
 		List and paginate ApiModel with additional data
@@ -125,10 +132,3 @@ class ApiModelViewSet(viewsets.ReadOnlyModelViewSet, ModelViewSetMixin):
 
 		serializer = self.get_serializer(instance)
 		return Response(serializer.data)
-
-	@property
-	def oauth_client(self):
-		if self._oauth_client is None:
-			from authentication.oauth import OAuthAPI
-			self._oauth_client = OAuthAPI(session=self.request.session)
-		return self._oauth_client

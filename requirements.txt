@@ -3,7 +3,6 @@ xhtml2pdf==0.2.2
 django==2.1
 djangorestframework==3.8.2
 django-cors-headers==2.2.0
-djangorestframework-jsonapi==2.5.0
 django_extensions==2.1.6
 pymysql==0.8.0
 requests==2.20.0

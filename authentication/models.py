@@ -92,7 +92,7 @@ class User(AbstractBaseUser, ApiModel):
 	# OAuth API methods
 
 	@classmethod
-	def get_api_endpoint(cls, **params) -> str:
+	def get_api_endpoint(cls, params: dict) -> str:
 		if params.get('me', False):
 			url = 'user'
 		elif 'pk' in params:
@@ -100,7 +100,7 @@ class User(AbstractBaseUser, ApiModel):
 		else:
 			url = 'users'
 		if params.get('with_types', True):
-			url += '?types=*'
+			url += '/?types=*'
 		return url
 
 	@staticmethod

@@ -1,3 +1,4 @@
+from django.db.utils import IntegrityError
 from django.db.models import QuerySet, Model
 from django.db.models.manager import BaseManager
 from core.helpers import filter_dict_keys, iterable_to_map
@@ -25,7 +26,7 @@ def fetch_data_from_api(model, oauth_client=None, **params):
 		oauth_client = OAuthAPI()
 
 	# Fetch from the right resource URI and patch data if needed
-	uri = model.get_api_endpoint(**params)
+	uri = model.get_api_endpoint(params)
 	data = oauth_client.fetch_resource(uri)
 	if hasattr(model, 'patch_fetched_data'):
 		return model.patch_fetched_data(data)
@@ -68,11 +69,15 @@ class ApiQuerySet(QuerySet):
 			return results
 
 		# Get database results, fetched data and some params
-		clone = self.filter(**params)
-		# TODO Fix potential errors
-		results = iterable_to_map(clone, get_key=lambda obj: str(obj.id))
-		fetched_data = self.fetch_api_data(oauth_client, **params)
 		field_names = self.model.field_names()
+		fetched_data = self.fetch_api_data(oauth_client, **params)
+		# TODO Fix potential errors
+		can_filter = all(key in field_names for key in params)
+		if can_filter:
+			results = self.filter(**params)
+			results = iterable_to_map(results, get_key=lambda obj: str(obj.id))
+		else:
+			results = {}
 
 		# Iter through fetched data and extend results
 		to_create = []
@@ -95,7 +100,12 @@ class ApiQuerySet(QuerySet):
 
 		# Create and update objects if needed
 		if to_create:
-			to_create = self.bulk_create(to_create)
+			try:
+				to_create = self.bulk_create(to_create)
+			except IntegrityError as error:
+				if can_filter:
+					raise error
+
 		if to_update:
 			self.bulk_update(to_update, updated_fields)
 
@@ -134,7 +144,7 @@ class ApiModel(Model):
 			raise error
 
 	@classmethod
-	def get_api_endpoint(cls, **params) -> str:
+	def get_api_endpoint(cls, params: dict) -> str:
 		raise NotImplementedError("get_api_endpoint must be implemented")
 
 	@classmethod
