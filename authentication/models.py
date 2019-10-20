@@ -51,6 +51,7 @@ class UserType(models.Model):
 		"""
 		if not isinstance(user, User):
 			raise ValueError("Provided user must be an instance of authentication.User")
+		# TODO error proofing
 		return eval(self.validation)
 
 	def __str__(self):
@@ -58,6 +59,7 @@ class UserType(models.Model):
 
 	class Meta:
 		verbose_name = "User Type"
+		ordering = ('id',)
 
 class User(AbstractBaseUser, ApiModel):
 	"""
@@ -113,7 +115,7 @@ class User(AbstractBaseUser, ApiModel):
 
 	def sync_data(self, *args, usertypes: 'UserTypes'=None, save: bool=True, **kwargs):
 		"""
-		Sync data, keep manually-set admin and also types
+		Synchronise data, keep manually-set admin and also types
 		"""
 		was_admin = self.is_admin
 		# Sync data and types
@@ -130,16 +132,27 @@ class User(AbstractBaseUser, ApiModel):
 
 		return updated_fields
 
-	def sync_types(self, usertypes: 'UserType'=None):
+	def sync_types(self, usertypes: UserType=None):
+		"""
+		Synchronise UserTypes to the user
+		"""
 		if not self.fetched_data:
 			raise ValueError('Must fetch data from API first')
 		if usertypes is None:
 			usertypes = UserType.objects.all()
 
 		self.types = {
-			utype.id: utype.check_user(self)
-			for utype in usertypes
+			usertype.id: usertype.check_user(self)
+			for usertype in usertypes
 		}
+
+	def is_type(self, usertype: UserType) -> bool:
+		"""
+		Check if user is of specified type
+		"""
+		if self.types is None:
+			self.sync_types()
+		return self.types.get(usertype, False)
 
 	# required by Django.admin TODO
 	
