@@ -3,12 +3,10 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from functools import reduce
+from core.faker import FakeModelFactory
 from .helpers import OrderValidator
 from authentication.models import *
 from sales.models import *
-
-from core.tests import FakeModelFactory, format_date
 
 
 class OrderValidatorTestCase(APITestCase):
@@ -172,9 +170,7 @@ class OrderValidatorTestCase(APITestCase):
 		order1, orderline1 = self._create_order(self.users[1], status=OrderStatus.AWAITING_PAYMENT.value)
 		order2, orderline2 = self._create_order(self.users[2], status=OrderStatus.AWAITING_PAYMENT.value)
 		booked_orders = (order1, order2)
-
-		orderlines = (self.orderline, orderline1, orderline2)
-		upperLimit = reduce(lambda sum, orderline: sum + orderline.quantity, orderlines, 0)
+		upperLimit = self.orderline.quantity + orderline1.quantity + orderline2.quantity
 
 		# Over Sale max_item_quantity
 		self.sale.max_item_quantity = upperLimit - 1

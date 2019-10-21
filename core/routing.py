@@ -22,6 +22,8 @@ VIEWSET_METHODS = {
 CONVERTERS_MAP = {
 	models.UUIDField: 'uuid',
 	models.SlugField: 'slug',
+	models.CharField: 'str',
+	models.SlugField: 'slug',
 }
 
 def merge_sets(*sets):
