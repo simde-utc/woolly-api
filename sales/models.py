@@ -34,10 +34,10 @@ class Sale(models.Model):
 	Defines a Sale
 	"""
 	# Description
-	# slug
+	# slug        = models.CharField(max_length=200, unique=True)
 	name        = models.CharField(max_length=200)
 	description = models.CharField(max_length=1000)
-	association = models.ForeignKey(Association, on_delete=None, related_name='sales') # editable=False
+	association = models.ForeignKey(Association, on_delete=None, related_name='sales', editable=False)
 	# cgv = TODO
 	
 	# Visibility

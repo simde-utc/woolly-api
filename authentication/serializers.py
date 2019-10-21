@@ -17,7 +17,7 @@ class UserSerializer(ApiModelSerializer):
 	# usertype     = RelatedField(read_only=True, required=False)
 	# associations = RelatedField(queryset=AssociationMember.objects, many=True, required=False)
 	# TODO
-	orders       = RelatedField(queryset=Order.objects, many=True, required=False)
+	orders       = RelatedField(queryset=Order.objects.all(), many=True, required=False)
 
 	included_serializers = {
 		# 'usertype': UserTypeSerializer,

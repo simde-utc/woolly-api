@@ -11,15 +11,20 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 import os
 import sys
+from datetime import timedelta
 from woolly_api import settings_confidential as confidentials
 
 
 # Build paths inside the project like this: use make_path helper or os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-def make_path(rel):
+def make_path(rel: str) -> str:
 	return os.path.join(BASE_DIR, rel.replace('/', os.path.sep))
 
+EXPORTS_DIR = make_path('exports')
+
+MAX_ONGOING_TIME = timedelta(minutes=15)
+MAX_PAYMENT_TIME = timedelta(hours=1)
 
 # --------------------------------------------------------------------------
 # 		Services Configuration
@@ -76,6 +81,7 @@ CORS_ORIGIN_WHITELIST = confidentials.CORS_ORIGIN_WHITELIST
 # 		Django REST Configuration
 # --------------------------------------------------------------------------
 
+BROWSABLE_API_WITH_FORMS = getattr(confidentials, 'BROWSABLE_API_WITH_FORMS', DEBUG)
 REST_FRAMEWORK = {
 	'DEFAULT_AUTHENTICATION_CLASSES': (
 		'authentication.oauth.OAuthAuthentication',
@@ -85,14 +91,13 @@ REST_FRAMEWORK = {
 	'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
 
 	'DEFAULT_PARSER_CLASSES': (
-		'rest_framework.parsers.JSONParser',								# Simple JSON
+		'rest_framework.parsers.JSONParser',
 		'rest_framework.parsers.FormParser',
 		'rest_framework.parsers.MultiPartParser'
 	),
 	'DEFAULT_RENDERER_CLASSES': (
-		'rest_framework.renderers.JSONRenderer',						# Simple JSON
-		# 'rest_framework.renderers.BrowsableAPIRenderer',
-		'core.utils.BrowsableAPIRendererWithoutForms',			# For performance testing
+		'rest_framework.renderers.JSONRenderer',
+		'core.utils.BrowsableAPIRenderer',
 	),
 	
 	# 'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',

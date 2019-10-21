@@ -12,17 +12,17 @@ RelatedField = serializers.PrimaryKeyRelatedField
 # ============================================
 
 class ItemGroupSerializer(ModelSerializer):
-	items = RelatedField(queryset=Item.objects, many=True, required=False)
+	items = RelatedField(queryset=Item.objects.all(), many=True, required=False)
 
 	class Meta:
 		model = ItemGroup
 		fields = '__all__' 		# DEBUG
 
 class ItemSerializer(ModelSerializer):
-	sale     = RelatedField(queryset=Sale.objects)
-	group    = RelatedField(queryset=ItemGroup.objects)
-	usertype = RelatedField(queryset=UserType.objects)
-	fields   = RelatedField(queryset=Field.objects, many=True, required=False)
+	sale     = RelatedField(queryset=Sale.objects.all())
+	group    = RelatedField(queryset=ItemGroup.objects.all())
+	usertype = RelatedField(queryset=UserType.objects.all())
+	fields   = RelatedField(queryset=Field.objects.all(), many=True, required=False)
 	
 	quantity_left = serializers.IntegerField(read_only=True)
 
@@ -41,9 +41,9 @@ class ItemSerializer(ModelSerializer):
 
 
 class SaleSerializer(ModelSerializer):
-	association = RelatedField(queryset=Association.objects, required=True)
-	orders      = RelatedField(queryset=Order.objects, many=True, required=False)
-	items       = RelatedField(queryset=Item.objects, many=True, required=False)
+	association = RelatedField(queryset=Association.objects.all(), required=True)
+	orders      = RelatedField(queryset=Order.objects.all(), many=True, required=False)
+	items       = RelatedField(queryset=Item.objects.all(), many=True, required=False)
 
 	included_serializers = {
 		'association': 'sales.serializers.AssociationSerializer',
@@ -61,7 +61,7 @@ class SaleSerializer(ModelSerializer):
 # ============================================
 
 class AssociationSerializer(ApiModelSerializer):
-	sales = RelatedField(queryset=Sale.objects, many=True, required=False)
+	sales = RelatedField(queryset=Sale.objects.all(), many=True, required=False)
 	# members
 
 	included_serializers = {
@@ -79,9 +79,9 @@ class AssociationSerializer(ApiModelSerializer):
 # ============================================
 
 class OrderSerializer(ModelSerializer):
-	owner = RelatedField(queryset=User.objects, required=False)
-	sale  = RelatedField(queryset=Sale.objects)
-	orderlines = RelatedField(queryset=OrderLine.objects,
+	owner = RelatedField(queryset=User.objects.all(), required=False)
+	sale  = RelatedField(queryset=Sale.objects.all())
+	orderlines = RelatedField(queryset=OrderLine.objects.all(),
 														many=True, required=False, allow_null=True)
 
 	included_serializers = {
@@ -97,9 +97,9 @@ class OrderSerializer(ModelSerializer):
 
 class OrderLineSerializer(ModelSerializer):
 	# order = serializers.ReadOnlyField(source='order.id')
-	order = RelatedField(queryset=Order.objects)
-	item  = RelatedField(queryset=Item.objects)
-	orderlineitems = RelatedField(queryset=OrderLineItem.objects,
+	order = RelatedField(queryset=Order.objects.all())
+	item  = RelatedField(queryset=Item.objects.all())
+	orderlineitems = RelatedField(queryset=OrderLineItem.objects.all(),
 		many=True, required=False, allow_null=True
 	)
 
@@ -120,7 +120,7 @@ class OrderLineSerializer(ModelSerializer):
 # ============================================
 
 class FieldSerializer(ModelSerializer):
-	itemfields = RelatedField(queryset='ItemField.objects', many=True, required=False)
+	itemfields = RelatedField(queryset='ItemField.objects.all()', many=True, required=False)
 
 	included_serializers = {
 		'itemfields': 'sales.serializers.ItemFieldSerializer',
@@ -131,8 +131,8 @@ class FieldSerializer(ModelSerializer):
 		fields = '__all__' 		# DEBUG
 
 class ItemFieldSerializer(ModelSerializer):
-	item  = RelatedField(queryset=Item.objects)
-	field = RelatedField(queryset=Field.objects)
+	item  = RelatedField(queryset=Item.objects.all())
+	field = RelatedField(queryset=Field.objects.all())
 
 	included_serializers = {
 		'item': ItemSerializer,
@@ -145,8 +145,8 @@ class ItemFieldSerializer(ModelSerializer):
 
 
 class OrderLineItemSerializer(ModelSerializer):
-	orderline       = RelatedField(queryset=OrderLine.objects)
-	orderlinefields = RelatedField(queryset=OrderLineField.objects,
+	orderline       = RelatedField(queryset=OrderLine.objects.all())
+	orderlinefields = RelatedField(queryset=OrderLineField.objects.all(),
 		many=True, required=False, allow_null=True
 	)
 
@@ -160,8 +160,8 @@ class OrderLineItemSerializer(ModelSerializer):
 		fields = '__all__' 		# DEBUG
 
 class OrderLineFieldSerializer(ModelSerializer):
-	orderlineitem = RelatedField(queryset=OrderLineItem.objects)
-	field         = RelatedField(queryset=Field.objects)
+	orderlineitem = RelatedField(queryset=OrderLineItem.objects.all())
+	field         = RelatedField(queryset=Field.objects.all())
 
 	# For easier access
 	name 	 = serializers.CharField(read_only=True, source='field.name')
