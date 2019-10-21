@@ -116,7 +116,7 @@ def update_orders(sale_pk: int=None):
 				order.save()
 				message = "Outdated"
 
-		elif order.status == OrderStatus.NOT_PAID.value: 								# TODO AWAITING_PAYMENT
+		elif order.status == OrderStatus.AWAITING_PAYMENT.value:
 			transaction = payutc.getTransactionInfo({ 'tra_id': order.tra_id, 'fun_id': order.sale.association.fun_id })
 			if 'error' in transaction:
 				message = "Payutc Error: " + transaction['error']['message']

@@ -87,7 +87,7 @@ def pay(request, pk):
 		return errorResponse(transaction['error']['message'], errors)
 
 	# 6. Save Transaction info and redirect
-	order.status = OrderStatus.NOT_PAID.value
+	order.status = OrderStatus.AWAITING_PAYMENT.value
 	order.tra_id = transaction['tra_id']
 	order.save()
 
@@ -104,7 +104,7 @@ def pay_callback(request, pk):
 	try:
 		order = Order.objects \
 					.select_related('sale__association').get(pk=pk)
-					# .filter(status=OrderStatus.NOT_PAID.value) \
+					# .filter(status=OrderStatus.AWAITING_PAYMENT.value) \
 					# .prefetch_related('sale', 'orderlines', 'owner') \
 	except Order.DoesNotExist as e:
 		return errorResponse(str(e), status=status.HTTP_404_NOT_FOUND)
@@ -142,7 +142,7 @@ def updateOrderStatus(order, transaction):
 			'message': 'Votre commande a expiré.'
 		}
 	elif transaction['status'] == 'V':
-		if order.status == OrderStatus.NOT_PAID.value:
+		if order.status == OrderStatus.AWAITING_PAYMENT.value:
 			createOrderLineItemsAndFields(order)
 			sendConfirmationMail(order)
 		order.status = OrderStatus.PAID.value
@@ -153,7 +153,7 @@ def updateOrderStatus(order, transaction):
 		}
 	else:
 		resp = {
-			'status': OrderStatus.NOT_PAID.name,
+			'status': OrderStatus.AWAITING_PAYMENT.name,
 			'url': PAYUTC_TRANSACTION_BASE_URL + str(transaction['id'])
 		}
 	return Response(resp, status=status.HTTP_200_OK)

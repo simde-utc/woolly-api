@@ -123,25 +123,30 @@ class OrderStatus(Enum):
 	ONGOING = 0
 	AWAITING_VALIDATION = 1
 	VALIDATED = 2
-	NOT_PAID = 3 # TODO AWAITING_PAYMENT
+	AWAITING_PAYMENT = 3
 	PAID = 4
 	EXPIRED = 5
 	CANCELLED = 6
 
-	# ====== Helpers, not real choices ====
+	# ====== Helpers, not real choices ======
 
-	# Orders which can be cancelled
-	BUYABLE_STATUS_LIST = (ONGOING, AWAITING_VALIDATION, NOT_PAID)  # TODO PENDING_LIST
-	# Orders whose items are booked temporary or not 
-	BOOKED_LIST = (AWAITING_VALIDATION, VALIDATED, NOT_PAID, PAID)
-	# NOT_CANCELLED_LIST = (PAID, VALIDATED) 
+	# Orders which can be bought
+	BUYABLE_STATUS_LIST = (ONGOING, AWAITING_VALIDATION, AWAITING_PAYMENT)
+	# Orders which book items, temporary or not 
+	BOOKED_LIST = (AWAITING_VALIDATION, VALIDATED, AWAITING_PAYMENT, PAID)
+	# Orders that are definitely valid
 	VALIDATED_LIST = (VALIDATED, PAID)
-	CANCELLABLE_LIST = (NOT_PAID, AWAITING_VALIDATION)
+	# Orders which can be cancelled
+	CANCELLABLE_LIST = (AWAITING_PAYMENT, AWAITING_VALIDATION)
+	# Orders which are definitely cancelled
 	CANCELLED_LIST = (EXPIRED, CANCELLED)
 
-	# Used for Django choices, return only choices whose value is int
 	@classmethod
 	def choices(cls):
+		"""
+		Used for Django choices
+		Return only real choices and not list of choices
+		"""
 		return tuple((i.value, i.name) for i in cls if isinstance(i.value, int))
 
 class Order(models.Model):

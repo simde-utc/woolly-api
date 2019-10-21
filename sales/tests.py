@@ -73,7 +73,7 @@ class OrderViewSetTestCase(CRUDViewSetTestMixin, APITestCase):
 
 	def _create_object(self, user=None):
 		data = self._get_object_attributes(user, withPk=False)
-		data['status'] = OrderStatus.NOT_PAID.value
+		data['status'] = OrderStatus.AWAITING_PAYMENT.value
 		return self.model.objects.create(**data)
 
 	def _get_expected_status_code(self, method, allowed, user):

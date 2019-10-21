@@ -144,7 +144,7 @@ class OrderValidatorTestCase(APITestCase):
 		self._test_validation(True)
 		self.order.status = OrderStatus.AWAITING_VALIDATION.value
 		self._test_validation(True)
-		self.order.status = OrderStatus.NOT_PAID.value
+		self.order.status = OrderStatus.AWAITING_PAYMENT.value
 		self._test_validation(True)
 		
 		self.order.status = OrderStatus.VALIDATED.value
@@ -169,8 +169,8 @@ class OrderValidatorTestCase(APITestCase):
 		# self._test_validation(True)
 
 		# Other users booked orders
-		order1, orderline1 = self._create_order(self.users[1], status=OrderStatus.NOT_PAID.value)
-		order2, orderline2 = self._create_order(self.users[2], status=OrderStatus.NOT_PAID.value)
+		order1, orderline1 = self._create_order(self.users[1], status=OrderStatus.AWAITING_PAYMENT.value)
+		order2, orderline2 = self._create_order(self.users[2], status=OrderStatus.AWAITING_PAYMENT.value)
 		booked_orders = (order1, order2)
 
 		orderlines = (self.orderline, orderline1, orderline2)
