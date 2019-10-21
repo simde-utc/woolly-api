@@ -5,7 +5,7 @@ from django.http import HttpResponse
 
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from core.viewsets import ModelViewSet, ApiModelViewSet
-from core.helpers import errorResponse
+from core.helpers import ErrorResponse
 from core.permissions import *
 from .serializers import *
 from .permissions import *
@@ -193,7 +193,7 @@ class OrderViewSet(ModelViewSet):
 			return Response(None, status=status.HTTP_204_NO_CONTENT)
 		else:
 			msg = "La commande n'est pas annulable."
-			return errorResponse(msg, [msg], status.HTTP_406_NOT_ACCEPTABLE)
+			return ErrorResponse(msg, status=status.HTTP_406_NOT_ACCEPTABLE)
 
 class OrderLineViewSet(ModelViewSet):
 	"""
@@ -224,18 +224,18 @@ class OrderLineViewSet(ModelViewSet):
 		# ...or fail
 		except Order.DoesNotExist as err:
 			msg = "Impossible de trouver la commande."
-			return errorResponse(msg, [msg], status.HTTP_404_NOT_FOUND)
+			return ErrorResponse(msg, status=status.HTTP_404_NOT_FOUND)
 
 		# Check Order owner
 		user = request.user
 		if not (user.is_authenticated and user.is_admin or order.owner == user):
 			msg = "Vous n'avez pas la permission d'effectuer cette action."
-			return errorResponse(msg, [msg], status.HTTP_403_FORBIDDEN)
+			return ErrorResponse(msg, status=status.HTTP_403_FORBIDDEN)
 
 		# Check if Order is open
 		if order.status != OrderStatus.ONGOING.value:
 			msg = "La commande n'accepte plus de changement."
-			return errorResponse(msg, [msg], status.HTTP_400_BAD_REQUEST)
+			return ErrorResponse(msg, status=status.HTTP_400_BAD_REQUEST)
 
 		# Try to retrieve a similar OrderLine...
 		try:
@@ -352,10 +352,10 @@ def generate_pdf(request, pk:int, **kwargs):
 						'orderlines__orderlineitems__orderlinefields', 'orderlines__orderlineitems__orderlinefields__field') \
 					.get(pk=pk)
 	except Order.DoesNotExist as e:
-		return errorResponse('La commande est introuvable', [], httpStatus=status.HTTP_404_NOT_FOUND)
+		return ErrorResponse('La commande est introuvable', [], httpStatus=status.HTTP_404_NOT_FOUND)
 
 	if order.status not in OrderStatus.VALIDATED_LIST.value:
-		return errorResponse("La commande n'est pas valide", [], httpStatus=status.HTTP_400_BAD_REQUEST)
+		return ErrorResponse("La commande n'est pas valide", [], httpStatus=status.HTTP_400_BAD_REQUEST)
 
 
 	# Process tickets

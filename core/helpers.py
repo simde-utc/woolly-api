@@ -1,4 +1,3 @@
-from django.http import JsonResponse
 from typing import Sequence, Iterable, Callable
 from rest_framework.response import Response
 from rest_framework import status
@@ -23,13 +22,6 @@ def iterable_to_map(iterable: Iterable, prop: str=None, attr: str=None, get_key:
 			raise ValueError("At least one of 'prop', 'attr' or 'get_key' must be provided")
 	return { get_key(obj): obj for obj in iterable }
 
-def errorResponse(message, errors=tuple(), httpStatus=status.HTTP_400_BAD_REQUEST):
-	resp = {
-		'message': message,
-		'errors': [ {'detail': e} for e in errors ]
-	}
-	return JsonResponse(resp, status=httpStatus)
-
 def format_date(date) -> 'datetime':
 	"""
 	Format a date with the proper timezone
@@ -45,6 +37,16 @@ def custom_editable_fields(request, obj=None, edition_readonly_fields=tuple(), a
 	"""
 	return edition_readonly_fields if obj else always_readonly_fields
 
+# --------------------------------------------------------------------------
+# 		HTTP & REST
+# --------------------------------------------------------------------------
+
+def ErrorResponse(error: str, detail: Sequence[str]=[], status=status.HTTP_400_BAD_REQUEST) -> Response:
+	data = {
+		'error': str(error),
+		'detail': detail,
+	}
+	return Response(data, status=status)
 
 # --------------------------------------------------------------------------
 # 		Naming

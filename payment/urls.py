@@ -1,11 +1,13 @@
+from rest_framework.urlpatterns import format_suffix_patterns
 from django.urls import path
 from .views import *
 
 urlpatterns = [
-	path('orders/<int:pk>/pay',          pay,          name='order-pay'),
-	path('orders/<int:pk>/pay_callback', pay_callback, name='pay-callback'),
+	path('orders/<int:pk>/pay',          PaymentView.pay,        name='order-pay'),
+	path('orders/<int:pk>/pay_callback', PaymentView.callback,   name='pay-callback'),
 ]
 
+urlpatterns = format_suffix_patterns(urlpatterns)
 
 
 """
