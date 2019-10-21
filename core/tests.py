@@ -56,7 +56,7 @@ class FakeModelFactory(object):
 		if seed:
 			self.faker.seed(seed)
 
-	def create(self, model, nb=None, **kwargs):
+	def create(self, model, nb: int=None, **kwargs):
 		if nb is None:
 			props = self.get_attributes(model, **kwargs)
 			return model.objects.create(**props)
@@ -79,17 +79,19 @@ class FakeModelFactory(object):
 
 		if model == User:
 			return {
+				'id':         kwargs.get('id',         self.faker.uuid4()),
 				'email':      kwargs.get('email',      self.faker.email()),
 				'first_name': kwargs.get('first_name', self.faker.first_name()),
 				'last_name':  kwargs.get('last_name',  self.faker.last_name()),
-				# 'birthdate':  kwargs.get('birthdate',  self.faker.date_of_birth()),
 				'is_admin':   kwargs.get('is_admin',   False),
-				'usertype':   kwargs.get('usertype',   _get_related('usertype', UserType)),
+				# 'types':      kwargs.get('types',      _get_related('usertype', UserType)),
 			}
 
 		if model == UserType:
 			return {
+				'id':   kwargs.get('id',   self.faker.uuid4()[:25]),
 				'name': kwargs.get('name', self.faker.sentence(nb_words=4)),
+				'validation': kwargs.get('validation', lambda user: False),
 			}
 
 		# ============================================
@@ -98,8 +100,9 @@ class FakeModelFactory(object):
 
 		if model == Association:
 			return {
-				'name':		kwargs.get('name',    self.faker.company()),
-				'fun_id':	kwargs.get('fun_id',  self.faker.random_digit()),
+				'id':        kwargs.get('id',      self.faker.uuid4()),
+				'shortname': kwargs.get('name',    self.faker.company()),
+				'fun_id':    kwargs.get('fun_id',  self.faker.random_digit()),
 			}
 
 		# if model == AssociationMember:

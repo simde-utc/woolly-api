@@ -34,7 +34,7 @@ class Sale(models.Model):
 	Defines a Sale
 	"""
 	# Description
-	# slud
+	# slug
 	name        = models.CharField(max_length=200)
 	description = models.CharField(max_length=1000)
 	association = models.ForeignKey(Association, on_delete=None, related_name='sales') # editable=False
@@ -90,7 +90,7 @@ class Item(models.Model):
 	is_active    = models.BooleanField(default=True)
 	quantity     = models.IntegerField(blank=True, null=True)		# Null quand pas de restrinction sur l'item
 	max_per_user = models.IntegerField(blank=True, null=True)		# TODO V2 : moteur de contraintes
-	usertype     = models.ForeignKey(UserType, on_delete=models.PROTECT)			# UserType ?
+	usertype     = models.ForeignKey(UserType, on_delete=models.PROTECT)
 	price        = models.FloatField()
 	nemopay_id   = models.CharField(max_length=30, blank=True, null=True)		# TODO V2 : abstraire payment
 
@@ -220,12 +220,10 @@ class ItemField(models.Model):
 	"""
 	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='itemfields') #, editable=False)
 	item  = models.ForeignKey(Item,  on_delete=models.CASCADE, related_name='itemfields') #, editable=False)
-	# Options
 	editable = models.BooleanField(default=True)
 
 	# sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
 	# itemgroup = models.ForeignKey(ItemGroup, on_delete = None, related_name = 'itemgroups')
-	# usertype = models.ManyToManyField('authentication.UserType')
 
 	def __str__(self):
 		return "%s - %s)" % (self.item, self.field)

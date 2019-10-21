@@ -55,13 +55,15 @@ def pay(request, pk):
 		return Response({'message': str(e)}, status=status.HTTP_404_NOT_FOUND)
 
 	# 2. Verify Order
-	validator = OrderValidator(order, validateOnInit=True)
-	if not validator.is_valid():
-		return orderErrorResponse(validator.get_errors())
+	validator = OrderValidator(order, raise_on_error=True)
+	try:
+		validator.validate()
+	except OrderValidationException as error:
+		return orderErrorResponse([ str(error) ])
 
 	# 3. Process orderlines
-	orderlines = order.orderlines.filter(quantity__gt=0).prefetch_related('item')
 	# Tableau pour Weez
+	orderlines = order.orderlines.filter(quantity__gt=0).prefetch_related('item')
 	itemsArray = [ [int(orderline.item.nemopay_id), orderline.quantity] for orderline in orderlines ]
 	if reduce(lambda acc, b: acc + b[1], itemsArray, 0) <= 0:
 		return orderErrorResponse(["Vous devez avoir un nombre d'items commandés strictement positif."])
