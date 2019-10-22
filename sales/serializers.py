@@ -147,8 +147,7 @@ class ItemFieldSerializer(ModelSerializer):
 class OrderLineItemSerializer(ModelSerializer):
 	orderline       = RelatedField(queryset=OrderLine.objects.all())
 	orderlinefields = RelatedField(queryset=OrderLineField.objects.all(),
-		many=True, required=False, allow_null=True
-	)
+	                               many=True, required=False, allow_null=True)
 
 	included_serializers = {
 		'orderline': OrderLineSerializer,

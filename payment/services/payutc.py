@@ -4,6 +4,8 @@ from typing import Sequence
 import requests
 import json
 
+PAYUTC_TRANSACTION_BASE_URL = 'https://payutc.nemopay.net/validation?tra_id='
+
 PAYUTC_TO_ORDER_STATUS = {
 	'A': OrderStatus.EXPIRED,
 	'V': OrderStatus.PAID,

@@ -16,7 +16,9 @@ class ModelViewSetMixin(object):
 	"""
 
 	def get_queryset(self):
-		"""Override from GenericAPIView"""
+		"""
+		Override from GenericAPIView
+		"""
 		queryset = super().get_queryset()
 
 		# Prefetch included sub models
@@ -48,7 +50,7 @@ class ModelViewSetMixin(object):
 
 	def get_serializer_context(self) -> dict:
 		"""
-		Pass the include_map to the 
+		Pass the include_map to the serializer
 		"""
 		include_query = self.request.GET.get('include')
 		return {
@@ -87,14 +89,13 @@ class ModelViewSetMixin(object):
 	# 	return super().handle_exception(exc)
 
 
-class ModelViewSet(viewsets.ModelViewSet, ModelViewSetMixin):
+class ModelViewSet(ModelViewSetMixin, viewsets.ModelViewSet):
 	pass
 
-class ApiModelViewSet(viewsets.ReadOnlyModelViewSet, ModelViewSetMixin):
+class ApiModelViewSet(ModelViewSetMixin, viewsets.ReadOnlyModelViewSet):
 	"""
 	Supercharged ReadOnlyModelViewSet linked to an external OAuth API
 	"""
-
 	_oauth_client = None
 
 	@property

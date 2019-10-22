@@ -6,7 +6,6 @@ import uuid
 
 from django.core.mail import EmailMessage
 
-
 # ============================================
 # 	Association
 # ============================================
@@ -190,15 +189,15 @@ class Order(models.Model):
 		resp = {
 			'status': status.name,
 			'old_status': self.get_status_display(),
-			'message': OrderStatus.MESSAGES[status],
+			'message': OrderStatus.MESSAGES.value[status.value],
 			# Redirect to payment if needed
 			'redirect_to_payment': self.status == OrderStatus.AWAITING_PAYMENT.value,
 			# Do not touch booked orders
-			'updated': not (self.status == status.value
-			                or self.status in OrderStatus.BOOKED_LIST.value),
+			'updated': (not self.status == status.value
+			            or self.status in OrderStatus.BOOKED_LIST.value),
 			# If sale freshly validated, generate tickets
 			'tickets_generated': (self.status in OrderStatus.BUYABLE_STATUS_LIST.value
-			                      and status in OrderStatus.VALIDATED_LIST),
+			                      and status.value in OrderStatus.VALIDATED_LIST.value),
 		}
 
 		# Update order status
@@ -218,6 +217,8 @@ class Order(models.Model):
 		all the orderlineitems and fields required
 		TODO : add a lock or something, and improve from scripts
 		"""
+		from .serializers import OrderLineItemSerializer, OrderLineFieldSerializer
+
 		orderlines = self.orderlines.filter(quantity__gt=0) \
 		                 .prefetch_related('item', 'orderlineitems')
 		total = 0

@@ -30,11 +30,8 @@ MAX_PAYMENT_TIME = timedelta(hours=1)
 # 		Services Configuration
 # --------------------------------------------------------------------------
 
-# Payutc & Ginger config
+# Payutc & Portail des Assos config
 PAYUTC_KEY = confidentials.PAYUTC_KEY
-PAYUTC_TRANSACTION_BASE_URL = 'https://payutc.nemopay.net/validation?tra_id='
-
-# Portail des Assos config
 OAUTH = {
 	'portal': {
 		'client_id':        confidentials.PORTAL['id'],

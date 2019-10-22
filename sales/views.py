@@ -344,7 +344,7 @@ class OrderLineFieldViewSet(ModelViewSet):
 @api_view(['GET'])
 @authentication_classes([OAuthAuthentication])
 @permission_classes([IsOrderOwnerOrAdmin])
-def generate_pdf(request, pk:int, **kwargs):
+def generate_pdf(request, pk: int, **kwargs):
 	# Get order
 	try:
 		order = Order.objects.all() \
@@ -352,10 +352,12 @@ def generate_pdf(request, pk:int, **kwargs):
 						'orderlines__orderlineitems__orderlinefields', 'orderlines__orderlineitems__orderlinefields__field') \
 					.get(pk=pk)
 	except Order.DoesNotExist as e:
-		return ErrorResponse('La commande est introuvable', [], httpStatus=status.HTTP_404_NOT_FOUND)
+		return ErrorResponse("La commande est introuvable", status=status.HTTP_404_NOT_FOUND)
 
 	if order.status not in OrderStatus.VALIDATED_LIST.value:
-		return ErrorResponse("La commande n'est pas valide", [], httpStatus=status.HTTP_400_BAD_REQUEST)
+		return ErrorResponse("La commande n'est pas valide",
+		                     [f"Status: {order.get_status_display()}"],
+		                     status=status.HTTP_400_BAD_REQUEST)
 
 
 	# Process tickets
@@ -391,7 +393,7 @@ def generate_pdf(request, pk:int, **kwargs):
 			})
 	data = {
 		'tickets': tickets,
-		'order': order
+		'order': order,
 	}
 
 	# Render template

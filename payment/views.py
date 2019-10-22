@@ -6,11 +6,10 @@ from rest_framework import status
 from django.urls import reverse
 
 from sales.permissions import IsOrderOwnerOrAdmin
-from sales.serializers import OrderLineItemSerializer, OrderLineFieldSerializer
 from sales.models import *
 from .helpers import OrderValidator
 
-from woolly_api.settings import PAYUTC_KEY, PAYUTC_TRANSACTION_BASE_URL
+from woolly_api.settings import PAYUTC_KEY
 from authentication.oauth import OAuthAuthentication
 from .services.payutc import Payutc
 
@@ -80,12 +79,12 @@ class PaymentView:
 
 		# Get transaction status
 		try:
-			status = cls.payutc.get_transaction_status(order)
+			transaction_status = cls.payutc.get_transaction_status(order)
 		except TransactionException as error:
 			return ErrorResponse(error)
 
 		# Update order
-		resp = order.update_status(status)
+		resp = order.update_status(transaction_status)
 
 		if resp.pop('redirect_to_payment', False):
 			resp['redirect_url'] = cls.payutc.get_redirection_to_payment(order)
