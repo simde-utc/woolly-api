@@ -37,7 +37,6 @@ class AssociationMember(models.Model):
 
 	class Meta:
 		ordering = ('id',)
-		verbose_name = "Association Member"			
 
 
 # ============================================
@@ -94,7 +93,6 @@ class ItemGroup(models.Model):
 
 	class Meta:
 		ordering = ('id',)
-		verbose_name = "Item Group"
 
 class Item(models.Model):
 	"""
@@ -197,7 +195,6 @@ class OrderLine(models.Model):
 
 	class Meta:
 		ordering = ('id',)
-		verbose_name = "Order Line"
 
 
 # ============================================
@@ -237,7 +234,6 @@ class ItemField(models.Model):
 
 	class Meta:
 		ordering = ('id',)
-		verbose_name = "Item Field"
 
 
 class OrderLineItem(models.Model):
@@ -253,7 +249,6 @@ class OrderLineItem(models.Model):
 
 	class Meta:
 		ordering = ('id',)
-		verbose_name = "OrderLine Item"
 
 class OrderLineField(models.Model):
 	"""
@@ -263,7 +258,7 @@ class OrderLineField(models.Model):
 	field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='orderlinefields')
 	value = models.CharField(max_length=1000, blank=True, null= True, editable='isEditable') # TODO Working ??
 
-	def isEditable(self):
+	def isEditable(self) -> bool:
 		itemfield = ItemField.objects.get(field__pk=self.field.pk, item__pk=self.orderlineitem.orderline.item.pk)
 		return itemfield.editable
 
@@ -272,5 +267,4 @@ class OrderLineField(models.Model):
 
 	class Meta:
 		ordering = ('id',)
-		verbose_name = "OrderLine Field"
 

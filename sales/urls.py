@@ -1,76 +1,66 @@
 from rest_framework.urlpatterns import format_suffix_patterns
-from django.conf.urls import url, include
+from django.urls import path
 
-from core.helpers import gen_url_set, merge_sets
-from woolly_api.settings import VIEWSET
+from core.helpers import merge_sets, gen_url_set
 from authentication.views import *
 from .views import *
 
-
-# JSON API Resource routes
 urlpatterns = merge_sets(
-	# User
-	gen_url_set(['users', 'associations'], AssociationViewSet),
-	gen_url_set(['users', 'orders'], OrderViewSet),
-
+	
 	# Association
-	gen_url_set('associations', AssociationViewSet),
-	gen_url_set(['associations', 'sales'], SaleViewSet),
-	# AssociationMember ????????????????????
-	gen_url_set('associationmembers', AssociationMemberViewSet),
-	gen_url_set(['associationmembers', 'associations'], AssociationViewSet),
-	gen_url_set(['associations', 'associationmembers'], AssociationMemberViewSet),
+	gen_url_set(AssociationViewSet),
+	gen_url_set([AssociationViewSet, SaleViewSet]),
+	gen_url_set([AssociationViewSet, UserViewSet]),
+
 	# Sale
-	gen_url_set('sales', SaleViewSet),
-	gen_url_set(['sales', 'associations'], AssociationViewSet),
-	gen_url_set(['sales', 'items'], ItemViewSet),
-	gen_url_set(['sales', 'itemgroups'], ItemGroupViewSet),
-	gen_url_set(['sales', 'orders'], OrderViewSet),
+	gen_url_set(SaleViewSet),
+	gen_url_set([SaleViewSet, AssociationViewSet]),
+	gen_url_set([SaleViewSet, ItemViewSet]),
+	gen_url_set([SaleViewSet, ItemGroupViewSet]),
+	gen_url_set([SaleViewSet, OrderViewSet]),
 
 	# ItemGroup
-	gen_url_set('itemgroups', ItemGroupViewSet),
-	gen_url_set(['itemgroups', 'items'], ItemViewSet),
+	gen_url_set(ItemGroupViewSet),
+	gen_url_set([ItemGroupViewSet, ItemViewSet]),
 	# Item
-	gen_url_set('items', ItemViewSet),
-	gen_url_set(['items', 'fields'], FieldViewSet),
-	gen_url_set(['items', 'sales'], SaleViewSet),
-	gen_url_set(['items', 'itemgroups'], ItemGroupViewSet),
-	gen_url_set(['items', 'usertypes'], UserTypeViewSet),
-	gen_url_set(['items', 'itemfields'], ItemFieldViewSet),
+	gen_url_set(ItemViewSet),
+	gen_url_set([ItemViewSet, FieldViewSet]),
+	gen_url_set([ItemViewSet, SaleViewSet]),
+	gen_url_set([ItemViewSet, ItemGroupViewSet]),
+	gen_url_set([ItemViewSet, UserTypeViewSet]),
+	gen_url_set([ItemViewSet, ItemFieldViewSet]),
 
 	# Order
-	gen_url_set('orders', OrderViewSet),
-	gen_url_set(['orders', 'sales'], SaleViewSet),
-	gen_url_set(['orders', 'users'], UserViewSet),
-	gen_url_set(['orders', 'orderlines'], OrderLineViewSet),
+	gen_url_set(OrderViewSet),
+	gen_url_set([OrderViewSet, SaleViewSet]),
+	gen_url_set([OrderViewSet, UserViewSet]),
+	gen_url_set([OrderViewSet, OrderLineViewSet]),
 	# OrderLine
-	gen_url_set('orderlines', OrderLineViewSet),
-	gen_url_set(['orderlines', 'items'], ItemViewSet),
-	gen_url_set(['orderlines', 'orders'], OrderViewSet),
-	gen_url_set(['orderlines', 'orderlineitems'], OrderLineItemViewSet),
-	# OrderLineItem ????
-	gen_url_set('orderlineitems', OrderLineItemViewSet),
-	gen_url_set(['orderlineitems', 'orderlines'], OrderLineViewSet),	
-	gen_url_set(['orderlineitems', 'orderlinefields'], OrderLineFieldViewSet),	
+	gen_url_set(OrderLineViewSet),
+	gen_url_set([OrderLineViewSet, ItemViewSet]),
+	gen_url_set([OrderLineViewSet, OrderViewSet]),
+	gen_url_set([OrderLineViewSet, OrderLineItemViewSet]),
+	# OrderLineItem
+	gen_url_set(OrderLineItemViewSet),
+	gen_url_set([OrderLineItemViewSet, OrderLineViewSet]),	
+	gen_url_set([OrderLineItemViewSet, OrderLineFieldViewSet]),	
 
 	# Field
-	gen_url_set('fields', FieldViewSet),
-	gen_url_set(['fields', 'itemfields'], ItemFieldViewSet),
-	# OrderLineField ?????????????????????
-	gen_url_set('orderlinefields', OrderLineFieldViewSet),
-	gen_url_set(['orderlinefields', 'fields'], FieldViewSet),	
-	# gen_url_set(['orderlinefield', 'orderline'], OrderLineViewSet),	
-	gen_url_set(['orderlinefields', 'orderlineitems'], OrderLineItemViewSet),	
-	# ItemField ??????????????????????
-	gen_url_set('itemfields', ItemFieldViewSet),
-	gen_url_set(['itemfields', 'items'], ItemViewSet),
-	gen_url_set(['itemfields', 'fields'], FieldViewSet),
+	gen_url_set(FieldViewSet),
+	gen_url_set([FieldViewSet, ItemFieldViewSet]),
+	# OrderLineField
+	gen_url_set(OrderLineFieldViewSet),
+	gen_url_set([OrderLineFieldViewSet, FieldViewSet]),	
+	gen_url_set([OrderLineFieldViewSet, OrderLineItemViewSet]),	
+	# ItemField
+	gen_url_set(ItemFieldViewSet),
+	gen_url_set([ItemFieldViewSet, ItemViewSet]),
+	gen_url_set([ItemFieldViewSet, FieldViewSet]),
 )
 
-# Addtionnal API endpoints for Authentication
 urlpatterns += [
 	# Generation du PDF
-	url(r'^orders/(?P<order_pk>[0-9]+)/pdf$', generate_pdf),
+	path('orders/<int:pk>/pdf', generate_pdf),
 ]
 
 

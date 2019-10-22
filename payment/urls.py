@@ -1,13 +1,10 @@
-from django.conf.urls import url, include
-from woolly_api.settings import VIEWSET
+from django.urls import path
 from .views import *
 
 urlpatterns = [
-	url(r'^orders/(?P<pk>[0-9]+)/pay$', pay, name = 'order-pay'),
-	url(r'^orders/(?P<pk>[0-9]+)/pay_callback$', pay_callback, name = 'pay-callback'),
+	path('orders/<int:pk>/pay',          pay,          name='order-pay'),
+	path('orders/<int:pk>/pay_callback', pay_callback, name='pay-callback'),
 ]
-
-
 
 
 

@@ -16,13 +16,13 @@ class UserTypeSerializer(ModelSerializer):
 class UserSerializer(ModelSerializer):
 
 	usertype     = RelatedField(read_only=True, required=False)
-	associations = RelatedField(queryset=AssociationMember.objects, required=False)
+	associations = RelatedField(queryset=AssociationMember.objects, many=True, required=False)
 	orders       = RelatedField(queryset=Order.objects, many=True, required=False)
 
 	included_serializers = {
 		'usertype': UserTypeSerializer,
-		'orders': 'sales.serializers.OrderSerializer'
-		# 'associationmembers': AssociationMemberSerializer
+		'orders': 'sales.serializers.OrderSerializer',
+		'associations': 'sales.serializers.AssociationSerializer',
 	}
 
 	class Meta:

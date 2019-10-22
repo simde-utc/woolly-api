@@ -30,15 +30,14 @@ class AssociationViewSet(ModelViewSet):
 	serializer_class = AssociationSerializer
 	permission_classes = (IsManagerOrReadOnly,)
 
-	def get_queryset(self):
-		queryset = super().get_queryset()
-
-		# user-association-list
-		if 'user_pk' in self.kwargs:
-			user_pk = self.kwargs['user_pk']
-			queryset = queryset.filter(members__pk=user_pk)
-
-		return queryset
+	def get_sub_urls_filters(self, queryset) -> dict:
+		"""
+		Override of core.viewsets.ModelViewSet for owner-user correspondance
+		"""
+		filters = super().get_sub_urls_filters(queryset)
+		if 'user__pk' in filters:
+			filters['members__pk'] = filters.pop('user__pk')
+		return filters
 
 class AssociationMemberViewSet(ModelViewSet):
 	"""
@@ -54,19 +53,6 @@ class AssociationMemberViewSet(ModelViewSet):
 			user_id = self.request.user.id,
 			association_id = self.kwargs['association_pk'],
 		)
-
-	def get_queryset(self):
-		queryset = self.queryset
-
-		if 'user_pk' in self.kwargs:
-			user_pk = self.kwargs['user_pk']
-			queryset = queryset.filter(user__pk=user_pk)
-
-		if 'association_pk' in self.kwargs:
-			association_pk = self.kwargs['association_pk']
-			queryset = queryset.filter(association__pk=association_pk)
-
-		return queryset
 	"""
 
 # ============================================
@@ -94,14 +80,10 @@ class SaleViewSet(ModelViewSet):
 
 		# TODO V2 : filtering
 		# filters = ('active', )
-		# filterQuery = self.request.query_params.get('filterQuery', None)
+		# filterQuery = self.request.GET.get('filterQuery', None)
 		# if filterQuery is not None:
 			# queryset = queryset.filter()
 			# pass
-
-		# Association detail route
-		if 'association_pk' in self.kwargs:
-			queryset = queryset.filter(association__pk=self.kwargs['association_pk'])
 
 		return queryset
 
@@ -166,41 +148,44 @@ class OrderViewSet(ModelViewSet):
 	serializer_class = OrderSerializer
 	permission_classes = (IsOrderOwnerOrAdmin,)
 
+	def get_sub_urls_filters(self, queryset) -> dict:
+		filters = super().get_sub_urls_filters(queryset)
+		if 'user__pk' in filters:
+			filters['owner__pk'] = filters.pop('user__pk')
+		return filters
+
 	def get_queryset(self):
 		queryset = super().get_queryset()
-		user = self.request.user
 
-		# Anonymous users see nothing
-		if not user.is_authenticated:
-			return None
+		# Get Params
+		user = self.request.user
+		only_owner = self.request.GET.get('only_owner') != 'false'
 
 		# Admins see everything
 		# Otherwise automatically filter to only those owned by the user
-		if not user.is_admin:
+		if only_owner or not user.is_admin:
 			queryset = queryset.filter(owner=user)
-
-		# Filter per user
-		if 'user_pk' in self.kwargs:
-			user_pk = self.kwargs['user_pk']
-			queryset = queryset.filter(owner__pk=user_pk)
 
 		return queryset
 
-	def create(self, request):
-		"""Find if user has a Buyable Order or create"""
+	def create(self, request, *args, **kwargs):
+		"""
+		Find if user has a Buyable Order or create
+		"""
+
+		sale_pk = kwargs.get('sale_pk', request.data.get('sale'))
 		try:
 			# TODO ajout de la limite de temps
-			# TODO ONGOING or BUYABLE LIST ???
-			order = Order.objects \
-				.filter(status=OrderStatus.ONGOING.value) \
-				.get(sale=request.data['sale'], owner=request.user.id)
+			order = self.get_queryset() \
+				.filter(status__in=OrderStatus.BUYABLE_STATUS_LIST.value) \
+				.get(sale=sale_pk, owner=request.user.id)
 
-			serializer = OrderSerializer(order)
+			serializer = self.get_serializer(instance=order)
 			httpStatus = status.HTTP_200_OK
 		except Order.DoesNotExist as err:
 			# Configure new Order
 			serializer = OrderSerializer(data={
-				'sale': request.data['sale'],
+				'sale': sale_pk,
 				'owner': request.user.id,
 				'orderlines': [],
 				'status': OrderStatus.ONGOING.value,
@@ -233,20 +218,16 @@ class OrderLineViewSet(ModelViewSet):
 	permission_classes = (IsOrderOwnerOrAdmin,)
 
 	def get_queryset(self):
-		user = self.request.user
 		queryset = super().get_queryset()
 
-		# Anonymous users see nothing
-		if not user.is_authenticated:
-			return None
+		# Get params
+		user = self.request.user
+		only_owner = self.request.GET.get('only_owner') != 'false'
 
-		# Admins see everything otherwise filter to see only those owned by the user
-		# if not user.is_admin:
-		# 	queryset = queryset.filter(order__owner=user)
-
-		if 'order_pk' in self.kwargs:
-			order_pk = self.kwargs['order_pk']
-			queryset = queryset.filter(order__pk=order_pk)
+		# Admins see everything
+		# Otherwise automatically filter to only those owned by the user
+		if only_owner or not user.is_admin:
+			queryset = queryset.filter(order__owner=user)
 
 		return queryset
 
@@ -353,14 +334,6 @@ class OrderLineFieldViewSet(ModelViewSet):
 	serializer_class = OrderLineFieldSerializer
 	permission_classes = (IsOrderOwnerReadUpdateOrAdmin,)
 
-	def get_queryset(self):
-		queryset = super().get_queryset()
-		if 'orderlineitem_pk' in self.kwargs:
-			orderlineitem_pk = self.kwargs['orderlineitem_pk']
-			queryset = queryset.filter(orderlineitem__pk=orderlineitem_pk)
-
-		return queryset
-
 	def partial_update(self, request, *args, **kwargs):
 		kwargs['partial'] = True
 		return self.update(request, *args, **kwargs)
@@ -368,6 +341,7 @@ class OrderLineFieldViewSet(ModelViewSet):
 	def update(self, request, *args, **kwargs):
 		partial = kwargs.pop('partial', False)
 		instance = self.get_object()
+		# Check if field is editable
 		if instance.isEditable() == True:
 			serializer = OrderLineFieldSerializer(instance, data={'value': request.data['value']}, partial=True)
 			serializer.is_valid(raise_exception=True)
@@ -376,22 +350,21 @@ class OrderLineFieldViewSet(ModelViewSet):
 			serializer = OrderLineFieldSerializer(instance)
 		return Response(serializer.data)
 
-# ============================================
-# 	Billet
-# ============================================
 
+# ============================================
+# 	Ticket
+# ============================================
 
 @api_view(['GET'])
 @authentication_classes([OAuthAuthentication])
 @permission_classes([IsOrderOwnerOrAdmin])
-def generate_pdf(request, *args, **kwargs):
+def generate_pdf(request, pk:int, **kwargs):
 	# Get order
-	order_pk = kwargs.get('order_pk', None)
 	try:
 		order = Order.objects.all() \
 					.prefetch_related('orderlines', 'orderlines__orderlineitems', 'orderlines__item',
 						'orderlines__orderlineitems__orderlinefields', 'orderlines__orderlineitems__orderlinefields__field') \
-					.get(pk=order_pk)
+					.get(pk=pk)
 	except Order.DoesNotExist as e:
 		return errorResponse('La commande est introuvable', [], httpStatus=status.HTTP_404_NOT_FOUND)
 
@@ -437,7 +410,7 @@ def generate_pdf(request, *args, **kwargs):
 	else:
 		pdf = render_to_pdf(template, data)
 		response = HttpResponse(pdf, content_type='application/pdf')
-		if request.GET.get('action', 'download') != 'view':
-			response['Content-Disposition'] = 'attachment;filename="commande_' + order.sale.name + '_' + order_pk + '.pdf"'
+		if request.GET.get('download', 'false') != 'false':
+			response['Content-Disposition'] = f'attachment;filename="commande_{order.sale.name}_{order.pk}.pdf"'
 			
 	return response

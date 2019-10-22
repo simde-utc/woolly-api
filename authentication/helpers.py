@@ -1,6 +1,4 @@
 from .models import User, UserType
-from .serializers import UserSerializer
-
 
 def find_or_create_user(user_infos):
 	"""
@@ -48,7 +46,8 @@ def find_or_create_user(user_infos):
 def create_user(user_infos):
 	# Create user
 	# TODO : birthdate, login
-	serializer = UserSerializer(data = {
+	from .serializers import UserSerializer
+	serializer = UserSerializer(data={
 		'email': user_infos['email'],
 		'first_name': user_infos['firstname'],
 		'last_name': user_infos['lastname'],
