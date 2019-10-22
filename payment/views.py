@@ -1,6 +1,7 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from core.helpers import ErrorResponse
+from core.helpers import ErrorResponse, get_field_default_value
+from core.exceptions import TransactionException
 from rest_framework import status
 from django.urls import reverse
 
@@ -11,29 +12,24 @@ from .helpers import OrderValidator
 
 from woolly_api.settings import PAYUTC_KEY, PAYUTC_TRANSACTION_BASE_URL
 from authentication.oauth import OAuthAuthentication
-from django.core.mail import EmailMessage
 from .services.payutc import Payutc
 
 
 class PaymentView:
-
 	payutc = Payutc({ 'app_key': PAYUTC_KEY })
 
 	@classmethod
 	@permission_classes([IsOrderOwnerOrAdmin])
-	def pay(request, pk):
+	def pay(cls, request, pk):
 		"""
 		Pay an order
 
 		Steps:
 			1. Retrieve Order
 			2. Verify Order
-			3. Process OrderLines
-			4. Instanciate PaymentService
-			5. Create Transaction
-			6. Save Transaction info and redirect
+			3. Create Transaction
+			4. Save Transaction info and redirect
 		"""
-
 		# 1. Retrieve Order
 		try:
 			# TODO ajout de la limite de temps
@@ -51,30 +47,15 @@ class PaymentView:
 		except OrderValidationException as error:
 			return ErrorResponse(error)
 
-		# 3. Process orderlines
-		# Tableau pour Weez
-		orderlines = order.orderlines.filter(quantity__gt=0).prefetch_related('item')
-		itemsArray = [ [int(orderline.item.nemopay_id), orderline.quantity] for orderline in orderlines ]
+		# 3. Create Transaction
+		try:
+			return_url = request.GET['return_url']
+			callback_url = cls.get_callback_url(request, order)
+			transaction = cls.payutc.create_transaction(order, callback_url, return_url)
+		except TransactionException as error:
+			return ErrorResponse(error)
 
-		# 4. Instanciate PaymentService
-		payutc = Payutc({ 'app_key': PAYUTC_KEY })
-		params = {
-			'items': str(itemsArray),
-			'mail': request.user.email,
-			'fun_id': order.sale.association.fun_id,
-			'return_url': request.GET['return_url'],
-			'callback_url': request.build_absolute_uri(reverse('pay-callback', kwargs={'pk': order.pk}))
-		}
-
-		# 5. Create Transaction
-		transaction = payutc.createTransaction(params)
-		if 'error' in transaction:
-			print(transaction)
-			# TODO Better feedback
-			errors = (f"{k}: {m}" for k, m in transaction['error']['data'].items())
-			return ErrorResponse(transaction['error']['message'], errors)
-
-		# 6. Save Transaction info and redirect
+		# 4. Save transaction id and redirect
 		order.status = OrderStatus.AWAITING_PAYMENT.value
 		order.tra_id = transaction['tra_id']
 		order.save()
@@ -82,129 +63,45 @@ class PaymentView:
 		# Redirect to transaction url
 		resp = {
 			'status': order.get_status_display(),
-			'url': transaction['url']
+			'redirect_url': transaction['url'],
 		}
 		return Response(resp, status=status.HTTP_200_OK)
 
 	@classmethod
-	def callback(request, pk):
+	def callback(cls, request, pk):
+		"""
+		Callback after the transaction has been made
+		to validate, cancel or redirect the order
+		"""
 		try:
 			order = Order.objects.select_related('sale__association').get(pk=pk)
-						# .filter(status=OrderStatus.AWAITING_PAYMENT.value) \
-						# .prefetch_related('sale', 'orderlines', 'owner') \
 		except Order.DoesNotExist as error:
 			return ErrorResponse(error, status=status.HTTP_404_NOT_FOUND)
 
-		payutc = Payutc({ 'app_key': PAYUTC_KEY })
-		transaction = payutc.getTransactionInfo({ 'tra_id': order.tra_id, 'fun_id': order.sale.association.fun_id })
-		if 'error' in transaction:
-			print(transaction)
-			# TODO parse error
-			return ErrorResponse(transaction['error']['message'])
+		# Get transaction status
+		try:
+			status = cls.payutc.get_transaction_status(order)
+		except TransactionException as error:
+			return ErrorResponse(error)
 
-		return updateOrderStatus(order, transaction)
+		# Update order
+		resp = order.update_status(status)
 
-# Set all method from PaymentView as API View
+		if resp.pop('redirect_to_payment', False):
+			resp['redirect_url'] = cls.payutc.get_redirection_to_payment(order)
+
+		return Response(resp, status=status.HTTP_200_OK)
+
+	@classmethod
+	def get_callback_url(cls, request, order) -> str:
+		"""
+		Build the url callback for an order
+		"""
+		return request.build_absolute_uri(
+			reverse('pay-callback', kwargs={ 'pk': order.pk })
+		)
+
+# Set all endpoint method from PaymentView as API View
 for key in ('pay', 'callback'):
 	setattr(PaymentView, key, api_view(['GET'])(getattr(PaymentView, key)))
 
-
-###################################################
-# 		One Time Actions
-###################################################
-
-def updateOrderStatus(order, transaction):
-
-	if transaction['status'] == 'A':
-		order.status = OrderStatus.EXPIRED.value
-		order.save()
-		resp = {
-			'status': OrderStatus.EXPIRED.name,
-			'message': 'Votre commande a expiré.'
-		}
-	elif transaction['status'] == 'V':
-		if order.status == OrderStatus.AWAITING_PAYMENT.value:
-			createOrderLineItemsAndFields(order)
-			sendConfirmationMail(order)
-		order.status = OrderStatus.PAID.value
-		order.save()
-		resp = {
-			'status': OrderStatus.PAID.name,
-			'message': 'Votre commande a été payée.'
-		}
-	else:
-		resp = {
-			'status': OrderStatus.AWAITING_PAYMENT.name,
-			'url': PAYUTC_TRANSACTION_BASE_URL + str(transaction['id'])
-		}
-	return Response(resp, status=status.HTTP_200_OK)
-
-
-# OrderLine
-def getFieldDefaultValue(default, order):
-	return {
-		'owner.first_name': order.owner.first_name,
-		'owner.last_name': order.owner.last_name,
-	}.get(default, default)
-
-def createOrderLineItemsAndFields(order):
-	# Create OrderLineItems
-	orderlines = order.orderlines.filter(quantity__gt=0).prefetch_related('item', 'orderlineitems').all()
-	total = 0
-	for orderline in orderlines:
-		qte = orderline.quantity - len(orderline.orderlineitems.all())
-		while qte > 0:
-			orderlineitem = OrderLineItemSerializer(data = {
-				'orderline': {
-					'id': orderline.id,
-					'type': 'orderlines'
-				}
-			})
-			orderlineitem.is_valid(raise_exception=True)
-			orderlineitem.save()
-
-			# Create OrderLineFields
-			for field in orderline.item.fields.all():
-				orderlinefield = OrderLineFieldSerializer(data = {
-					'orderlineitem': {
-						'id': orderlineitem.data['id'],
-						'type': 'orderlineitems'
-					},
-					'field': {
-						'id': field.id,
-						'type': 'fields'
-					},
-					'value': getFieldDefaultValue(field.default, order)
-				})
-				orderlinefield.is_valid(raise_exception=True)
-				orderlinefield.save()
-			total += 1
-			qte -= 1
-			
-	return total
-
-def sendConfirmationMail(order):
-	# TODO : généraliser + markdown
-
-	link_order = "http://assos.utc.fr/picasso/degustations/commandes/" + str(order.pk)
-	message = "Bonjour " + order.owner.get_full_name() + ",\n\n" \
-					+ "Votre commande n°" + str(order.pk) + " vient d'être confirmée.\n" \
-					+ "Vous avez commandé:\n" \
-					+ "".join([ " - " + str(ol.quantity) + " " + ol.item.name + "\n" for ol in order.orderlines.all() ]) \
-					+ "Vous pouvez télécharger vos billets ici : " + link_order + "\n\n" \
-					+ "Merci d'avoir utilisé Woolly"
-
-	email = EmailMessage(
-		subject="Woolly - Confirmation de commande",
-		body=message,
-		from_email="woolly@assos.utc.fr",
-		to=[order.owner.email],
-		reply_to=["woolly@assos.utc.fr"],
-	)
-	email.send()
-
-
-	# if order.status in OrderStatus.BUYABLE_STATUS_LIST.value:
-		# Check on Weezevent if 
-		# transaction = payutc.getTransactionInfo({ 'tra_id': order.tra_id, 'fun_id': order.sale.association.fun_id })
-		# updateOrderStatus(order, transaction)

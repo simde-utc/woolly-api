@@ -1,8 +1,10 @@
-from django.db import models
-from core.models import ApiModel
 from authentication.models import User, UserType
+from core.models import ApiModel
+from django.db import models
 from enum import Enum
 import uuid
+
+from django.core.mail import EmailMessage
 
 
 # ============================================
@@ -17,6 +19,8 @@ class Association(ApiModel):
 	shortname = models.CharField(max_length=200)
 	fun_id    = models.PositiveSmallIntegerField(null=True, blank=True)			# TODO V2 : abstraire payment
 
+	# def patch_
+
 	@classmethod
 	def get_api_endpoint(cls, params: dict) -> str:
 		url = 'assos'
@@ -26,7 +30,7 @@ class Association(ApiModel):
 			url = f"users/{params['user_pk']}/{url}"
 		return url
 
-	def __str__(self):
+	def __str__(self) -> str:
 		return self.shortname
 
 class Sale(models.Model):
@@ -37,7 +41,7 @@ class Sale(models.Model):
 	# slug        = models.CharField(max_length=200, unique=True)
 	name        = models.CharField(max_length=200)
 	description = models.CharField(max_length=1000)
-	association = models.ForeignKey(Association, on_delete=None, related_name='sales', editable=False)
+	association = models.ForeignKey(Association, on_delete=None, related_name='sales') #, editable=False)
 	# cgv = TODO
 	
 	# Visibility
@@ -55,7 +59,7 @@ class Sale(models.Model):
 	# TODO v2
 	# paymentmethods = models.ManyToManyField(PaymentMethod)
 
-	def __str__(self):
+	def __str__(self) -> str:
 		return "%s par %s" % (self.name, self.association)
 
 
@@ -73,7 +77,7 @@ class ItemGroup(models.Model):
 	max_per_user = models.PositiveIntegerField(blank=True, null=True)		# TODO V2 : moteur de contraintes
 	# sale 		 = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
 
-	def __str__(self):
+	def __str__(self) -> str:
 		return self.name
 
 class Item(models.Model):
@@ -105,7 +109,7 @@ class Item(models.Model):
 																						for orderline in order.orderlines.filter(item=self).all())
 		return self.quantity - allItemsBought
 
-	def __str__(self):
+	def __str__(self) -> str:
 		return "%s (%s)" % (self.name, self.sale)
 
 	class Meta:
@@ -141,6 +145,16 @@ class OrderStatus(Enum):
 	# Orders which are definitely cancelled
 	CANCELLED_LIST = (EXPIRED, CANCELLED)
 
+	MESSAGES = {
+		ONGOING: "Votre commande est en cours",
+		AWAITING_PAYMENT: "Votre commande en attente de paiement",
+		AWAITING_VALIDATION: "Votre commande en attente de validation",
+		PAID: "Votre commande est payée",
+		VALIDATED: "Votre commande est validée",
+		EXPIRED: "Votre commande est expirée",
+		CANCELLED: "Votre commande a été annulée",
+	}
+
 	@classmethod
 	def choices(cls):
 		"""
@@ -152,20 +166,112 @@ class OrderStatus(Enum):
 class Order(models.Model):
 	"""
 	Defines the Order object
+	This is the central model of all the project
 	"""
-	owner 	= models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders', editable=False)
-	sale 		= models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='orders', editable=False)
+	owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')#, editable=False)
+	sale  = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='orders')#, editable=False)
 
 	created_at = models.DateTimeField(auto_now_add=True, editable=False)
 	updated_at = models.DateTimeField(auto_now=True)
 
 	status = models.PositiveSmallIntegerField(
-		choices=OrderStatus.choices(),	# Choices is a list of Tuple
+		choices=OrderStatus.choices(),
 		default=OrderStatus.ONGOING.value,
 	)
 	tra_id = models.IntegerField(blank=True, null=True, default=None)
 
-	def __str__(self):
+	# Additional methods
+
+	def update_status(self, status: OrderStatus) -> dict:
+		"""
+		Update the order status, make side changes if needed,
+		and return an update response
+		"""
+		resp = {
+			'status': status.name,
+			'old_status': self.get_status_display(),
+			'message': OrderStatus.MESSAGES[status],
+			# Redirect to payment if needed
+			'redirect_to_payment': self.status == OrderStatus.AWAITING_PAYMENT.value,
+			# Do not touch booked orders
+			'updated': not (self.status == status.value
+			                or self.status in OrderStatus.BOOKED_LIST.value),
+			# If sale freshly validated, generate tickets
+			'tickets_generated': (self.status in OrderStatus.BUYABLE_STATUS_LIST.value
+			                      and status in OrderStatus.VALIDATED_LIST),
+		}
+
+		# Update order status
+		if resp['updated']:
+			self.status = status.value
+			self.save()
+
+		if resp['tickets_generated']:
+			self.create_orderlineitems_and_fields()
+
+		return resp
+
+
+	def create_orderlineitems_and_fields(self) -> int:
+		"""
+		When an order has just been validated, create
+		all the orderlineitems and fields required
+		TODO : add a lock or something, and improve from scripts
+		"""
+		orderlines = self.orderlines.filter(quantity__gt=0) \
+		                 .prefetch_related('item', 'orderlineitems')
+		total = 0
+		for orderline in orderlines.all():
+			qte = orderline.quantity - len(orderline.orderlineitems.all())
+			while qte > 0:
+				# Create OrderLineItem 
+				orderlineitem = OrderLineItemSerializer(data={
+					'orderline': orderline.id
+				})
+				orderlineitem.is_valid(raise_exception=True)
+				orderlineitem.save()
+
+				# Create OrderLineFields
+				for field in orderline.item.fields.all():
+					orderlinefield = OrderLineFieldSerializer(data = {
+						'orderlineitem': orderlineitem.data['id'],
+						'field': field.id,
+						'value': get_field_default_value(field.default, self),
+					})
+					orderlinefield.is_valid(raise_exception=True)
+					orderlinefield.save()
+					
+				total += 1
+				qte -= 1
+				
+		return total
+
+	def send_confirmation_mail(self):
+		"""
+		Send a confirmation mail to the owner of the order
+		"""
+		if self.status not in OrderStatus.VALIDATED_LIST.value:
+			raise Exception(f"The order must be valid to send a confirmation mail")
+
+		# TODO : généraliser + markdown
+		link_order = "http://assos.utc.fr/picasso/degustations/commandes/" + str(self.pk)
+		message = "Bonjour " + self.owner.get_full_name() + ",\n\n" \
+						+ "Votre commande n°" + str(self.pk) + " vient d'être confirmée.\n" \
+						+ "Vous avez commandé:\n" \
+						+ "".join([ " - " + str(ol.quantity) + " " + ol.item.name + "\n" for ol in self.orderlines.all() ]) \
+						+ "Vous pouvez télécharger vos billets ici : " + link_order + "\n\n" \
+						+ "Merci d'avoir utilisé Woolly"
+
+		email = EmailMessage(
+			subject="Woolly - Confirmation de commande",
+			body=message,
+			from_email="woolly@assos.utc.fr",
+			to=[self.owner.email],
+			reply_to=["woolly@assos.utc.fr"],
+		)
+		return email.send()
+
+	def __str__(self) -> str:
 		return "%d %s - %s ordered by %s" % (self.id, OrderStatus(self.status).name, self.sale, self.owner)
 
 	class Meta:
@@ -179,7 +285,7 @@ class OrderLine(models.Model):
 	order 	 = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='orderlines') #, editable=False)
 	quantity = models.IntegerField()
 
-	def __str__(self):
+	def __str__(self) -> str:
 		return "%s - %dx %s (Order %s)" % (self.id, self.quantity, self.item.name, self.order)
 
 	class Meta:
@@ -193,7 +299,7 @@ class OrderLineItem(models.Model):
 	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 	orderline = models.ForeignKey(OrderLine, on_delete=models.CASCADE, related_name="orderlineitems")
 
-	def __str__(self):
+	def __str__(self) -> str:
 		return "%s - %s" % (self.id, self.orderline)
 
 	class Meta:
@@ -213,7 +319,7 @@ class Field(models.Model):
 	default = models.CharField(max_length=200, blank=True, null=True)
 	items 	= models.ManyToManyField(Item, through='ItemField', through_fields=('field','item'))
 
-	def __str__(self):
+	def __str__(self) -> str:
 		return "%s (%s)" % (self.name, self.type)
 
 	class Meta:
@@ -230,7 +336,7 @@ class ItemField(models.Model):
 	# sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
 	# itemgroup = models.ForeignKey(ItemGroup, on_delete = None, related_name = 'itemgroups')
 
-	def __str__(self):
+	def __str__(self) -> str:
 		return "%s - %s)" % (self.item, self.field)
 
 	class Meta:
@@ -248,7 +354,7 @@ class OrderLineField(models.Model):
 		itemfield = ItemField.objects.get(field__pk=self.field.pk, item__pk=self.orderlineitem.orderline.item.pk)
 		return itemfield.editable
 
-	def __str__(self):
+	def __str__(self) -> str:
 		return "%s - %s = %s" % (self.orderlineitem.id, self.field.name, self.value)
 
 	class Meta:

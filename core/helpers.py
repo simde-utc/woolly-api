@@ -1,4 +1,5 @@
-from typing import Sequence, Iterable, Callable
+from typing import Sequence, Iterable, Callable, Union
+from core.exceptions import TransactionException
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
@@ -31,6 +32,19 @@ def format_date(date) -> 'datetime':
 	else:
 		return timezone.make_aware(date, CURRENT_TZ, is_dst=False)
 
+# --------------------------------------------------------------------------
+# 		Models
+# --------------------------------------------------------------------------
+
+def get_field_default_value(default, order):
+	"""
+	Get the default value of a field
+	"""
+	return {
+		'owner.first_name': order.owner.first_name,
+		'owner.last_name': order.owner.last_name,
+	}.get(default, default)
+
 def custom_editable_fields(request, obj=None, edition_readonly_fields=tuple(), always_readonly_fields=tuple()):
 	"""
 	Helper to allow non editable fields to be set on creation
@@ -41,7 +55,11 @@ def custom_editable_fields(request, obj=None, edition_readonly_fields=tuple(), a
 # 		HTTP & REST
 # --------------------------------------------------------------------------
 
-def ErrorResponse(error: str, detail: Sequence[str]=[], status=status.HTTP_400_BAD_REQUEST) -> Response:
+def ErrorResponse(error: Union[TransactionException, str],
+                  detail: Sequence[str]=[],
+                  status=status.HTTP_400_BAD_REQUEST) -> Response:
+	if not detail and issubclass(type(error), TransactionException):
+		detail = error.detail
 	data = {
 		'error': str(error),
 		'detail': detail,
