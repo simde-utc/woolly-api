@@ -29,7 +29,10 @@ def fetch_data_from_api(model, oauth_client=None, **params):
 	uri = model.get_api_endpoint(params)
 	data = oauth_client.fetch_resource(uri)
 	if hasattr(model, 'patch_fetched_data'):
-		return model.patch_fetched_data(data)
+		if type(data) is list:
+			data = list(map(model.patch_fetched_data, data))
+		else:
+			data = model.patch_fetched_data(data)
 
 	return data
 

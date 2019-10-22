@@ -17,8 +17,7 @@ class Association(ApiModel):
 	id = models.UUIDField(primary_key=True, editable=False)
 	shortname = models.CharField(max_length=200)
 	fun_id    = models.PositiveSmallIntegerField(null=True, blank=True)			# TODO V2 : abstraire payment
-
-	# def patch_
+	# TODO Fetch fun_id
 
 	@classmethod
 	def get_api_endpoint(cls, params: dict) -> str:
@@ -210,7 +209,6 @@ class Order(models.Model):
 
 		return resp
 
-
 	def create_orderlineitems_and_fields(self) -> int:
 		"""
 		When an order has just been validated, create
@@ -218,9 +216,9 @@ class Order(models.Model):
 		TODO : add a lock or something, and improve from scripts
 		"""
 		from .serializers import OrderLineItemSerializer, OrderLineFieldSerializer
-
 		orderlines = self.orderlines.filter(quantity__gt=0) \
 		                 .prefetch_related('item', 'orderlineitems')
+
 		total = 0
 		for orderline in orderlines.all():
 			qte = orderline.quantity - len(orderline.orderlineitems.all())
