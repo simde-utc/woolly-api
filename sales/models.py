@@ -4,6 +4,7 @@ from django.db import models
 from enum import Enum
 import uuid
 
+from django.db import transaction
 from django.core.mail import EmailMessage
 
 # ============================================
@@ -60,6 +61,8 @@ class Sale(models.Model):
 	def __str__(self) -> str:
 		return "%s par %s" % (self.name, self.association)
 
+	class Meta:
+		ordering = ('-created_at',)
 
 # ============================================
 # 	Item
@@ -189,26 +192,31 @@ class Order(models.Model):
 			'status': status.name,
 			'old_status': self.get_status_display(),
 			'message': OrderStatus.MESSAGES.value[status.value],
+			'updated': self.status != status.value,
 			# Redirect to payment if needed
-			'redirect_to_payment': self.status == OrderStatus.AWAITING_PAYMENT.value,
-			# Do not touch booked orders
-			'updated': (not self.status == status.value
-			            or self.status in OrderStatus.BOOKED_LIST.value),
+			'redirect_to_payment': status.value == OrderStatus.AWAITING_PAYMENT.value,
 			# If sale freshly validated, generate tickets
 			'tickets_generated': (self.status in OrderStatus.BUYABLE_STATUS_LIST.value
 			                      and status.value in OrderStatus.VALIDATED_LIST.value),
 		}
+
+		# Do not touch booked orders
+		if self.status not in OrderStatus.BOOKED_LIST.value:
+			resp['updated'] = False
+			resp['status'] = self.get_status_display()
 
 		# Update order status
 		if resp['updated']:
 			self.status = status.value
 			self.save()
 
+		# Generate tickets if needed
 		if resp['tickets_generated']:
 			self.create_orderlineitems_and_fields()
 
 		return resp
 
+	@transaction.atomic
 	def create_orderlineitems_and_fields(self) -> int:
 		"""
 		When an order has just been validated, create
