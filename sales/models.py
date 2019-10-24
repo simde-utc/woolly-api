@@ -189,21 +189,18 @@ class Order(models.Model):
 		and return an update response
 		"""
 		resp = {
-			'status': status.name,
 			'old_status': self.get_status_display(),
 			'message': OrderStatus.MESSAGES.value[status.value],
-			'updated': self.status != status.value,
+			# Do not update if same status, booked or cancelled orders
+			'updated': not (self.status == status.value
+			                or self.status in OrderStatus.BOOKED_LIST.value
+			                or self.status == OrderStatus.CANCELLED.value),
 			# Redirect to payment if needed
 			'redirect_to_payment': status.value == OrderStatus.AWAITING_PAYMENT.value,
 			# If sale freshly validated, generate tickets
-			'tickets_generated': (self.status in OrderStatus.BUYABLE_STATUS_LIST.value
+			'tickets_generated': (self.status not in OrderStatus.VALIDATED_LIST.value
 			                      and status.value in OrderStatus.VALIDATED_LIST.value),
 		}
-
-		# Do not touch booked orders
-		if self.status not in OrderStatus.BOOKED_LIST.value:
-			resp['updated'] = False
-			resp['status'] = self.get_status_display()
 
 		# Update order status
 		if resp['updated']:
@@ -214,6 +211,7 @@ class Order(models.Model):
 		if resp['tickets_generated']:
 			self.create_orderlineitems_and_fields()
 
+		resp['status'] = self.get_status_display()
 		return resp
 
 	@transaction.atomic

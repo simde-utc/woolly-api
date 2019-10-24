@@ -109,7 +109,7 @@ class OrderValidatorTestCase(APITestCase):
 		debug_msg = "Les erreurs obtenues sont : \n - " + "\n - ".join(validator.errors) if validator.errors else None
 		self.assertEqual(validator.is_valid, should_pass, debug_msg)
 		if messages is not None:
-			self.assertEqual(message_list, messages, debug_msg)
+			self.assertEqual(validator.errors, messages, debug_msg)
 
 
 	# =================================================
