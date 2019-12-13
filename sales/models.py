@@ -39,7 +39,7 @@ class Sale(models.Model):
 	# Description
 	# slug        = models.CharField(max_length=200, unique=True)
 	name        = models.CharField(max_length=200)
-	description = models.CharField(max_length=1000)
+	description = models.CharField(max_length=1000, blank=True)
 	association = models.ForeignKey(Association, on_delete=None, related_name='sales') #, editable=False)
 	# cgv = TODO
 	
@@ -190,7 +190,6 @@ class Order(models.Model):
 		"""
 		resp = {
 			'old_status': self.get_status_display(),
-			'message': OrderStatus.MESSAGES.value[status.value],
 			# Do not update if same status, booked or cancelled orders
 			'updated': not (self.status == status.value
 			                or self.status in OrderStatus.BOOKED_LIST.value
@@ -211,7 +210,8 @@ class Order(models.Model):
 		if resp['tickets_generated']:
 			self.create_orderlineitems_and_fields()
 
-		resp['status'] = self.get_status_display()
+		resp['status']  = self.get_status_display()
+		resp['message'] = OrderStatus.MESSAGES.value[self.status.value]
 		return resp
 
 	@transaction.atomic

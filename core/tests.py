@@ -1,5 +1,6 @@
 from django.urls import reverse, exceptions
 from rest_framework import status
+from functools import partial
 from copy import deepcopy
 from typing import Dict
 
@@ -9,15 +10,12 @@ from authentication.models import User
 
 PermissionList = Dict[str, Dict[str, bool]]
 
+CRUD_ACTIONS = ('list', 'retrieve', 'create', 'update', 'delete')
 # Only admin can do things by default
 DEFAULT_CRUD_PERMISSIONS = {
-	'list':     { 'public': False, 	'user': False, 	'other': False, 	'admin': True },
-	'retrieve': { 'public': False, 	'user': False, 	'other': False, 	'admin': True },
-	'create':   { 'public': False, 	'user': False, 	'other': False, 	'admin': True },
-	'update':   { 'public': False, 	'user': False, 	'other': False, 	'admin': True },
-	'delete':   { 'public': False, 	'user': False, 	'other': False, 	'admin': True },
+	action: { 'public': False, 	'user': False, 	'other': False, 	'admin': True }
+	for action in CRUD_ACTIONS
 }
-
 VISIBILITY_SHORTCUTS = {
 	'p': 'public',
 	'u': 'user',
@@ -49,9 +47,14 @@ def get_permissions_from_compact(compact: Dict[str, str]) -> PermissionList:
 
 class CRUDViewSetTestMixin(object):
 	model = None
+	crud_actions = CRUD_ACTIONS
 	permissions = DEFAULT_CRUD_PERMISSIONS
 	modelFactory = FakeModelFactory()
 	debug = False
+
+	def __init__(self, *args, **kwargs):
+		self._attach_crud_test_methods()
+		super().__init__(*args, **kwargs)
 
 	def setUp(self):
 		"""Function run before beginning the tests"""
@@ -176,7 +179,7 @@ class CRUDViewSetTestMixin(object):
 		return self.model.objects.create(**data)
 
 
-	def _perform_crud_test(self, action):
+	def _perform_crud_test(self, action: str):
 		"""
 		@brief   Helper to perform CRUD action tests
 		@param   action           The url to access
@@ -225,23 +228,12 @@ class CRUDViewSetTestMixin(object):
 	# 		Tests
 	# ========================================================
 
-	def test_list_view(self):
-		"""Test all users permissions to list"""
-		self._perform_crud_test('list')
-
-	def test_retrieve_view(self):
-		"""Test all users permissions to retrieve self.object"""
-		self._perform_crud_test('retrieve')
-
-	def test_create_view(self):
-		"""Test all users permissions to create an object"""
-		self._perform_crud_test('create')
-
-	def test_update_view(self):
-		"""Test all users permissions to modify an object"""
-		self._perform_crud_test('update')
-
-	def test_delete_view(self):
-		"""Test all users permissions to delete an object"""
-		self._perform_crud_test('delete')
-
+	def _attach_crud_test_methods(self):
+		"""
+		Attach CRUD test methods to the TestCase 
+		"""
+		model_name = get_model_name(self.model)
+		for action in self.crud_actions:
+			method = partial(self._perform_crud_test, action)
+			method.__doc__ = f"Test all users permissions to {action} {model_name}"
+			setattr(self, f"test_{action}_view", method)

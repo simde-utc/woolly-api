@@ -59,7 +59,7 @@ HTTPS_ENABLED = getattr(confidentials, 'HTTPS_ENABLED', True)
 SECURE_SSL_REDIRECT = HTTPS_ENABLED
 SECURE_BROWSER_XSS_FILTER = True
 
-SESSION_COOKIE_SECURE = False # False to enable the use of cookies in ajax requests
+SESSION_COOKIE_SECURE = HTTPS_ENABLED # TODO ?????,, False to enable the use of cookies in ajax requests
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' # cache or cached_db
 
 # Cross Site Request Foregery protection
