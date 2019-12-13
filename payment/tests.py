@@ -101,7 +101,7 @@ class OrderValidatorTestCase(APITestCase):
 		if order is None:
 			order = self.order
 
-		# TODO Try to lower that
+		# TODO Try to lower the queries required to lower
 		# with self.assertNumQueries(6):
 		validator = OrderValidator(order, raise_on_error=False)
 		validator.validate()

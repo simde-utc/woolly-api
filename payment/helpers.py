@@ -1,7 +1,8 @@
 from sales.models import Order, OrderLine, OrderStatus
 from django.utils import timezone
+from typing import List, Sequence
+from collections import namedtuple
 from functools import reduce
-from typing import List
 
 class OrderValidationException(Exception):
 	pass
@@ -44,10 +45,12 @@ class OrderValidator:
 		return self.errors
 
 	def _add_error(self, error: str):
-		"""Raise or add a new error"""
+		"""
+		Raise or add a new error
+		"""
 		self.errors.append(error)
 		if self.raise_on_error:
-			raise Exception(error)
+			raise OrderValidationException(error)
 
 
 	# ===============================================
@@ -78,8 +81,7 @@ class OrderValidator:
 		if self.order.status not in OrderStatus.BUYABLE_STATUS_LIST.value:
 			self._add_error("Votre commande n'est pas payable.")
 
-		# Check if expired
-		# TODO
+		# TODO Check if expired
 
 		# Check if no previous ongoing order
 		user_prev_ongoing_orders = self.user.orders.filter(status=OrderStatus.ONGOING.value).exclude(pk=self.order.pk)
@@ -106,20 +108,21 @@ class OrderValidator:
 
 		# ======= Part II - Process quantities
 
-		def build_quantity(orderlines) -> list:
+		Quantity = namedtuple('Quantity', ['total', 'per_item', 'per_group'])
+
+		def build_quantity(orderlines: Sequence[OrderLine]) -> Quantity:
 			def _reducer(acc: list, orderline: OrderLine) -> list:
 				acc[0] += orderline.quantity
 				acc[1][orderline.item] = acc[1].get(orderline.item, 0) + orderline.quantity
 				if orderline.item.group:
 					acc[2][orderline.item.group] = acc[2].get(orderline.item.group, 0) + orderline.quantity
 				return acc
-			return reduce(_reducer, orderlines, [0, {}, {}])
+			return Quantity._make(reduce(_reducer, orderlines, [0, {}, {}]))
 
 		# Quantity per item and Total quantity bought in the order
-		order_total_qt, order_qt_per_item, order_qt_per_group = build_quantity(order_orderlines)
-		sale_total_qt,  sale_qt_per_item,  sale_qt_per_group  = build_quantity(sale_orderlines)
-		user_total_qt,  user_qt_per_item,  user_qt_per_group  = build_quantity(user_orderlines)
-
+		order_qt = build_quantity(order_orderlines)
+		sale_qt  = build_quantity(sale_orderlines)
+		user_qt  = build_quantity(user_orderlines)
 
 		# ======= Part III - Verification
 
@@ -129,33 +132,30 @@ class OrderValidator:
 		# III.1 - Sale level verification
 
 		# TODO
-		if order_total_qt <= 0:
+		if order_qt.total <= 0:
 			self._add_error("Vous devez avoir un nombre d'items commandés strictement positif.")
 
 		# Check max item quantity for the sale (ie. enough items left)
-		if is_quantity(self.sale.max_item_quantity) and sale_total_qt + order_total_qt > self.sale.max_item_quantity:
+		if is_quantity(self.sale.max_item_quantity) and sale_qt.total + order_qt.total > self.sale.max_item_quantity:
 			self._add_error("Il ne reste pas assez d'articles pour cette vente.")
 
-		# Check max per user for the sale
-		# TODO
-
 		# III.2 - Item level verification
-		for item in order_qt_per_item:
+		for item in order_qt.per_item:
 			# Check quantity per item
-			if is_quantity(item.quantity) and sale_qt_per_item.get(item, 0) + order_qt_per_item[item] > item.quantity:
+			if is_quantity(item.quantity) and sale_qt.per_item.get(item, 0) + order_qt.per_item[item] > item.quantity:
 				self._add_error("Il ne reste pas assez de %s." % item.name)
 
 			# Check max_per_user per item 
-			if is_quantity(item.quantity) and user_qt_per_item.get(item, 0) + order_qt_per_item[item] > item.max_per_user:
-				self._add_error("Vous ne pouvez pas prendre plus de %d %s par utilisateur." % (item.max_per_user, item.name))
+			if is_quantity(item.quantity) and user_qt.per_item.get(item, 0) + order_qt.per_item[item] > item.max_per_user:
+				self._add_error(f"Vous ne pouvez pas prendre plus de {item.max_per_user} {item.name} par utilisateur.")
 
 		# III.3 - ItemGroup level verification
-		for group in order_qt_per_group:
+		for group in order_qt.per_group:
 			# Check quantity per group
-			if is_quantity(group.quantity) and sale_qt_per_group.get(group, 0) + order_qt_per_group[group] > group.quantity:
+			if is_quantity(group.quantity) and sale_qt.per_group.get(group, 0) + order_qt.per_group[group] > group.quantity:
 				self._add_error("Il ne reste pas assez de %s." % group.name)
 
 			# Check max_per_user per group
-			if is_quantity(group.quantity) and user_qt_per_group.get(group, 0) + order_qt_per_group[group] > group.max_per_user:
-				self._add_error("Vous ne pouvez pas prendre plus de %d %s par utilisateur." % (group.max_per_user, group.name))
+			if is_quantity(group.quantity) and user_qt.per_group.get(group, 0) + order_qt.per_group[group] > group.max_per_user:
+				self._add_error(f"Vous ne pouvez pas prendre plus de {group.max_per_user} {group.name} par utilisateur.")
 

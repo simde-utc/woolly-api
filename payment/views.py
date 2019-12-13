@@ -14,7 +14,7 @@ from authentication.oauth import OAuthAuthentication
 from .services.payutc import Payutc
 from threading import Lock
 
-lock = Lock()
+pay_lock = Lock()
 
 class PaymentView:
 	payutc = Payutc({ 'app_key': PAYUTC_KEY })
@@ -42,14 +42,14 @@ class PaymentView:
 			return ErrorResponse(error, status=status.HTTP_404_NOT_FOUND)
 
 		# Lock sensitive part
-		lock.acquire()
+		pay_lock.acquire()
 
 		# 2. Verify Order
 		try:
 			validator = OrderValidator(order, raise_on_error=True)
 			validator.validate()
 		except OrderValidationException as error:
-			lock.release()
+			pay_lock.release()
 			return ErrorResponse(error)
 
 		# 3. Create Transaction
@@ -58,7 +58,7 @@ class PaymentView:
 			callback_url = cls.get_callback_url(request, order)
 			transaction = cls.payutc.create_transaction(order, callback_url, return_url)
 		except TransactionException as error:
-			lock.release()
+			pay_lock.release()
 			return ErrorResponse(error)
 
 		# 4. Save transaction id and redirect
@@ -67,7 +67,7 @@ class PaymentView:
 			order.tra_id = transaction['tra_id']
 			order.save()
 		finally:
-			lock.release()
+			pay_lock.release()
 
 		# Redirect to transaction url
 		resp = {
