@@ -21,10 +21,17 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def make_path(rel: str) -> str:
 	return os.path.join(BASE_DIR, rel.replace('/', os.path.sep))
 
+
+# --------------------------------------------------------------------------
+# 		Application Configuration
+# --------------------------------------------------------------------------
+
 EXPORTS_DIR = make_path('exports')
 
 MAX_ONGOING_TIME = timedelta(minutes=15)
 MAX_PAYMENT_TIME = timedelta(hours=1)
+MAX_VALIDATION_TIME = timedelta(days=30)
+
 
 # --------------------------------------------------------------------------
 # 		Services Configuration
@@ -118,6 +125,7 @@ DATABASES = {
 		'NAME': 'db.sqlite3',
 	}
 }
+
 if 'test' in sys.argv and 'sqlite' in DATABASES: # Test database
 	DATABASES['default'] = DATABASES.pop('sqlite')
 

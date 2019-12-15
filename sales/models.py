@@ -104,7 +104,7 @@ class Item(models.Model):
 	def quantity_left(self):
 		if self.quantity == None:
 			return None
-		allOrders = self.sale.orders.filter(orderlines__item__pk=self.pk, status__in=OrderStatus.BOOKED_LIST.value) \
+		allOrders = self.sale.orders.filter(orderlines__item__pk=self.pk, status__in=OrderStatus.BOOKING_LIST.value) \
 						.prefetch_related('orderlines').all()
 		allItemsBought = sum(orderline.quantity for order in allOrders
 																						for orderline in order.orderlines.filter(item=self).all())
@@ -137,19 +137,23 @@ class OrderStatus(Enum):
 
 	# Orders which can be bought
 	BUYABLE_STATUS_LIST = (ONGOING, AWAITING_VALIDATION, AWAITING_PAYMENT)
-	# Orders which book items, temporary or not 
-	BOOKED_LIST = (AWAITING_VALIDATION, VALIDATED, AWAITING_PAYMENT, PAID)
+	# Orders which book items, temporary or not
+	BOOKING_LIST = (AWAITING_VALIDATION, VALIDATED, AWAITING_PAYMENT, PAID)
 	# Orders that are definitely valid
 	VALIDATED_LIST = (VALIDATED, PAID)
-	# Orders which can be cancelled
-	CANCELLABLE_LIST = (AWAITING_PAYMENT, AWAITING_VALIDATION)
 	# Orders which are definitely cancelled
 	CANCELLED_LIST = (EXPIRED, CANCELLED)
+	# Orders that are not in a stable state
+	AWAITING_LIST = (AWAITING_PAYMENT, AWAITING_VALIDATION)
+	# Orders which can be cancelled
+	CANCELLABLE_LIST = AWAITING_LIST
+	# Orders that are not supposed to be updated
+	STABLE_LIST = (PAID, VALIDATED, EXPIRED, CANCELLED)
 
 	MESSAGES = {
 		ONGOING: "Votre commande est en cours",
-		AWAITING_PAYMENT: "Votre commande en attente de paiement",
-		AWAITING_VALIDATION: "Votre commande en attente de validation",
+		AWAITING_PAYMENT: "Votre commande est en attente de paiement",
+		AWAITING_VALIDATION: "Votre commande est en attente de validation",
 		PAID: "Votre commande est payée",
 		VALIDATED: "Votre commande est validée",
 		EXPIRED: "Votre commande est expirée",
@@ -183,21 +187,24 @@ class Order(models.Model):
 
 	# Additional methods
 
-	def update_status(self, status: OrderStatus) -> dict:
+	def update_status(self, status: OrderStatus, force_update: bool=False) -> dict:
 		"""
 		Update the order status, make side changes if needed,
 		and return an update response
 		"""
 		resp = {
 			'old_status': self.get_status_display(),
-			# Do not update if same status, booked or cancelled orders
-			'updated': not (self.status == status.value
-			                or self.status in OrderStatus.BOOKED_LIST.value
-			                or self.status == OrderStatus.CANCELLED.value),
+			# Do not update if same or stable status
+			'updated': status is not None
+			           and (
+			             force_update
+			             or self.status != status.value
+			             or self.status in OrderStatus.STABLE_LIST.value),
 			# Redirect to payment if needed
-			'redirect_to_payment': status.value == OrderStatus.AWAITING_PAYMENT.value,
+			'redirect_to_payment': status and status.value == OrderStatus.AWAITING_PAYMENT.value,
 			# If sale freshly validated, generate tickets
-			'tickets_generated': (self.status not in OrderStatus.VALIDATED_LIST.value
+			'tickets_generated': (status
+			                      and self.status not in OrderStatus.VALIDATED_LIST.value
 			                      and status.value in OrderStatus.VALIDATED_LIST.value),
 		}
 
@@ -211,7 +218,7 @@ class Order(models.Model):
 			self.create_orderlineitems_and_fields()
 
 		resp['status']  = self.get_status_display()
-		resp['message'] = OrderStatus.MESSAGES.value[self.status.value]
+		resp['message'] = OrderStatus.MESSAGES.value[self.status]
 		return resp
 
 	@transaction.atomic

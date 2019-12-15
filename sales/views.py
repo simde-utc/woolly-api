@@ -127,7 +127,9 @@ class ItemViewSet(ModelViewSet):
 
 class OrderViewSet(ModelViewSet):
 	"""
-	Defines the behavior of the order CRUD
+	Defines the behavior of the Order CRUD
+
+	TODO: update status if not stable
 	"""
 	queryset = Order.objects.all()
 	serializer_class = OrderSerializer
