@@ -44,17 +44,33 @@ def get_permissions_from_compact(compact: Dict[str, str]) -> PermissionList:
 			permissions[action][visibility] = True
 	return permissions
 
+class CRUDViewSetTestMeta(type):
 
-class CRUDViewSetTestMixin(object):
+	def __new__(metacls, name: str, bases: tuple, dct: dict):
+		"""
+		Attach CRUD test methods to the TestCase class 
+		"""
+		cls = super().__new__(metacls, name, bases, dct)
+		if cls.model is None:
+			return cls
+
+		model_name = cls.model.__name__
+		for action in cls.crud_actions:
+			method_name = f"test_{action}_view"
+			if not hasattr(cls, method_name):
+				method = lambda self: self._perform_crud_test(action)
+				method.__doc__ = f"Test all users permissions to {action} {model_name}"
+				setattr(cls, method_name, method)
+
+		return cls
+
+
+class CRUDViewSetTestMixin(metaclass=CRUDViewSetTestMeta):
 	model = None
 	crud_actions = CRUD_ACTIONS
 	permissions = DEFAULT_CRUD_PERMISSIONS
 	modelFactory = FakeModelFactory()
 	debug = False
-
-	def __init__(self, *args, **kwargs):
-		self._attach_crud_test_methods()
-		super().__init__(*args, **kwargs)
 
 	def setUp(self):
 		"""Function run before beginning the tests"""
@@ -222,18 +238,3 @@ class CRUDViewSetTestMixin(object):
 			if action == 'update':
 				options['method'] = 'put'
 				self._test_user_permission(url, user, self._is_allowed(action, user), **options)
-
-
-	# ========================================================
-	# 		Tests
-	# ========================================================
-
-	def _attach_crud_test_methods(self):
-		"""
-		Attach CRUD test methods to the TestCase 
-		"""
-		model_name = get_model_name(self.model)
-		for action in self.crud_actions:
-			method = partial(self._perform_crud_test, action)
-			method.__doc__ = f"Test all users permissions to {action} {model_name}"
-			setattr(self, f"test_{action}_view", method)
