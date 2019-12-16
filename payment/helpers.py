@@ -99,7 +99,7 @@ class OrderValidator:
 		order_orderlines = self.order.orderlines.prefetch_related('item').all()
 		# All orders which book items except the one we are processing
 		sale_orderlines = OrderLine.objects \
-							.filter(order__sale__pk=self.sale.pk, order__status__in=OrderStatus.BOOKED_LIST.value) \
+							.filter(order__sale__pk=self.sale.pk, order__status__in=OrderStatus.BOOKING_LIST.value) \
 							.exclude(order__pk=self.order.pk) \
 							.prefetch_related('item', 'item__group')
 		# Orders that the user already booked
@@ -140,22 +140,22 @@ class OrderValidator:
 			self._add_error("Il ne reste pas assez d'articles pour cette vente.")
 
 		# III.2 - Item level verification
-		for item in order_qt.per_item:
+		for item, qt in order_qt.per_item.items():
 			# Check quantity per item
-			if is_quantity(item.quantity) and sale_qt.per_item.get(item, 0) + order_qt.per_item[item] > item.quantity:
-				self._add_error("Il ne reste pas assez de %s." % item.name)
+			if is_quantity(item.quantity) and sale_qt.per_item.get(item, 0) + qt > item.quantity:
+				self._add_error(f"Il ne reste pas assez de {item.name}.")
 
 			# Check max_per_user per item 
-			if is_quantity(item.quantity) and user_qt.per_item.get(item, 0) + order_qt.per_item[item] > item.max_per_user:
+			if is_quantity(item.max_per_user) and user_qt.per_item.get(item, 0) + qt > item.max_per_user:
 				self._add_error(f"Vous ne pouvez pas prendre plus de {item.max_per_user} {item.name} par utilisateur.")
 
 		# III.3 - ItemGroup level verification
-		for group in order_qt.per_group:
+		for group, qt in order_qt.per_group.items():
 			# Check quantity per group
-			if is_quantity(group.quantity) and sale_qt.per_group.get(group, 0) + order_qt.per_group[group] > group.quantity:
-				self._add_error("Il ne reste pas assez de %s." % group.name)
+			if is_quantity(group.quantity) and sale_qt.per_group.get(group, 0) + qt > group.quantity:
+				self._add_error(f"Il ne reste pas assez de {group.name}.")
 
 			# Check max_per_user per group
-			if is_quantity(group.quantity) and user_qt.per_group.get(group, 0) + order_qt.per_group[group] > group.max_per_user:
+			if is_quantity(group.max_per_user) and user_qt.per_group.get(group, 0) + qt > group.max_per_user:
 				self._add_error(f"Vous ne pouvez pas prendre plus de {group.max_per_user} {group.name} par utilisateur.")
 

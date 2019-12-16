@@ -3,8 +3,8 @@ from django.urls import path
 from .views import *
 
 urlpatterns = [
-	path('orders/<int:pk>/pay',          PaymentView.pay,        name='order-pay'),
-	path('orders/<int:pk>/pay_callback', PaymentView.callback,   name='pay-callback'),
+	path('orders/<int:pk>/pay',    PaymentView.pay,           name='order-pay'),
+	path('orders/<int:pk>/status', PaymentView.update_status, name='order-status'),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)

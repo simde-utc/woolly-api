@@ -1,5 +1,6 @@
+from .base import AbstractPaymentService, TransactionException
 from core.exceptions import TransactionException
-from sales.models import OrderStatus
+from sales.models import Order, OrderStatus
 from typing import Sequence
 import requests
 import json
@@ -13,6 +14,12 @@ PAYUTC_TO_ORDER_STATUS = {
 }
 
 class PayutcException(TransactionException):
+	"""
+	Payutc specific exception
+	
+	Extends:
+		TransactionException
+	"""
 
 	@classmethod
 	def from_response(cls, resp: dict):
@@ -28,7 +35,7 @@ class PayutcException(TransactionException):
 		detail = [ f"{k}: {m}" for k, m in error.get('data', {}).items() ]
 		return cls(message, detail)
 
-class Payutc:
+class Payutc(AbstractPaymentService):
 
 	def __init__(self, params: dict):
 		if 'app_key' not in params:
@@ -88,7 +95,7 @@ class Payutc:
 	# 	Transactions
 	# ============================================
 
-	def create_transaction(self, order: 'Order', callback_url: str, return_url: str, **kwargs) -> dict:
+	def create_transaction(self, order: Order, callback_url: str, return_url: str, **kwargs) -> dict:
 		"""
 		Adapter to create transaction from an order
 		"""
@@ -108,7 +115,7 @@ class Payutc:
 
 		return resp
 
-	def get_transaction_status(self, order: 'Order') -> dict:
+	def get_transaction_status(self, order: Order) -> OrderStatus:
 		"""
 		Adapter to get transaction status from an order
 		"""
@@ -123,7 +130,7 @@ class Payutc:
 			raise TransactionException("Le statut de la transaction est inconnue",
 			                           [f"Status: {trans['status']}"])
 
-	def get_redirection_to_payment(self, order: 'Order') -> str:
+	def get_redirection_to_payment(self, order: Order) -> str:
 		"""
 		Get the redirection url to the order payment
 		"""

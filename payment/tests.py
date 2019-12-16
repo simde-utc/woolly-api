@@ -1,7 +1,13 @@
 from django.urls import reverse, exceptions
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APIClient
+
+from typing import Sequence
+from collections import namedtuple
+from threading import Thread
+from math import ceil
+import random
 
 from core.faker import FakeModelFactory
 from .helpers import OrderValidator
@@ -9,7 +15,8 @@ from authentication.models import *
 from sales.models import *
 
 
-class OrderValidatorTestCase(APITestCase):
+# class OrderValidatorTestCase(APITestCase):
+class OrderValidatorTestCase:
 	
 	modelFactory = FakeModelFactory()
 
@@ -117,13 +124,17 @@ class OrderValidatorTestCase(APITestCase):
 	# =================================================
 
 	def test_sale_active(self):
-		"""Inactive sales can't proceed orders"""
+		"""
+		Inactive sales can't proceed orders
+		"""
 		self.sale.is_active = False
 		self.sale.save()
 		self._test_validation(False)
 
 	def test_sale_is_ongoing(self):
-		"""Orders should be paid between sales beginning date and max payment date"""
+		"""
+		Orders should be paid between sales beginning date and max payment date
+		"""
 		# Cannot pay before sale
 		self.sale.begin_at = self.datetimes['after']
 		self.sale.max_payment_date = self.datetimes['after']
@@ -137,7 +148,9 @@ class OrderValidatorTestCase(APITestCase):
 		self._test_validation(False)
 
 	def test_not_buyable_order(self):
-		"""Orders that don't have the right status can't be bought"""
+		"""
+		Orders that don't have the right status can't be bought
+		"""
 		self.order.status = OrderStatus.ONGOING.value
 		self._test_validation(True)
 		self.order.status = OrderStatus.AWAITING_VALIDATION.value
@@ -155,7 +168,9 @@ class OrderValidatorTestCase(APITestCase):
 		self._test_validation(False)
 
 	def test_sale_max_quantities(self):
-		"""Sales max quantities must be respected"""
+		"""
+		Sales max quantities must be respected
+		"""
 		# Over Sale max_item_quantity
 		self.sale.max_item_quantity = self.orderline.quantity - 1
 		self.sale.save()
@@ -188,7 +203,9 @@ class OrderValidatorTestCase(APITestCase):
 
 
 	def test_item_quantities(self):
-		"""Items quantities must be respected"""
+		"""
+		Items quantities must be respected
+		"""
 		upperLimit = self.orderline.quantity
 
 		# Over Item max_per_user
@@ -212,7 +229,9 @@ class OrderValidatorTestCase(APITestCase):
 		# TODO : with other users
 
 	def test_itemgroup_quantities(self):
-		"""ItemGroups quantities must be respected"""
+		"""
+		ItemGroups quantities must be respected
+		"""
 		upperLimit = self.orderline.quantity
  
 		# Over Itemgroup quantity
@@ -234,6 +253,118 @@ class OrderValidatorTestCase(APITestCase):
 		self._test_validation(True)
 
 		# TODO : with other users
+
+class ShotgunTestCase(APITestCase):
+
+	modelFactory = FakeModelFactory()
+	Response = namedtuple('Response', ('order', 'orderline', 'pay'))
+
+	n_users = 10
+	n_items = 2
+	max_quantity = n_users - 1
+
+	def setUp(self):
+		"""
+		Set up the shotgun
+		"""
+		# DEBUG
+		# if self.n_users <= self.n_items:
+		# 	raise ValueError("There must be more items than users") 
+		# if self.n_users <= self.max_quantity:
+		# 	raise ValueError("Max quantity must be more than the number of users") 
+
+		# Create sale
+		self.sale = self.modelFactory.create(Sale, max_item_quantity=None)
+		self.usertype = self.modelFactory.create(UserType, validation=lambda user: True)
+		self.group = self.modelFactory.create(ItemGroup, quantity=None, max_per_user=None)
+		self.items = [
+			self.modelFactory.create(Item,
+				sale=self.sale, usertype=self.usertype, group=self.group,
+				quantity=None, max_per_user=None
+			) for _ in range(self.n_items)
+		]
+
+		# Create users and clients
+		self.users = []
+		self.clients = []
+		for _ in range(self.n_users):
+			user = self.modelFactory.create(User)
+			client = APIClient(enforce_csrf_checks=True)
+			client.force_authenticate(user=user)
+			self.users.append(user)
+
+			self.clients.append(client)
+
+	def _shotgun(self, client: APIClient, item: Item, quantity: int=1):
+
+		# Create order
+		order_resp = client.post(f"/sales/{self.sale.id}/orders", {})
+		self.assertEqual(order_resp.status_code, 201)
+		order = order_resp.json()
+		order_id = order['id']
+		self.assertTrue(order_id)
+		self.assertFalse(order['orderlines'])
+		self.assertEqual(order['status'], OrderStatus.ONGOING.value)
+
+		# Create orderlines
+		orderline_resp = client.post(f"/orders/{order_id}/orderlines", {
+			'item': item.id,
+			'quantity': quantity,
+		})
+		self.assertEqual(orderline_resp.status_code, 201)
+
+		# Pay order
+		pay_resp = client.get(f"/orders/{order_id}/pay?return_url=http://localhost:3000/orders/{order_id}")
+		import ipdb; ipdb.set_trace() # DEBUG
+
+		# Add responses
+		self.responses.append(self.Response._make(order_resp, orderline_resp, pay_resp))
+
+	def _test_shotgun(self, items: Sequence[Item]=None, quantity_per_request: int=1):
+		self.responses = []
+		if items is None:
+			items = self.items
+
+		# DEBUG
+		self._shotgun(self.clients[0], self.items[0], quantity_per_request)
+
+		# Create jobs
+		jobs = []
+		n_requests = ceil(self.max_quantity / quantity_per_request)
+		for i in range(n_requests):
+			client = self.clients[i % self.n_users]
+			item = random.choice(items)
+			jobs.append(Thread(target=self._shotgun, args=(client, item, quantity_per_request)))
+
+		# Start jobs and wait for them to finish
+		for job in jobs:
+			job.start()
+		for job in jobs:
+			job.join()
+
+		import ipdb; ipdb.set_trace() # DEBUG
+
+		# Analyse responses
+		# "status": "AWAITING_PAYMENT",
+		# "redirect_url": "https://payutc.nemopay.net/validation?tra_id=2244790"
+		# resp['error']
+
+	def test_sale_quantity(self):
+		self.sale.max_item_quantity = self.max_quantity
+		self.sale.save()
+		self._test_shotgun()
+
+	def aaa_______________test_group_quantity(self):
+		self.group.quantity = self.max_quantity
+		self.group.save()
+		self._test_shotgun()
+
+	def aaa_______________test_item_quantity(self):
+		for item in self.items:
+			item.quantity = self.max_quantity
+			item.save()
+			self._test_shotgun(items=[item])
+
 
 
 
