@@ -1,7 +1,10 @@
 from django.urls import reverse, exceptions
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.test import APITestCase, APIClient
+from django.db import transaction
+from rest_framework.test import APITestCase, APITransactionTestCase, APIClient
+from django import db
+from time import sleep
 
 from typing import Sequence
 from collections import namedtuple
@@ -14,9 +17,7 @@ from .helpers import OrderValidator
 from authentication.models import *
 from sales.models import *
 
-
-# class OrderValidatorTestCase(APITestCase):
-class OrderValidatorTestCase:
+class OrderValidatorTestCase(APITestCase):
 	
 	modelFactory = FakeModelFactory()
 
@@ -254,10 +255,9 @@ class OrderValidatorTestCase:
 
 		# TODO : with other users
 
-class ShotgunTestCase(APITestCase):
+class ShotgunTestCase(APITransactionTestCase):
 
 	modelFactory = FakeModelFactory()
-	Response = namedtuple('Response', ('order', 'orderline', 'pay'))
 
 	n_users = 10
 	n_items = 2
@@ -267,70 +267,89 @@ class ShotgunTestCase(APITestCase):
 		"""
 		Set up the shotgun
 		"""
-		# DEBUG
-		# if self.n_users <= self.n_items:
-		# 	raise ValueError("There must be more items than users") 
-		# if self.n_users <= self.max_quantity:
-		# 	raise ValueError("Max quantity must be more than the number of users") 
+		if self.n_users <= self.n_items:
+			raise ValueError("There must be more items than users") 
+		if self.n_users <= self.max_quantity:
+			raise ValueError("Max quantity must be less than the number of users") 
 
-		# Create sale
-		self.sale = self.modelFactory.create(Sale, max_item_quantity=None)
-		self.usertype = self.modelFactory.create(UserType, validation=lambda user: True)
-		self.group = self.modelFactory.create(ItemGroup, quantity=None, max_per_user=None)
-		self.items = [
-			self.modelFactory.create(Item,
-				sale=self.sale, usertype=self.usertype, group=self.group,
-				quantity=None, max_per_user=None
-			) for _ in range(self.n_items)
-		]
+		with transaction.atomic():
+			# Create sale
+			self.sale = self.modelFactory.create(Sale, max_item_quantity=None)
+			self.usertype = self.modelFactory.create(UserType, validation=lambda user: True)
+			self.group = self.modelFactory.create(ItemGroup, quantity=None, max_per_user=None)
+			self.items = [
+				self.modelFactory.create(Item,
+					sale=self.sale, usertype=self.usertype, group=self.group,
+					quantity=None, max_per_user=None
+				) for _ in range(self.n_items)
+			]
 
-		# Create users and clients
-		self.users = []
-		self.clients = []
-		for _ in range(self.n_users):
-			user = self.modelFactory.create(User)
-			client = APIClient(enforce_csrf_checks=True)
-			client.force_authenticate(user=user)
-			self.users.append(user)
+			# Create users and clients
+			self.users = []
+			self.clients = []
+			for _ in range(self.n_users):
+				user = self.modelFactory.create(User)
+				client = APIClient(enforce_csrf_checks=True)
+				client.force_authenticate(user=user)
+				self.users.append(user)
 
-			self.clients.append(client)
+				self.clients.append(client)
+		db.connections.close_all()
+
+	@classmethod
+	def tearDownClass(cls):
+		super().tearDownClass()
+		db.connections.close_all()
+		# TODO FIXME There are 6 other sessions using the database.
+		import ipdb; ipdb.set_trace()
+
+	def _debug_response(self, resp) -> str:
+		try:
+			return f" ({resp.json()['error']})"
+		except:
+			return ""
 
 	def _shotgun(self, client: APIClient, item: Item, quantity: int=1):
-
+		"""
+		Shotgun an item from a client
+		
+		Arguments:
+			client (APIClient): the client to shotgun with
+			item (Item):        the item to shotgun
+			quantity (int):     the quantity to shotgun (default: {1})
+		"""
 		# Create order
 		order_resp = client.post(f"/sales/{self.sale.id}/orders", {})
-		self.assertEqual(order_resp.status_code, 201)
+		self.assertEqual(order_resp.status_code, 201,
+		                 "Order response is not valid" + self._debug_response(order_resp))
+
 		order = order_resp.json()
 		order_id = order['id']
-		self.assertTrue(order_id)
-		self.assertFalse(order['orderlines'])
-		self.assertEqual(order['status'], OrderStatus.ONGOING.value)
+		self.assertTrue(order_id, "Didn't receive an order id")
+		self.assertFalse(order['orderlines'], "Orderlines should be empty")
+		self.assertEqual(order['status'], OrderStatus.ONGOING.value,
+		                 f"Order should be ONGOING ({OrderStatus(order['status']).name})")
 
 		# Create orderlines
 		orderline_resp = client.post(f"/orders/{order_id}/orderlines", {
 			'item': item.id,
 			'quantity': quantity,
 		})
-		self.assertEqual(orderline_resp.status_code, 201)
+		self.assertEqual(orderline_resp.status_code, 201,
+		                 "Orderline response is not valid" + self._debug_response(order_resp))
 
-		# Pay order
+		# Pay order and add pay response
 		pay_resp = client.get(f"/orders/{order_id}/pay?return_url=http://localhost:3000/orders/{order_id}")
-		import ipdb; ipdb.set_trace() # DEBUG
-
-		# Add responses
-		self.responses.append(self.Response._make(order_resp, orderline_resp, pay_resp))
+		self.responses.append(pay_resp)
 
 	def _test_shotgun(self, items: Sequence[Item]=None, quantity_per_request: int=1):
 		self.responses = []
 		if items is None:
 			items = self.items
 
-		# DEBUG
-		self._shotgun(self.clients[0], self.items[0], quantity_per_request)
-
 		# Create jobs
 		jobs = []
-		n_requests = ceil(self.max_quantity / quantity_per_request)
+		n_requests = self.n_users # ceil(self.max_quantity / quantity_per_request)
 		for i in range(n_requests):
 			client = self.clients[i % self.n_users]
 			item = random.choice(items)
@@ -341,25 +360,28 @@ class ShotgunTestCase(APITestCase):
 			job.start()
 		for job in jobs:
 			job.join()
-
-		import ipdb; ipdb.set_trace() # DEBUG
+			del job
 
 		# Analyse responses
-		# "status": "AWAITING_PAYMENT",
-		# "redirect_url": "https://payutc.nemopay.net/validation?tra_id=2244790"
-		# resp['error']
+		nb_success = nb_awaiting = 0
+		for resp in self.responses:
+			nb_success += resp.status_code == 200
+			nb_awaiting += resp.data.get('status') == OrderStatus.AWAITING_PAYMENT.name
+		self.assertEqual(nb_success, self.max_quantity)
+		self.assertEqual(nb_awaiting, self.max_quantity)
+		# TODO Test more
 
 	def test_sale_quantity(self):
 		self.sale.max_item_quantity = self.max_quantity
 		self.sale.save()
 		self._test_shotgun()
 
-	def aaa_______________test_group_quantity(self):
+	def test_group_quantity(self):
 		self.group.quantity = self.max_quantity
 		self.group.save()
 		self._test_shotgun()
 
-	def aaa_______________test_item_quantity(self):
+	def test_item_quantity(self):
 		for item in self.items:
 			item.quantity = self.max_quantity
 			item.save()

@@ -220,47 +220,60 @@ class OrderLineViewSet(ModelViewSet):
 		return queryset
 
 	def create(self, request, *args, **kwargs):
-		# Retrieve Order...
+		"""
+		Create an orderline attached to an order
+		"""
+		# Retrieve Order or fail
+		order_pk = kwargs.get('order_pk', request.data.get('order'))
 		try:
-			order = Order.objects.get(pk=request.data['order'])
-		# ...or fail
-		except Order.DoesNotExist as err:
-			msg = "Impossible de trouver la commande."
-			return ErrorResponse(msg, status=status.HTTP_404_NOT_FOUND)
+			order = Order.objects.get(pk=order_pk)
+		except Order.DoesNotExist as error:
+			return ErrorResponse("Impossible de trouver la commande.",
+			                     status=status.HTTP_404_NOT_FOUND)
 
 		# Check Order owner
 		user = request.user
-		if not (user.is_authenticated and user.is_admin or order.owner == user):
-			msg = "Vous n'avez pas la permission d'effectuer cette action."
-			return ErrorResponse(msg, status=status.HTTP_403_FORBIDDEN)
+		if not (user.is_authenticated and user.is_admin or str(order.owner.pk) == str(user.pk)):
+			return ErrorResponse("Vous n'avez pas la permission d'effectuer cette action.",
+			                     status=status.HTTP_403_FORBIDDEN)
 
 		# Check if Order is open
 		if order.status != OrderStatus.ONGOING.value:
-			msg = "La commande n'accepte plus de changement."
-			return ErrorResponse(msg, status=status.HTTP_400_BAD_REQUEST)
+			return ErrorResponse("La commande n'accepte plus de changement.",
+			                     status=status.HTTP_400_BAD_REQUEST)
+
+		item_pk = request.data.get('item')
+		try:
+			quantity = int(request.data.get('quantity'))
+			assert quantity >= 0
+		except (ValueError, AssertionError) as error:
+			return ErrorResponse("La quantité d'article à acheter doit être positive ou nulle.",
+			                     status=status.HTTP_400_BAD_REQUEST)
 
 		# Try to retrieve a similar OrderLine...
+		# TODO ajout de la vérification de la limite de temps
 		try:
-			orderline = OrderLine.objects.get(order=request.data['order'], item=request.data['item'])
-			# TODO ajout de la vérification de la limite de temps
-			serializer = OrderLineSerializer(orderline, data={'quantity': request.data['quantity']}, partial=True)
+			orderline = OrderLine.objects.get(order=order_pk, item=item_pk)
+			serializer = OrderLineSerializer(orderline, data={ 'quantity': quantity }, partial=True)
 
 			# Delete empty OrderLines
-			if request.data['quantity'] <= 0:
+			if quantity <= 0:
 				orderline.delete()
 				return Response(serializer.initial_data, status=status.HTTP_205_RESET_CONTENT)
-		# ...or create a new one
+
 		except OrderLine.DoesNotExist as err:
-			if request.data['quantity'] > 0:
-				# Configure Order
+			# ...or create a new one
+			if quantity > 0:
 				serializer = self.get_serializer(data={
-					'order': request.data['order'],
-					'item': request.data['item'],
-					'quantity': request.data['quantity'],
+					'order': order_pk,
+					'item': item_pk,
+					'quantity': quantity,
 				})
 			# If no quantity, then no OrderLine
 			else:
-				return Response(request.data, status=status.HTTP_204_NO_CONTENT)
+				return Response({}, status=status.HTTP_204_NO_CONTENT)
+
+		# Validate and create OrderLineSerializer
 		serializer.is_valid(raise_exception=True)
 		self.perform_create(serializer)
 

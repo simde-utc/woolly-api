@@ -25,6 +25,9 @@ class FakeModelFactory:
 
 	def get_attributes(self, model, withPk=False, **kwargs):
 
+		def cast_to_uuid(uuid: 'UUID') -> 'UUID':
+			return uuid
+
 		def _get_related(kw, model):
 			related = kwargs.get(kw, self.create(model))
 			return getattr(related, 'pk', None) if withPk else related
@@ -35,7 +38,7 @@ class FakeModelFactory:
 
 		if model == User:
 			return {
-				'id':         kwargs.get('id',         self.faker.uuid4()),
+				'id':         kwargs.get('id',         self.faker.uuid4(cast_to=cast_to_uuid)),
 				'email':      kwargs.get('email',      self.faker.email()),
 				'first_name': kwargs.get('first_name', self.faker.first_name()),
 				'last_name':  kwargs.get('last_name',  self.faker.last_name()),
@@ -45,7 +48,7 @@ class FakeModelFactory:
 
 		if model == UserType:
 			return {
-				'id':   kwargs.get('id',   self.faker.uuid4()[:25]),
+				'id':   kwargs.get('id',   self.faker.uuid4(cast_to=str)[:25]),
 				'name': kwargs.get('name', self.faker.sentence(nb_words=4)),
 				'validation': kwargs.get('validation', 'False'),
 			}
@@ -56,13 +59,11 @@ class FakeModelFactory:
 
 		if model == Association:
 			return {
-				'id':        kwargs.get('id',      self.faker.uuid4()),
+				'id':        kwargs.get('id',      self.faker.uuid4(cast_to=cast_to_uuid)),
 				'shortname': kwargs.get('name',    self.faker.company()),
 				'fun_id':    kwargs.get('fun_id',  self.faker.random_digit()),
 			}
 
-		# if model == AssociationMember:
-	
 		if model == Sale:
 			return {
 				'name':         kwargs.get('name',          self.faker.company()),

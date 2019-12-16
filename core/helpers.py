@@ -58,6 +58,7 @@ def custom_editable_fields(request, obj=None, edition_readonly_fields=tuple(), a
 def ErrorResponse(error: Union[TransactionException, str],
                   detail: Sequence[str]=[],
                   status=status.HTTP_400_BAD_REQUEST) -> Response:
+	# TODO Create as an exception
 	if not detail and issubclass(type(error), TransactionException):
 		detail = error.detail
 	data = {

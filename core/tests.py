@@ -162,7 +162,7 @@ class CRUDViewSetTestMixin(metaclass=CRUDViewSetTestMeta):
 		@param   expected_status_code  The status code that should be returned by the request
 		"""
 		# Authenticate with specified user
-		self.client.force_authenticate(user = self.users.get(user, None))
+		self.client.force_authenticate(user=self.users.get(user, None))
 
 		# Create request
 		HTTP_method = kwargs.get('method', 'get')

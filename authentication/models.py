@@ -68,7 +68,7 @@ class User(AbstractBaseUser, ApiModel):
 	id = models.UUIDField(primary_key=True, editable=False)
 	email = models.EmailField(unique=True) # TODO
 	first_name = models.CharField(max_length=100)
-	last_name = models.CharField(max_length=100)
+	last_name  = models.CharField(max_length=100)
 
 	# Relations
 	types = None

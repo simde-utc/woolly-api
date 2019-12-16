@@ -1,6 +1,7 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from django.db import transaction
 
 from core.helpers import ErrorResponse, get_field_default_value
 from rest_framework import status
@@ -19,6 +20,9 @@ from sales.models import Order, OrderStatus
 pay_lock = Lock()
 
 class PaymentView:
+	"""
+	View responsible for payment of orders
+	"""
 
 	@classmethod
 	def _get_pay_service(cls, request) -> AbstractPaymentService:

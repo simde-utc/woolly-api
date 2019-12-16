@@ -1,4 +1,3 @@
-from rest_framework import permissions
 from core.permissions import CustomPermission
 from .models import *
 

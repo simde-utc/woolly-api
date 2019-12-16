@@ -57,6 +57,10 @@ OAUTH = {
 # 		Debug & Security
 # --------------------------------------------------------------------------
 
+TEST_MODE = sys.argv[1:2] == ['test']
+if TEST_MODE:
+	print("WARNING: test mode on !")
+
 # SECURITY WARNING: don't run with DEBUG turned on in production!
 DEBUG = confidentials.DEBUG
 SECRET_KEY = confidentials.SECRET_KEY
@@ -126,8 +130,8 @@ DATABASES = {
 	}
 }
 
-if 'test' in sys.argv and 'sqlite' in DATABASES: # Test database
-	DATABASES['default'] = DATABASES.pop('sqlite')
+# if TEST_MODE and 'sqlite' in DATABASES: # Test database
+# 	DATABASES['default'] = DATABASES.pop('sqlite')
 
 INSTALLED_APPS = [
 	# Django
@@ -275,5 +279,10 @@ LOGGING = {
 			'level': 'WARNING',
 			'propagate': True,
 		},
+		'custom': {
+			'handlers': ['console', 'file'],
+			'level': 'DEBUG',
+			'propagate': True,
+		}
 	},
 }
