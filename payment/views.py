@@ -8,12 +8,9 @@ from rest_framework import status
 from django.urls import reverse
 from threading import Lock
 
-from payment.services.base import AbstractPaymentService, TransactionException
-from payment.services.payutc import Payutc
-
-from woolly_api.settings import PAYUTC_KEY, TEST_MODE
 from authentication.oauth import OAuthAuthentication
-from .helpers import OrderValidator, OrderValidationException
+from payment.services.base import TransactionException
+from payment.helpers import OrderValidator, OrderValidationException, get_pay_service
 from sales.models import Order, OrderStatus
 
 
@@ -23,18 +20,6 @@ class PaymentView:
 	"""
 	View responsible for payment of orders
 	"""
-
-	@classmethod
-	def _get_pay_service(cls, request) -> AbstractPaymentService:
-		"""
-		Instanciate the requested payment service
-		"""
-		pay_service = request.data.get('pay_service')
-		if TEST_MODE:
-			from payment.services.fake import FakePaymentService
-			return FakePaymentService()
-		else:
-			return Payutc({ 'app_key': PAYUTC_KEY })
 
 	@classmethod
 	@permission_classes([IsAuthenticated])
@@ -72,7 +57,7 @@ class PaymentView:
 		# TODO Check if doesn't already have an order
 
 		# 3. Create Transaction
-		pay_service = cls._get_pay_service(request)
+		pay_service = get_pay_service(order, request)
 		try:
 			callback_url = request.build_absolute_uri(
 				reverse('order-status', kwargs={ 'pk': order.pk })
@@ -109,18 +94,13 @@ class PaymentView:
 		except Order.DoesNotExist as error:
 			return ErrorResponse(error, status=status.HTTP_404_NOT_FOUND)
 
-		# Get transaction status if needed
-		if order.status in OrderStatus.AWAITING_LIST.value:
-			pay_service = cls._get_pay_service(request)
-			try:
-				new_status = pay_service.get_transaction_status(order)
-			except TransactionException as error:
-				return ErrorResponse(error)
-		else:
-			new_status = None
+		# Update order status
+		try:
+			resp = order.update_status()
+		except TransactionException as error:
+			return ErrorResponse(error)
 
-		# Update order if needed and return the response
-		resp = order.update_status(new_status)
+		# Return the response
 		if resp.pop('redirect_to_payment', False):
 			resp['redirect_url'] = pay_service.get_redirection_to_payment(order)
 
@@ -130,4 +110,3 @@ class PaymentView:
 # Set all endpoint method from PaymentView as API View
 for key in ('pay', 'update_status'):
 	setattr(PaymentView, key, api_view(['GET'])(getattr(PaymentView, key)))
-

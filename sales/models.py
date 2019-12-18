@@ -4,8 +4,11 @@ from django.db import models
 from enum import Enum
 import uuid
 
-from django.db import transaction
+from woolly_api.settings import MAX_ONGOING_TIME, MAX_PAYMENT_TIME, MAX_VALIDATION_TIME
 from django.core.mail import EmailMessage
+from django.db import transaction
+from django.utils import timezone
+
 
 # ============================================
 # 	Association
@@ -187,19 +190,50 @@ class Order(models.Model):
 
 	# Additional methods
 
-	def update_status(self, status: OrderStatus, force_update: bool=False) -> dict:
+	def is_expired(self) -> bool:
+		"""
+		Check expiracy time according to order status and expire if needed
+		"""
+		if self.status == OrderStatus.EXPIRED.value:
+			return True
+
+		if self.status in OrderStatus.STABLE_LIST.value:
+			return False
+
+		delta = timezone.now() - self.created_at
+		return self.status == OrderStatus.ONGOING.value and	delta > MAX_ONGOING_TIME \
+		    or self.status == OrderStatus.AWAITING_PAYMENT.value and delta > MAX_PAYMENT_TIME \
+		    or self.status == OrderStatus.AWAITING_VALIDATION.value and delta > MAX_VALIDATION_TIME
+
+	def fetch_status(self) -> OrderStatus:
+		"""
+		Fetch the status from external APIs if needed, doesn't update it !
+		"""
+		if self.status in OrderStatus.STABLE_LIST.value:
+			return OrderStatus(self.status)
+
+		# Check payment status if waiting
+		if self.status == OrderStatus.AWAITING_PAYMENT.value:
+			from payment.helpers import get_pay_service
+			return get_pay_service(self).get_transaction_status(self)
+
+		if self.is_expired():
+			return OrderStatus.EXPIRED
+
+		return OrderStatus(self.status)
+
+	def update_status(self, status: OrderStatus=None) -> dict:
 		"""
 		Update the order status, make side changes if needed,
 		and return an update response
 		"""
+		if status is None:
+			status = self.fetch_status()
+
 		resp = {
 			'old_status': self.get_status_display(),
 			# Do not update if same or stable status
-			'updated': status is not None
-			           and (
-			             force_update
-			             or self.status != status.value
-			             or self.status in OrderStatus.STABLE_LIST.value),
+			'updated': self.status != status.value and self.status not in OrderStatus.STABLE_LIST.value,
 			# Redirect to payment if needed
 			'redirect_to_payment': status and status.value == OrderStatus.AWAITING_PAYMENT.value,
 			# If sale freshly validated, generate tickets

@@ -202,7 +202,6 @@ class OrderValidatorTestCase(APITestCase):
 			self._test_validation(True, order)
 		self._test_validation(True, self.order)
 
-
 	def test_item_quantities(self):
 		"""
 		Items quantities must be respected

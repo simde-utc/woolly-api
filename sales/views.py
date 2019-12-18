@@ -7,9 +7,9 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from core.viewsets import ModelViewSet, ApiModelViewSet
 from core.helpers import ErrorResponse
 from core.permissions import *
-from .serializers import *
-from .permissions import *
-from .models import OrderStatus
+from sales.serializers import *
+from sales.permissions import *
+from sales.models import OrderStatus
 
 from authentication.oauth import OAuthAuthentication
 from core.utils import render_to_pdf, data_to_qrcode
@@ -154,6 +154,15 @@ class OrderViewSet(ModelViewSet):
 			queryset = queryset.filter(owner=user)
 
 		return queryset
+
+	def get_object(self) -> Order:
+		"""
+		Try to update order status if unstable
+		"""
+		order = super().get_object()
+		if order.status not in OrderStatus.STABLE_LIST.value:
+			order.update_status()
+		return order
 
 	def create(self, request, *args, **kwargs):
 		"""
@@ -380,6 +389,7 @@ def generate_pdf(request, pk: int, **kwargs):
 	for orderline in order.orderlines.all():
 		for orderlineitem in orderline.orderlineitems.all():
 			# Process QRCode
+			# TODO Move to helpers
 			qr_buffer = BytesIO()
 			code = data_to_qrcode(orderlineitem.id)
 			code.save(qr_buffer)
