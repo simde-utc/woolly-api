@@ -4,6 +4,10 @@ from functools import partial
 from copy import deepcopy
 from typing import Dict
 
+from rest_framework.test import APIClient
+from contextlib import contextmanager
+from django import db
+
 from core.helpers import get_model_name, pluralize
 from core.faker import FakeModelFactory
 from authentication.models import User
@@ -44,6 +48,22 @@ def get_permissions_from_compact(compact: Dict[str, str]) -> PermissionList:
 			permissions[action][visibility] = True
 	return permissions
 
+@contextmanager
+def get_api_client(user: User=None) -> APIClient:
+	"""
+	Context manager to get an APIClient and clear connection if threaded
+	
+	Arguments:
+		user (User): if specified login the APIClient with it (default: None)
+	"""
+	client = APIClient(enforce_csrf_checks=True)
+	if user is not None:
+		client.force_authenticate(user=user)
+	try:
+		yield client
+	finally:
+		db.connections.close_all()
+
 class CRUDViewSetTestMeta(type):
 
 	def __new__(metacls, name: str, bases: tuple, dct: dict):
@@ -63,7 +83,6 @@ class CRUDViewSetTestMeta(type):
 				setattr(cls, method_name, method)
 
 		return cls
-
 
 class CRUDViewSetTestMixin(metaclass=CRUDViewSetTestMeta):
 	model = None
@@ -121,14 +140,10 @@ class CRUDViewSetTestMixin(metaclass=CRUDViewSetTestMeta):
 
 	def _get_url(self, pk=None):
 		"""Helper to get url from resource_name and pk"""
-		# try:
 		if pk is None:
 			return reverse(self.resource_name + '-list')
 		else:
 			return reverse(self.resource_name + '-detail', kwargs={ 'pk': pk })
-		# TODO
-		# except exceptions.NoReverseMatch:
-		# 	self.assertIsNotNone(url, "Route '%s' is not defined" % route['name'])
 
 	def _get_expected_status_code(self, method, allowed, user):
 		if not allowed:
