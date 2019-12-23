@@ -60,7 +60,7 @@ def ErrorResponse(error: Union[Exception, str],
                   status=status.HTTP_400_BAD_REQUEST) -> Response:
 	# TODO Create as an exception
 	if not detail and issubclass(type(error), Exception):
-		detail = error.detail
+		detail = getattr(error, 'detail', [])
 	data = {
 		'error': str(error),
 		'detail': detail,
@@ -76,4 +76,3 @@ def pluralize(name: str) -> str:
 
 def get_model_name(instance) -> str:
 	return (instance if isinstance(instance, type) else type(instance)).__name__.lower()
-
