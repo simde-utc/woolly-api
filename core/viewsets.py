@@ -127,9 +127,13 @@ class ApiModelViewSet(ModelViewSetMixin, viewsets.ReadOnlyModelViewSet):
 		key = gen_model_key(self.queryset.model, **kwargs)
 		instance = cache.get(key, None)
 
-		if not instance or instance.fetched_data:
+		if not (instance or instance.fetched_data):
 			instance = self.get_object()
 			instance.get_with_api_data(self.oauth_client)
+		else:
+			# Check permission manually if not going through get_object
+			self.check_object_permissions(self.request, instance)
+
 
 		serializer = self.get_serializer(instance)
 		return Response(serializer.data)

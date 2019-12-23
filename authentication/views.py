@@ -17,14 +17,6 @@ class UserViewSet(ApiModelViewSet):
 	serializer_class = UserSerializer
 	permission_classes = (IsUserOrAdmin,)
 
-	# Block create and redirect to login
-	def create(self, request, *args, **kwargs):
-		return redirect('login')
-
-	# TODO : block self is_admin -> True
-	# def update(self, request, *args, **kwargs):
-		# pass
-
 class UserTypeViewSet(ModelViewSet):
 	queryset = UserType.objects.all()
 	serializer_class = UserTypeSerializer

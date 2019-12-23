@@ -16,7 +16,7 @@ class FakeModelFactory:
 
 	def __init__(self, seed: int=None):
 		self.faker = Faker()
-		if seed: is not None:
+		if seed is not None:
 			self.faker.seed(seed)
 
 	def create(self, model: Model, nb: int=None, **kwargs) -> Union[Model, List[Model]]:
