@@ -1,35 +1,81 @@
+from typing import Union, List, Dict, Any
 from core.helpers import format_date
 from faker import Faker
 
+from django.db.models import Model
 from authentication.models import *
 from sales.models import *
 
+Pk = Union[str, int, 'UUID']
 
 class FakeModelFactory:
+	"""
+	Factory that generates instances of specified models filled with fake values.
+	Useful for testing purposes.
+	"""
 
-	def __init__(self, seed=None):
+	def __init__(self, seed: int=None):
 		self.faker = Faker()
-		if seed:
+		if seed: is not None:
 			self.faker.seed(seed)
 
-	def create(self, model, nb: int=None, **kwargs):
+	def create(self, model: Model, nb: int=None, **kwargs) -> Union[Model, List[Model]]:
+		"""
+		Generates one or multiple instances of a specified Model
+		
+		Args:
+			model: the Model class to generate
+			nb: the number of instances to generate,
+			    None returns a single instance (default: None)
+			**kwargs: the fixed attributes for the models
+		
+		Returns:
+			Union[Model, List[Model]]: one or multiple generated instances of Model
+		"""
+		# Return a single model
 		if nb is None:
 			props = self.get_attributes(model, **kwargs)
 			return model.objects.create(**props)
+		# Or a list of models
+		else:
+			if type(nb) is not int or nb <= 0:
+				raise ValueError("Number of instances to generate must be greater than 0")
+			return [
+				model.objects.create(**self.get_attributes(model, **kwargs))
+				for __ in range(nb)
+			]
 
-		fake_models = list()
-		for i in range(nb):
-			props = self.get_attributes(model, **kwargs)
-			fake_models.append(model.objects.create(**props))
-		return fake_models
-
-	def get_attributes(self, model, withPk=False, **kwargs):
+	def get_attributes(self, model: Model, withPk: bool=False, **kwargs) -> Dict[str, Any]:
+		"""
+		Generates the attributes required to create a specified Model
+		
+		Args:
+			model (Model): the Model whose attributes are to be created
+			withPk: whether to return related Model or simply its Primary key (default: False)
+			kwargs: fixed attributes
+		
+		Returns:
+			Dict[str, Any]: the attributes generated
+		
+		Raises:
+			NotImplementedError: in case the model is not implemented
+		"""
 
 		def cast_to_uuid(uuid: 'UUID') -> 'UUID':
 			return uuid
 
-		def _get_related(kw, model):
-			related = kwargs.get(kw, self.create(model))
+		def get_related_model(key: str, model: Model) -> Union[Pk, Model]:
+			"""
+			Helper to get or create a related Model
+			
+			Args:
+				key: the key to the related model in the kwargs
+				model (Model): the type of model to create as a fallback 
+			
+			Returns:
+				Union[Pk, Model]: the model or its primary key
+			"""
+			related = kwargs.get(key, self.create(model))
 			return getattr(related, 'pk', None) if withPk else related
 
 		# ============================================
@@ -43,7 +89,6 @@ class FakeModelFactory:
 				'first_name': kwargs.get('first_name', self.faker.first_name()),
 				'last_name':  kwargs.get('last_name',  self.faker.last_name()),
 				'is_admin':   kwargs.get('is_admin',   False),
-				# 'types':      kwargs.get('types',      _get_related('usertype', UserType)),
 			}
 
 		if model == UserType:
@@ -68,7 +113,7 @@ class FakeModelFactory:
 			return {
 				'name':         kwargs.get('name',          self.faker.company()),
 				'description':  kwargs.get('description',   self.faker.paragraph()),
-				'association':  _get_related('association', Association),
+				'association':  get_related_model('association', Association),
 				'is_active':    kwargs.get('is_active',     True),
 				'public':       kwargs.get('public',        True),
 				'begin_at':     format_date(kwargs.get('begin_at',
@@ -98,9 +143,9 @@ class FakeModelFactory:
 			return {
 				'name':          kwargs.get('name',         self.faker.word()),
 				'description':   kwargs.get('description',  self.faker.paragraph()),
-				'sale':          _get_related('sale',       Sale),
-				'group':         _get_related('group',      ItemGroup),
-				'usertype':      _get_related('usertype',   UserType),
+				'sale':          get_related_model('sale',       Sale),
+				'group':         get_related_model('group',      ItemGroup),
+				'usertype':      get_related_model('usertype',   UserType),
 				'quantity':      kwargs.get('quantity',     self.faker.random_number()),
 				'max_per_user':  kwargs.get('max_per_user', self.faker.random_number()),
 				'is_active':     kwargs.get('is_active',    True),
@@ -117,8 +162,8 @@ class FakeModelFactory:
 
 		if model == Order:
 			return {
-				'owner':      _get_related('owner', User),
-				'sale':       _get_related('sale',  Sale),
+				'owner':      get_related_model('owner', User),
+				'sale':       get_related_model('sale',  Sale),
 				'created_at': format_date(kwargs.get('created_at', 
 					self.faker.date_time_this_year(before_now=True, after_now=False)
 				)),
@@ -131,14 +176,14 @@ class FakeModelFactory:
 
 		if model == OrderLine:
 			return {
-				'item':     _get_related('item',   Item),
-				'order':    _get_related('order',  Order),
+				'item':     get_related_model('item',   Item),
+				'order':    get_related_model('order',  Order),
 				'quantity': kwargs.get('quantity', self.faker.random_digit()),
 			}
 
 		if model == OrderLineItem:
 			return {
-				'orderline': _get_related('orderline', OrderLine),
+				'orderline': get_related_model('orderline', OrderLine),
 			}
 
 		# ============================================
@@ -155,17 +200,17 @@ class FakeModelFactory:
 
 		if model == ItemField:
 			return {
-				'field':    _get_related('field',  Field),
-				'item':     _get_related('item',   Item),
+				'field':    get_related_model('field',  Field),
+				'item':     get_related_model('item',   Item),
 				'editable': kwargs.get('editable', self.faker.boolean()),
 			}
 
 		if model == OrderLineField:
 			return {
-				'orderlineitem': _get_related('orderlineitem', OrderLineItem),
-				'field':         _get_related('field', Field),
+				'orderlineitem': get_related_model('orderlineitem', OrderLineItem),
+				'field':         get_related_model('field', Field),
 				'value':         kwargs.get('value',   self.faker.word()),
 			}
 
-		raise NotImplementedError("This model isn't faked yet")
+		raise NotImplementedError(f"The model {model} isn't fakable yet")
 
