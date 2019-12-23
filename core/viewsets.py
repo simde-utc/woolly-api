@@ -15,6 +15,12 @@ class ModelViewSetMixin(object):
 	- Security checks
 	"""
 
+	def query_params_is_true(self, key: str) -> bool:
+		"""
+		Whether the request as the specified params and it is not false
+		"""
+		return key in self.request.GET and self.request.GET.get(key, '').lower() != 'false'
+
 	def get_queryset(self):
 		"""
 		Override from GenericAPIView

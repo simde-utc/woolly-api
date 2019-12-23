@@ -89,7 +89,7 @@ class CRUDViewSetTestMeta(type):
 		for action in cls.crud_actions:
 			method_name = f"test_{action}_view"
 			if not hasattr(cls, method_name):
-				method = lambda self: self._perform_crud_test(action, method_name)
+				method = lambda self: self._perform_crud_test(action)
 				method.__doc__ = f"Test all users permissions to {action} {model_name}"
 				setattr(cls, method_name, method)
 
@@ -243,7 +243,7 @@ class CRUDTestCaseMixin:
 		assert_method(response.status_code, expected_status_code, error_message)
 		# TODO Improve tests
 
-	def _perform_crud_test(self, action: str, x: str=None):
+	def _perform_crud_test(self, action: str):
 		"""
 		Method to perform CRUD action tests for all users
 		

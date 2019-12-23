@@ -144,9 +144,9 @@ class OrderViewSet(ModelViewSet):
 	def get_queryset(self):
 		queryset = super().get_queryset()
 
-		# Get Params
+		# Get params
 		user = self.request.user
-		only_owner = self.request.GET.get('only_owner') != 'false'
+		only_owner = not self.query_params_is_true('all')
 
 		# Admins see everything
 		# Otherwise automatically filter to only those owned by the user
@@ -194,7 +194,9 @@ class OrderViewSet(ModelViewSet):
 		return Response(serializer.data, status=httpStatus, headers=headers)
 
 	def destroy(self, request, *args, **kwargs):
-		"""Doesn't destroy an order but set it as cancelled"""
+		"""
+		Doesn't destroy an order but set it as cancelled
+		"""
 		order = self.get_object()
 		# TODO Check service status !!!
 		if order.status in OrderStatus.CANCELLABLE_LIST.value:
@@ -219,7 +221,7 @@ class OrderLineViewSet(ModelViewSet):
 
 		# Get params
 		user = self.request.user
-		only_owner = self.request.GET.get('only_owner') != 'false'
+		only_owner = not self.query_params_is_true('all')
 
 		# Admins see everything
 		# Otherwise automatically filter to only those owned by the user
@@ -270,7 +272,7 @@ class OrderLineViewSet(ModelViewSet):
 				orderline.delete()
 				return Response(serializer.initial_data, status=status.HTTP_205_RESET_CONTENT)
 
-		except OrderLine.DoesNotExist as err:
+		except OrderLine.DoesNotExist as error:
 			# ...or create a new one
 			if quantity > 0:
 				serializer = self.get_serializer(data={

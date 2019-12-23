@@ -10,7 +10,7 @@ from threading import Thread
 from math import ceil
 import random
 
-from core.tests import get_api_client
+from core.testcases import get_api_client
 from core.faker import FakeModelFactory
 from payment.helpers import OrderValidator
 from authentication.models import *
