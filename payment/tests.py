@@ -12,7 +12,7 @@ import random
 
 from core.testcases import get_api_client
 from core.faker import FakeModelFactory
-from payment.helpers import OrderValidator
+from payment.validator import OrderValidator
 from authentication.models import *
 from sales.models import *
 

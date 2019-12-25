@@ -10,7 +10,8 @@ from threading import Lock
 
 from authentication.oauth import OAuthAuthentication
 from payment.services.base import TransactionException
-from payment.helpers import OrderValidator, OrderValidationException, get_pay_service
+from payment.validator import OrderValidator, OrderValidationException
+from payment.helpers import get_pay_service
 from sales.models import Order, OrderStatus
 
 
