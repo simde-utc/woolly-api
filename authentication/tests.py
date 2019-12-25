@@ -23,3 +23,5 @@ class UserTypeViewSetTestCase(ModelViewSetTestCase):
 		'update':   '...a',    # Only admin can update
 		'delete':   '...a',    # Only admin can delete
 	})
+
+# TODO Test user retrieval from API

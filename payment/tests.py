@@ -64,8 +64,8 @@ class OrderValidatorTestCase(APITestCase):
 		self.user = self.users[0]
 
 		def only_for_users(users):
-			users_id = [ user.id for user in users ]
-			return lambda user: user.id in users_id
+			users_id = [ str(user.id) for user in users ]
+			return f"str(user.id) in {users_id}"
 
 		self.usertypes = [
 			self.modelFactory.create(UserType, validation=only_for_users(self.users[:2])),
@@ -159,6 +159,19 @@ class OrderValidatorTestCase(APITestCase):
 		self.sale.max_payment_date = self.datetimes['before']
 		self.sale.save()
 		self._test_validation(False)
+
+	def test_usertype_verification(self):
+		"""
+		Item for special usertype should only be buyable
+		by users that validate the usertype
+		"""
+		self.order.delete()
+		for item in self.items:
+			for user in self.users:
+				should_pass = item.usertype.check_user(user)
+				order, __ = self._create_order(user, item)
+				self._test_validation(should_pass, order)
+				order.delete()
 
 	def test_not_buyable_order(self):
 		"""
@@ -282,7 +295,7 @@ class ShotgunTestCase(APITransactionTestCase):
 		# Create sale and users
 		with transaction.atomic():
 			self.sale = self.modelFactory.create(Sale, max_item_quantity=None)
-			self.usertype = self.modelFactory.create(UserType, validation=lambda user: True)
+			self.usertype = self.modelFactory.create(UserType, validation='True')
 			self.group = self.modelFactory.create(ItemGroup, quantity=None, max_per_user=None)
 			self.items = [
 				self.modelFactory.create(Item,

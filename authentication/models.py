@@ -4,6 +4,13 @@ from core.models import ApiModel
 import datetime
 
 
+class UserTypeValidationError(Exception):
+
+	def __init__(self, usertype: 'UserType'):
+		self.message = f"Cannot validate usertype {usertype}\n(validation: {usertype.validation}"
+		super().__init__(self.message)
+
+
 class UserType(models.Model):
 	id = models.CharField(max_length=25, primary_key=True)
 	name = models.CharField(max_length=50)
@@ -51,8 +58,10 @@ class UserType(models.Model):
 		"""
 		if not isinstance(user, User):
 			raise ValueError("Provided user must be an instance of authentication.User")
-		# TODO error proofing
-		return eval(self.validation)
+		try:
+			return eval(self.validation, {}, { 'user': user })
+		except Exception as error:
+			raise UserTypeValidationError(self) from error
 
 	def __str__(self):
 		return self.name

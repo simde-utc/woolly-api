@@ -87,6 +87,11 @@ class OrderValidator:
 		if len(user_prev_ongoing_orders) > 0:
 			self._add_error("Vous avez déjà une commande en cours pour cette vente.")
 
+		# Check if user can buy items
+		for orderline in self.order.orderlines.prefetch_related('item', 'item__usertype').all():
+			if not orderline.item.usertype.check_user(self.order.owner):
+				self._add_error(f"L'article {orderline.item.name} est réservé à {orderline.item.usertype.name}")
+
 	def _check_quantities(self):
 		"""
 		Fetch, Process and Verify Quantities
