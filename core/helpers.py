@@ -1,6 +1,4 @@
-from typing import Sequence, Iterable, Callable, Union
-from rest_framework.response import Response
-from rest_framework import status
+from typing import Sequence, Iterable, Callable
 from django.utils import timezone
 
 CURRENT_TZ = timezone.get_current_timezone()
@@ -9,10 +7,35 @@ CURRENT_TZ = timezone.get_current_timezone()
 # 		Data Structures
 # --------------------------------------------------------------------------
 
-def filter_dict_keys(obj: dict, whitelist: Sequence):
+def filter_dict_keys(obj: dict, whitelist: Sequence) -> dict:
+	"""
+	Filter dictionnary keys from a whitelist
+	
+	Args:
+		obj: the dictionnary to filter
+		whitelist: the whitelist of keys to keep
+
+	Returns:
+		dict: the filtered dictionnary
+	"""
 	return { k: v for k, v in obj.items() if k in whitelist }
 
-def iterable_to_map(iterable: Iterable, prop: str=None, attr: str=None, get_key: Callable=None) -> dict:
+def iterable_to_map(iterable: Iterable, get_key: Callable=None, prop: str=None, attr: str=None) -> dict:
+	"""
+	Change an iterable into a dictionnary by selecting a key from each item
+	
+	Args:
+		iterable (Iterable): the iterable to transform
+		get_key: a function that takes an item and return its key
+		prop (str): the property to get the key from with item[prop]
+		attr (str): the attribute to get the key from with getattr(item, attr)
+	
+	Raises:
+		ValueError: if prop, attr or get_key are all None
+
+	Returns:
+		dict: the mapped iterable
+	"""
 	if not get_key:
 		if prop:
 			get_key = lambda obj: obj[prop]
@@ -35,7 +58,7 @@ def format_date(date) -> 'datetime':
 # 		Models
 # --------------------------------------------------------------------------
 
-def get_field_default_value(default, order):
+def get_field_default_value(default: str, order: 'Order'):
 	"""
 	Get the default value of a field
 	"""
@@ -44,35 +67,24 @@ def get_field_default_value(default, order):
 		'owner.last_name': order.owner.last_name,
 	}.get(default, default)
 
-# def adaptable_editable_fields(request, obj=None, edition_readonly=[]), always_readonly=[])):
-def custom_editable_fields(request, obj=None, edition_readonly_fields=tuple(), always_readonly_fields=tuple()):
+def adaptable_editability_fields(obj=None, edition_readonly: Sequence=[], always_readonly: Sequence=[]) -> tuple:
 	"""
 	Helper to allow non editable fields to be set on creation
 	"""
-	return edition_readonly_fields if obj else always_readonly_fields
-
-# --------------------------------------------------------------------------
-# 		HTTP & REST
-# --------------------------------------------------------------------------
-
-def ErrorResponse(error: Union[Exception, str],
-                  detail: Sequence[str]=[],
-                  status=status.HTTP_400_BAD_REQUEST) -> Response:
-	# TODO Create as an exception
-	if not detail and issubclass(type(error), Exception):
-		detail = getattr(error, 'detail', [])
-	data = {
-		'error': str(error),
-		'detail': detail,
-	}
-	return Response(data, status=status)
+	return tuple(always_readonly if obj is None else edition_readonly)
 
 # --------------------------------------------------------------------------
 # 		Naming
 # --------------------------------------------------------------------------
 
 def pluralize(name: str) -> str:
+	"""
+	Simple and quite stupid helper to pluralize a name
+	"""
 	return name + 's'
 
-def get_model_name(instance) -> str:
-	return (instance if isinstance(instance, type) else type(instance)).__name__.lower()
+def get_model_name(inst) -> str:
+	"""
+	Get the lowered model name from an instance
+	"""
+	return (inst if isinstance(inst, type) else type(inst)).__name__.lower()

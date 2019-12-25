@@ -3,16 +3,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db import transaction
 
-from core.helpers import ErrorResponse, get_field_default_value
+from core.helpers import get_field_default_value
 from rest_framework import status
 from django.urls import reverse
 from threading import Lock
 
-from authentication.oauth import OAuthAuthentication
+from sales.models import OrderValidationException, Order, OrderStatus
 from payment.services.base import TransactionException
-from payment.validator import OrderValidator, OrderValidationException
+from payment.validator import OrderValidator
 from payment.helpers import get_pay_service
-from sales.models import Order, OrderStatus
 
 
 pay_lock = Lock()
@@ -35,14 +34,11 @@ class PaymentView:
 			4. Save Transaction info and redirect
 		"""
 		# 1. Retrieve Order
-		try:
-			# TODO ajout de la limite de temps
-			order = Order.objects.filter(owner__pk=request.user.pk) \
-			             .filter(status__in=OrderStatus.BUYABLE_STATUS_LIST.value) \
-			             .select_related('sale', 'owner') \
-			             .get(pk=pk)
-		except Order.DoesNotExist as error:
-			return ErrorResponse(error, status=status.HTTP_404_NOT_FOUND)
+		# TODO ajout de la limite de temps
+		order = Order.objects.filter(owner__pk=request.user.pk) \
+		             .filter(status__in=OrderStatus.BUYABLE_STATUS_LIST.value) \
+		             .select_related('sale', 'owner') \
+		             .get(pk=pk)
 
 		# Lock sensitive part
 		pay_lock.acquire()
@@ -53,7 +49,7 @@ class PaymentView:
 			validator.validate()
 		except OrderValidationException as error:
 			pay_lock.release()
-			return ErrorResponse(error)
+			raise error
 
 		# TODO Check if doesn't already have an order
 
@@ -67,7 +63,7 @@ class PaymentView:
 			transaction = pay_service.create_transaction(order, callback_url, return_url)
 		except TransactionException as error:
 			pay_lock.release()
-			return ErrorResponse(error)
+			raise error
 
 		# 4. Save transaction id and redirect
 		try:
@@ -90,16 +86,9 @@ class PaymentView:
 		Callback after the transaction has been made
 		to validate, cancel or redirect the order
 		"""
-		try:
-			order = Order.objects.select_related('sale__association').get(pk=pk)
-		except Order.DoesNotExist as error:
-			return ErrorResponse(error, status=status.HTTP_404_NOT_FOUND)
-
 		# Update order status
-		try:
-			resp = order.update_status()
-		except TransactionException as error:
-			return ErrorResponse(error)
+		order = Order.objects.select_related('sale__association').get(pk=pk)
+		resp = order.update_status()
 
 		# Return the response
 		if resp.pop('redirect_to_payment', False):

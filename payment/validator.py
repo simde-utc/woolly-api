@@ -1,10 +1,8 @@
-from sales.models import Order, OrderLine, OrderStatus
+from sales.models import OrderValidationException, Order, OrderLine, OrderStatus
 from django.utils import timezone
 from typing import List, Sequence
 from collections import namedtuple
 
-class OrderValidationException(Exception):
-	pass
 
 class OrderValidator:
 	"""
@@ -37,19 +35,23 @@ class OrderValidator:
 	@property
 	def is_valid(self) -> bool:
 		if not self.checked:
-			raise OrderValidationException("Must launch the validation process before")
+			raise OrderValidationException(
+				"La commande doit être vérifiée avant d'être validée",
+				'check_order_before_is_valid',
+				status_code=500)
+			
 		return len(self.errors) == 0
 
 	def get_errors(self) -> List[str]:
 		return self.errors
 
-	def _add_error(self, error: str):
+	def _add_error(self, message: str, code: str=None):
 		"""
 		Raise or add a new error
 		"""
-		self.errors.append(error)
+		self.errors.append(message)
 		if self.raise_on_error:
-			raise OrderValidationException(error)
+			raise OrderValidationException(message, code)
 
 
 	# ===============================================

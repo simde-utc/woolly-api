@@ -9,7 +9,7 @@ from .permissions import *
 
 from .serializers import UserSerializer, UserTypeSerializer
 from .models import UserType, User
-from .oauth import OAuthAPI, OAuthError
+from .oauth import OAuthAPI
 
 
 class UserViewSet(ApiModelViewSet):
@@ -45,14 +45,8 @@ class AuthView:
 		Get user from API, find or create it in Woolly, store the OAuth token,
 		and redirect to the front with a session
 		"""
-		try:
-			resp = cls.oauth.callback_and_create_session(request)
-			return redirect(resp)
-		except OAuthError as error:
-			return Response({
-				'error': 'OAuthError',
-				'message': str(error)
-			}, status=status.HTTP_400_BAD_REQUEST)
+		resp = cls.oauth.callback_and_create_session(request)
+		return redirect(resp)
 
 	@classmethod
 	def me(cls, request):

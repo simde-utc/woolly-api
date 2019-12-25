@@ -7,30 +7,44 @@ from django.core.cache import cache
 from authlib.client import OAuth2Session
 from authlib.common.errors import AuthlibBaseError
 
+from woolly_api.settings import OAUTH as OAuthConfig
+from core.exceptions import APIException
 from core.models import gen_model_key
 from core.helpers import filter_dict_keys
-from woolly_api.settings import OAUTH as OAuthConfig
 
 OAUTH_TOKEN_NAME = 'oauth_token'
 UserModel = django_auth.get_user_model()
 
 
-class OAuthError(Exception):
+class OAuthException(APIException):
 	"""
-	OAuth Error
+	Custom OAuth Error for better feedback
 	"""
-	def __init__(self, message: str=None, response=None):
-		if not message and response is not None:
-			message = response.json().get('message', 'Unknown error')
+	status_code = 500
+	default_detail = "Une erreur est survenue avec l'authentification, veuillez contactez un administrateur"
+	default_code = 'oauth_error'
 
-		super().__init__(message)
-		self.response = response
+	@classmethod
+	def from_response(cls, response: 'Response', code: str=None) -> 'OAuthException':
+		"""
+		Create a OAuthException from an OAuth response
+		"""
+		message = response.json().get('message', 'Unknown error')
+		details = None
+
+		if 'unauthenticated' in message.lower():
+			details = message
+			code = code or 'unauthenticated'
+			message = "Requête non authentifié" # TODO Better message
+
+		return cls(message, code, details)
+
 
 def get_user_from_request(request):
 	"""
 	Get the user from the request session
 	Can debug logged user like this:
-	> return UserModel(email='test@woolly.com') # DEBUG
+	> return UserModel(email='test@woolly.com')
 	"""
 	# Try to get the user logged in the request
 	user = getattr(request, '_request', request).user
@@ -96,7 +110,11 @@ class OAuthAPI:
 		try:
 			token = self.client.fetch_access_token(self.config['access_token_url'], code=code)
 		except AuthlibBaseError as error:
-			raise OAuthError(error)
+			raise OAuthException(
+				"Impossible de récuperer le Token OAuth",
+				"fetch_access_token_error",
+				details=str(error)
+			) from error
 
 		# Fetch and login user into Django, then create session
 		user = self.fetch_user()
@@ -127,13 +145,13 @@ class OAuthAPI:
 
 	def fetch_resource(self, query: str):
 		"""
-		Return infos from the API if 200 else an OAuthError
+		Return data from the API if valid else raise an OAuthException
 		"""
 		resp = self.client.get(self.config['base_url'] + query)
 		if resp.status_code == 200:
 			return resp.json()
 		else:
-			raise OAuthError(response=resp)
+			raise OAuthException.from_response(resp)
 
 	def fetch_user(self, user_id: str=None) -> UserModel:
 		"""

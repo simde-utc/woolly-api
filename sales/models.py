@@ -4,6 +4,8 @@ from django.db import models
 from enum import Enum
 import uuid
 
+from core.exceptions import APIException
+from rest_framework import status
 from woolly_api.settings import MAX_ONGOING_TIME, MAX_PAYMENT_TIME, MAX_VALIDATION_TIME
 from django.core.mail import EmailMessage
 from django.db import transaction
@@ -123,6 +125,13 @@ class Item(models.Model):
 # ============================================
 # 	Order
 # ============================================
+
+class OrderValidationException(APIException):
+	status_code = status.HTTP_406_NOT_ACCEPTABLE
+	default_detail = "La commande n'est pas valide"
+	default_code = 'invalid_order'
+	
+	
 
 class OrderStatus(Enum):
 	"""
