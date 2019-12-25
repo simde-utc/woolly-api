@@ -3,6 +3,7 @@ from django.urls import reverse, exceptions
 from django.utils import timezone
 from rest_framework import status
 from django.db import transaction
+from django.test import tag
 from typing import Sequence
 
 from collections import Counter, namedtuple
@@ -31,6 +32,7 @@ def start_and_wait_jobs(jobs: Sequence[Thread]):
 		job.join()
 
 
+@tag('validation')
 class OrderValidatorTestCase(APITestCase):
 	
 	modelFactory = FakeModelFactory()
@@ -193,6 +195,7 @@ class OrderValidatorTestCase(APITestCase):
 		self.order.status = OrderStatus.CANCELLED.value
 		self._test_validation(False)
 
+	@tag('quantities')
 	def test_sale_max_quantities(self):
 		"""
 		Sales max quantities must be respected
@@ -200,16 +203,16 @@ class OrderValidatorTestCase(APITestCase):
 		# Over Sale max_item_quantity
 		self.sale.max_item_quantity = self.orderline.quantity - 1
 		self.sale.save()
-		# self._test_validation(False)
+		self._test_validation(False)
 
 		# Limit Sale max_item_quantity
 		self.sale.max_item_quantity = self.orderline.quantity
 		self.sale.save()
-		# self._test_validation(True)
+		self._test_validation(True)
 
 		# Other users booked orders
-		order1, orderline1 = self._create_order(self.users[1], status=OrderStatus.AWAITING_PAYMENT.value)
-		order2, orderline2 = self._create_order(self.users[2], status=OrderStatus.AWAITING_PAYMENT.value)
+		order1, orderline1 = self._create_order(self.users[1], self.items[0], status=OrderStatus.AWAITING_PAYMENT.value)
+		order2, orderline2 = self._create_order(self.users[2], self.items[1], status=OrderStatus.AWAITING_PAYMENT.value)
 		booked_orders = (order1, order2)
 		upperLimit = self.orderline.quantity + orderline1.quantity + orderline2.quantity
 
@@ -227,6 +230,7 @@ class OrderValidatorTestCase(APITestCase):
 			self._test_validation(True, order)
 		self._test_validation(True, self.order)
 
+	@tag('quantities')
 	def test_item_quantities(self):
 		"""
 		Items quantities must be respected
@@ -251,6 +255,7 @@ class OrderValidatorTestCase(APITestCase):
 		self.item.save()
 		self._test_validation(True)
 
+	@tag('quantities')
 	def test_itemgroup_quantities(self):
 		"""
 		ItemGroups quantities must be respected
@@ -275,6 +280,7 @@ class OrderValidatorTestCase(APITestCase):
 		self.itemgroup.save()
 		self._test_validation(True)
 
+@tag('validation', 'shotgun')
 class ShotgunTestCase(APITransactionTestCase):
 
 	modelFactory = FakeModelFactory()
@@ -379,6 +385,7 @@ class ShotgunTestCase(APITransactionTestCase):
 		self.assertEqual(nb_success, max_quantity)
 		self.assertEqual(nb_awaiting, max_quantity)
 
+	@tag('quantities')
 	def test_sale_quantity(self):
 		"""
 		Test that the Sale max quantity is respected even under pressure
@@ -387,6 +394,7 @@ class ShotgunTestCase(APITransactionTestCase):
 		self.sale.save()
 		self._test_shotgun()
 
+	@tag('quantities')
 	def test_group_quantity(self):
 		"""
 		Test that the ItemGroup max quantity is respected even under pressure
@@ -395,6 +403,7 @@ class ShotgunTestCase(APITransactionTestCase):
 		self.group.save()
 		self._test_shotgun()
 
+	@tag('quantities')
 	def test_item_quantity(self):
 		"""
 		Test that the Item max quantity is respected even under pressure
