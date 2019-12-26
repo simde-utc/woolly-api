@@ -1,14 +1,23 @@
 from django.contrib.auth.models import AbstractBaseUser
+from core.exceptions import APIException
 from django.db import models
 from core.models import ApiModel
 import datetime
 
 
-class UserTypeValidationError(Exception):
+class UserTypeValidationError(APIException):
+	"""
+	UserType validation error
+	"""
+	status_code = 500
+	default_detail = "Une erreur est survenue lors de la vérification du type d'utilisateur," \
+	                 " veuillez contactez un administrateur"
+	default_code = 'usertype_validation_error'
 
-	def __init__(self, usertype: 'UserType'):
-		self.message = f"Cannot validate usertype {usertype}\n(validation: {usertype.validation}"
-		super().__init__(self.message)
+	@classmethod
+	def from_usertype(cls, usertype: 'UserType'):
+		return cls(f"Impossible de vérifier le type d'utilisateur {usertype},"
+		            " veuillez contactez un administrateur")
 
 
 class UserType(models.Model):
@@ -58,10 +67,12 @@ class UserType(models.Model):
 		"""
 		if not isinstance(user, User):
 			raise ValueError("Provided user must be an instance of authentication.User")
+		if not getattr(user, 'fetched_data', None):
+			raise ValueError("User full data must be fetched first")
 		try:
 			return eval(self.validation, {}, { 'user': user })
 		except Exception as error:
-			raise UserTypeValidationError(self) from error
+			raise UserTypeValidationError.from_usertype(self) from error
 
 	def __str__(self):
 		return self.name
@@ -146,7 +157,7 @@ class User(AbstractBaseUser, ApiModel):
 		Synchronise UserTypes to the user
 		"""
 		if not self.fetched_data:
-			raise ValueError('Must fetch data from API first')
+			raise ValueError("Must fetch data from API first")
 		if usertypes is None:
 			usertypes = UserType.objects.all()
 
