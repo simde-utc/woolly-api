@@ -7,17 +7,24 @@ from django.core.cache import cache
 from authlib.client import OAuth2Session
 from authlib.common.errors import AuthlibBaseError
 
+from core.models import gen_model_key
+from core.helpers import filter_dict_keys
 from woolly_api.settings import OAUTH as OAuthConfig
-from .helpers import find_or_create_user
 
+OAUTH_TOKEN_NAME = 'oauth_token'
 UserModel = django_auth.get_user_model()
+
 
 class OAuthError(Exception):
 	"""
 	OAuth Error
-	(TODO Will be) Useful to send error responses
 	"""
-	pass
+	def __init__(self, message: str=None, response=None):
+		if not message and response is not None:
+			message = response.json().get('message', 'Unknown error')
+
+		super().__init__(message)
+		self.response = response
 
 def get_user_from_request(request):
 	"""
@@ -26,16 +33,23 @@ def get_user_from_request(request):
 	> return UserModel(email='test@woolly.com') # DEBUG
 	"""
 	# Try to get the user logged in the request
-	user = (getattr(request, '_request', request)).user
+	user = getattr(request, '_request', request).user
 	if user.is_authenticated:
-		return user
+		if user.fetched_data:
+			return user
+
+		# Add api data and return user
+		oauth_client = OAuthAPI(session=request.session)
+		return user.get_with_api_data(oauth_client)
 
 	# Get the user from the session
 	user_id = request.session.get('user_id')
 	if not user_id:
 		return None
+
 	try:
-		return UserModel.objects.get(pk=user_id)
+		oauth_client = OAuthAPI(session=request.session)
+		return UserModel.objects.get_with_api_data(oauth_client, pk=user_id)
 	except UserModel.DoesNotExist:
 		raise AuthenticationFailed("user_id does not match a user")
 
@@ -46,21 +60,25 @@ class OAuthAPI:
 	Utile pour la connexion, la récupération des droits
 	"""
 
-	def __init__(self, provider: str='portal', config: dict=None):
+	def __init__(self, provider: str='portal', config: dict=None, token: dict=None, session=None):
 		"""
 		OAuth2 Client initialisation
 		"""
 		self.provider = provider
-		self.config = config or OAuthConfig[provider]
-		self.oauth_client = OAuth2Session(**self.config)
+		self.config = config or OAuthConfig[provider].copy()
+		if token:
+			self.config['token'] = token
+		elif session:
+			self.config['token'] = session.get(OAUTH_TOKEN_NAME)
+		self.client = OAuth2Session(**self.config)
 
 	def get_auth_url(self, redirection: str) -> str:
 		"""
 		Return authorization url
 		"""
 		# Get url and state from OAuth server
-		url, state = self.oauth_client.create_authorization_url(self.config['authorize_url'])
-		
+		url, state = self.client.create_authorization_url(self.config['authorize_url'])
+
 		# Cache front url with state for 5mins
 		cache.set(state, redirection, 300)
 		return url
@@ -70,26 +88,22 @@ class OAuthAPI:
 		Get token, user informations, store these and redirect
 		"""
 		# Get code and state from request
+		# TODO Checks
 		code = request.GET['code']
 		state = request.GET['state']
 
 		# Get token from code
 		try:
-			oauthToken = self.oauth_client.fetch_access_token(self.config['access_token_url'], code=code)
+			token = self.client.fetch_access_token(self.config['access_token_url'], code=code)
 		except AuthlibBaseError as error:
 			raise OAuthError(error)
 
-		# Retrieve user infos from the Portal
-		auth_user_infos = self.fetch_resource('user/?types=*')  # TODO restreindre
-
-		# Find or create User
-		user = find_or_create_user(auth_user_infos)
-
-		# Login user into Django and Create session
+		# Fetch and login user into Django, then create session
+		user = self.fetch_user()
 		request.user = user
 		django_auth.login(request, user)
-		request.session['user_id'] = user.pk
-		request.session['portal_token'] = oauthToken
+		request.session['user_id'] = str(user.id)
+		request.session[OAUTH_TOKEN_NAME] = token
 
 		# Get front redirection from cached state
 		redirection = cache.get(state)
@@ -100,6 +114,11 @@ class OAuthAPI:
 		"""
 		Logout the user from Woolly and redirect to the provider's logout
 		"""
+		# Revoke user token ??? POSSIBLE TODO
+		# token = request.session.get(OAUTH_TOKEN_NAME)
+		# if token:
+		# 	self.client.revoke_token(url, token)
+
 		# Logout from Django
 		django_auth.logout(request)
 
@@ -110,12 +129,37 @@ class OAuthAPI:
 		"""
 		Return infos from the API if 200 else an OAuthError
 		"""
-		resp = self.oauth_client.get(self.config['base_url'] + query)
+		resp = self.client.get(self.config['base_url'] + query)
 		if resp.status_code == 200:
 			return resp.json()
-		elif resp.status_code == 404:
-			raise OAuthError('Resource not found')
-		raise OAuthError('Unknown error')
+		else:
+			raise OAuthError(response=resp)
+
+	def fetch_user(self, user_id: str=None) -> UserModel:
+		"""
+		Get specified or current user
+		"""
+		# Get and patch data from API
+		url = (f"users/{user_id}" if user_id else "user") + "/?types=*"
+		data = self.fetch_resource(url)
+		if hasattr(UserModel, 'patch_fetched_data'):
+			data = UserModel.patch_fetched_data(data)
+
+		# Get or create user from db
+		new_user = False
+		try:
+			user = UserModel.objects.get(pk=data['id'])
+		except UserModel.DoesNotExist:
+			fields_data = filter_dict_keys(data, UserModel.field_names())
+			user = UserModel(**fields_data)
+			new_user = True
+		
+		# Update with fetched data and return
+		updated_fields = user.sync_data(data, save=False)
+		if updated_fields or new_user:
+			user.save()
+
+		return user
 
 
 class OAuthBackend(ModelBackend):
@@ -125,11 +169,18 @@ class OAuthBackend(ModelBackend):
 
 	def authenticate(self, request, **kwargs):
 		"""
-		For rest_framework authentication
+		For django authentication
 		"""
 		return get_user_from_request(request)
 
 	def get_user(self, user_id):
+		# Try to get full user from cache
+		key = gen_model_key(UserModel, pk=user_id)
+		cached_user = cache.get(key, None)
+		if cached_user is not None:
+			return cached_user
+
+		# Return simple user as a fallback
 		try:
 			return UserModel.objects.get(pk=user_id)
 		except UserModel.DoesNotExist:

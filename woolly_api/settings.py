@@ -11,27 +11,34 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 import os
 import sys
+from datetime import timedelta
 from woolly_api import settings_confidential as confidentials
 
 
 # Build paths inside the project like this: use make_path helper or os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-def make_path(rel):
+def make_path(rel: str) -> str:
 	return os.path.join(BASE_DIR, rel.replace('/', os.path.sep))
+
+
+# --------------------------------------------------------------------------
+# 		Application Configuration
+# --------------------------------------------------------------------------
+
+EXPORTS_DIR = make_path('exports')
+
+MAX_ONGOING_TIME = timedelta(minutes=15)
+MAX_PAYMENT_TIME = timedelta(hours=1)
+MAX_VALIDATION_TIME = timedelta(days=30)
 
 
 # --------------------------------------------------------------------------
 # 		Services Configuration
 # --------------------------------------------------------------------------
 
-# Payutc & Ginger config
+# Payutc & Portail des Assos config
 PAYUTC_KEY = confidentials.PAYUTC_KEY
-PAYUTC_TRANSACTION_BASE_URL = 'https://payutc.nemopay.net/validation?tra_id='
-GINGER_KEY = confidentials.GINGER_KEY
-GINGER_SERVER_URL = 'https://assos.utc.fr/ginger/v1/'
-
-# Portail des Assos config
 OAUTH = {
 	'portal': {
 		'client_id':        confidentials.PORTAL['id'],
@@ -42,7 +49,7 @@ OAUTH = {
 		'access_token_url': 'https://assos.utc.fr/oauth/token',
 		'login_url':        'https://assos.utc.fr/login',
 		'logout_url':       'https://assos.utc.fr/logout',
-		'scope':            'user-get-info user-get-roles user-get-assos-members-joined-now'
+		'scope':            'user-get-assos user-get-info user-get-roles', # user-get-assos-members-joined-now',
 	},
 }
 
@@ -50,16 +57,20 @@ OAUTH = {
 # 		Debug & Security
 # --------------------------------------------------------------------------
 
+TEST_MODE = sys.argv[1:2] == ['test']
+if TEST_MODE:
+	print("WARNING: test mode on !")
+
 # SECURITY WARNING: don't run with DEBUG turned on in production!
 DEBUG = confidentials.DEBUG
 SECRET_KEY = confidentials.SECRET_KEY
 ALLOWED_HOSTS = confidentials.ALLOWED_HOSTS
-HTTPS_ENABLED = getattr(confidentials, 'HTTPS_ENABLED', False)
+HTTPS_ENABLED = getattr(confidentials, 'HTTPS_ENABLED', True)
 
 SECURE_SSL_REDIRECT = HTTPS_ENABLED
 SECURE_BROWSER_XSS_FILTER = True
 
-SESSION_COOKIE_SECURE = False # False to enable the use of cookies in ajax requests
+SESSION_COOKIE_SECURE = HTTPS_ENABLED # TODO ?????,, False to enable the use of cookies in ajax requests
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' # cache or cached_db
 
 # Cross Site Request Foregery protection
@@ -78,6 +89,7 @@ CORS_ORIGIN_WHITELIST = confidentials.CORS_ORIGIN_WHITELIST
 # 		Django REST Configuration
 # --------------------------------------------------------------------------
 
+BROWSABLE_API_WITH_FORMS = getattr(confidentials, 'BROWSABLE_API_WITH_FORMS', DEBUG)
 REST_FRAMEWORK = {
 	'DEFAULT_AUTHENTICATION_CLASSES': (
 		'authentication.oauth.OAuthAuthentication',
@@ -87,14 +99,13 @@ REST_FRAMEWORK = {
 	'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
 
 	'DEFAULT_PARSER_CLASSES': (
-		'rest_framework.parsers.JSONParser',								# Simple JSON
+		'rest_framework.parsers.JSONParser',
 		'rest_framework.parsers.FormParser',
 		'rest_framework.parsers.MultiPartParser'
 	),
 	'DEFAULT_RENDERER_CLASSES': (
-		'rest_framework.renderers.JSONRenderer',						# Simple JSON
-		# 'rest_framework.renderers.BrowsableAPIRenderer',
-		'core.utils.BrowsableAPIRendererWithoutForms',			# For performance testing
+		'rest_framework.renderers.JSONRenderer',
+		'core.utils.BrowsableAPIRenderer',
 	),
 	
 	# 'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
@@ -118,8 +129,9 @@ DATABASES = {
 		'NAME': 'db.sqlite3',
 	}
 }
-if 'test' in sys.argv and 'sqlite' in DATABASES: # Test database
-	DATABASES['default'] = DATABASES.pop('sqlite')
+
+# if TEST_MODE and 'sqlite' in DATABASES: # Test database
+# 	DATABASES['default'] = DATABASES.pop('sqlite')
 
 INSTALLED_APPS = [
 	# Django
@@ -267,5 +279,10 @@ LOGGING = {
 			'level': 'WARNING',
 			'propagate': True,
 		},
+		'custom': {
+			'handlers': ['console', 'file'],
+			'level': 'DEBUG',
+			'propagate': True,
+		}
 	},
 }

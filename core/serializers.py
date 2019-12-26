@@ -1,6 +1,7 @@
 from rest_framework.relations import ManyRelatedField
 from rest_framework import serializers
 from django.utils.module_loading import import_string
+from collections import OrderedDict
 from .helpers import filter_dict_keys
 
 FIELD_KWARGS = serializers.LIST_SERIALIZER_KWARGS
@@ -20,6 +21,7 @@ class ModelSerializer(serializers.ModelSerializer):
 
 	TODO:
 		- Hide data on demand
+		- Show only fields data
 	"""
 	included_serializers = {}
 
@@ -66,3 +68,15 @@ class ModelSerializer(serializers.ModelSerializer):
 
 		# Return updated fields
 		return fields
+
+class ApiModelSerializer(ModelSerializer):
+	"""
+	ModelSerializer that can display additional data from APIModels
+	"""
+
+	def to_representation(self, instance) -> dict:
+		data = super().to_representation(instance)
+		fetched_data = getattr(instance, 'fetched_data', None)
+		if fetched_data:
+			return OrderedDict({ **data, **fetched_data })
+		return data

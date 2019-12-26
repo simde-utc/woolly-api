@@ -4,12 +4,12 @@ from rest_framework.response import Response
 from django.http import HttpResponse
 
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from core.viewsets import ModelViewSet
-from core.helpers import errorResponse
+from core.viewsets import ModelViewSet, ApiModelViewSet
+from core.helpers import ErrorResponse
 from core.permissions import *
-from .serializers import *
-from .permissions import *
-from .models import OrderStatus
+from sales.serializers import *
+from sales.permissions import *
+from sales.models import OrderStatus
 
 from authentication.oauth import OAuthAuthentication
 from core.utils import render_to_pdf, data_to_qrcode
@@ -22,7 +22,7 @@ import base64
 # 	Association
 # ============================================
 
-class AssociationViewSet(ModelViewSet):
+class AssociationViewSet(ApiModelViewSet):
 	"""
 	Defines the behavior of the association view
 	"""
@@ -35,25 +35,10 @@ class AssociationViewSet(ModelViewSet):
 		Override of core.viewsets.ModelViewSet for owner-user correspondance
 		"""
 		filters = super().get_sub_urls_filters(queryset)
+		# TODO
 		if 'user__pk' in filters:
 			filters['members__pk'] = filters.pop('user__pk')
 		return filters
-
-class AssociationMemberViewSet(ModelViewSet):
-	"""
-	Defines the behavior link to the association member view
-	"""
-	queryset = AssociationMember.objects.all()
-	serializer_class = AssociationMemberSerializer
-	permission_classes = (IsManager,)
-
-	"""
-	def perform_create(self, serializer):
-		serializer.save(
-			user_id = self.request.user.id,
-			association_id = self.kwargs['association_pk'],
-		)
-	"""
 
 # ============================================
 # 	Sale
@@ -142,7 +127,9 @@ class ItemViewSet(ModelViewSet):
 
 class OrderViewSet(ModelViewSet):
 	"""
-	Defines the behavior of the order CRUD
+	Defines the behavior of the Order CRUD
+
+	TODO: update status if not stable
 	"""
 	queryset = Order.objects.all()
 	serializer_class = OrderSerializer
@@ -157,9 +144,9 @@ class OrderViewSet(ModelViewSet):
 	def get_queryset(self):
 		queryset = super().get_queryset()
 
-		# Get Params
+		# Get params
 		user = self.request.user
-		only_owner = self.request.GET.get('only_owner') != 'false'
+		only_owner = not self.query_params_is_true('all')
 
 		# Admins see everything
 		# Otherwise automatically filter to only those owned by the user
@@ -167,6 +154,15 @@ class OrderViewSet(ModelViewSet):
 			queryset = queryset.filter(owner=user)
 
 		return queryset
+
+	def get_object(self) -> Order:
+		"""
+		Try to update order status if unstable
+		"""
+		order = super().get_object()
+		if order.status not in OrderStatus.STABLE_LIST.value:
+			order.update_status()
+		return order
 
 	def create(self, request, *args, **kwargs):
 		"""
@@ -198,8 +194,11 @@ class OrderViewSet(ModelViewSet):
 		return Response(serializer.data, status=httpStatus, headers=headers)
 
 	def destroy(self, request, *args, **kwargs):
-		"""Doesn't destroy an order but set it as cancelled"""
+		"""
+		Doesn't destroy an order but set it as cancelled
+		"""
 		order = self.get_object()
+		# TODO Check service status !!!
 		if order.status in OrderStatus.CANCELLABLE_LIST.value:
 			# TODO Add time
 			order.status = OrderStatus.CANCELLED.value
@@ -207,7 +206,7 @@ class OrderViewSet(ModelViewSet):
 			return Response(None, status=status.HTTP_204_NO_CONTENT)
 		else:
 			msg = "La commande n'est pas annulable."
-			return errorResponse(msg, [msg], status.HTTP_406_NOT_ACCEPTABLE)
+			return ErrorResponse(msg, status=status.HTTP_406_NOT_ACCEPTABLE)
 
 class OrderLineViewSet(ModelViewSet):
 	"""
@@ -222,7 +221,7 @@ class OrderLineViewSet(ModelViewSet):
 
 		# Get params
 		user = self.request.user
-		only_owner = self.request.GET.get('only_owner') != 'false'
+		only_owner = not self.query_params_is_true('all')
 
 		# Admins see everything
 		# Otherwise automatically filter to only those owned by the user
@@ -232,47 +231,60 @@ class OrderLineViewSet(ModelViewSet):
 		return queryset
 
 	def create(self, request, *args, **kwargs):
-		# Retrieve Order...
+		"""
+		Create an orderline attached to an order
+		"""
+		# Retrieve Order or fail
+		order_pk = kwargs.get('order_pk', request.data.get('order'))
 		try:
-			order = Order.objects.get(pk=request.data['order'])
-		# ...or fail
-		except Order.DoesNotExist as err:
-			msg = "Impossible de trouver la commande."
-			return errorResponse(msg, [msg], status.HTTP_404_NOT_FOUND)
+			order = Order.objects.get(pk=order_pk)
+		except Order.DoesNotExist as error:
+			return ErrorResponse("Impossible de trouver la commande.",
+			                     status=status.HTTP_404_NOT_FOUND)
 
 		# Check Order owner
 		user = request.user
-		if not (user.is_authenticated and user.is_admin or order.owner == user):
-			msg = "Vous n'avez pas la permission d'effectuer cette action."
-			return errorResponse(msg, [msg], status.HTTP_403_FORBIDDEN)
+		if not (user.is_authenticated and user.is_admin or str(order.owner.pk) == str(user.pk)):
+			return ErrorResponse("Vous n'avez pas la permission d'effectuer cette action.",
+			                     status=status.HTTP_403_FORBIDDEN)
 
 		# Check if Order is open
 		if order.status != OrderStatus.ONGOING.value:
-			msg = "La commande n'accepte plus de changement."
-			return errorResponse(msg, [msg], status.HTTP_400_BAD_REQUEST)
+			return ErrorResponse("La commande n'accepte plus de changement.",
+			                     status=status.HTTP_400_BAD_REQUEST)
+
+		item_pk = request.data.get('item')
+		try:
+			quantity = int(request.data.get('quantity'))
+			assert quantity >= 0
+		except (ValueError, AssertionError) as error:
+			return ErrorResponse("La quantité d'article à acheter doit être positive ou nulle.",
+			                     status=status.HTTP_400_BAD_REQUEST)
 
 		# Try to retrieve a similar OrderLine...
+		# TODO ajout de la vérification de la limite de temps
 		try:
-			orderline = OrderLine.objects.get(order=request.data['order'], item=request.data['item'])
-			# TODO ajout de la vérification de la limite de temps
-			serializer = OrderLineSerializer(orderline, data={'quantity': request.data['quantity']}, partial=True)
+			orderline = OrderLine.objects.get(order=order_pk, item=item_pk)
+			serializer = OrderLineSerializer(orderline, data={ 'quantity': quantity }, partial=True)
 
 			# Delete empty OrderLines
-			if request.data['quantity'] <= 0:
+			if quantity <= 0:
 				orderline.delete()
 				return Response(serializer.initial_data, status=status.HTTP_205_RESET_CONTENT)
-		# ...or create a new one
-		except OrderLine.DoesNotExist as err:
-			if request.data['quantity'] > 0:
-				# Configure Order
+
+		except OrderLine.DoesNotExist as error:
+			# ...or create a new one
+			if quantity > 0:
 				serializer = self.get_serializer(data={
-					'order': request.data['order'],
-					'item': request.data['item'],
-					'quantity': request.data['quantity'],
+					'order': order_pk,
+					'item': item_pk,
+					'quantity': quantity,
 				})
 			# If no quantity, then no OrderLine
 			else:
-				return Response(request.data, status=status.HTTP_204_NO_CONTENT)
+				return Response({}, status=status.HTTP_204_NO_CONTENT)
+
+		# Validate and create OrderLineSerializer
 		serializer.is_valid(raise_exception=True)
 		self.perform_create(serializer)
 
@@ -358,7 +370,7 @@ class OrderLineFieldViewSet(ModelViewSet):
 @api_view(['GET'])
 @authentication_classes([OAuthAuthentication])
 @permission_classes([IsOrderOwnerOrAdmin])
-def generate_pdf(request, pk:int, **kwargs):
+def generate_pdf(request, pk: int, **kwargs):
 	# Get order
 	try:
 		order = Order.objects.all() \
@@ -366,10 +378,12 @@ def generate_pdf(request, pk:int, **kwargs):
 						'orderlines__orderlineitems__orderlinefields', 'orderlines__orderlineitems__orderlinefields__field') \
 					.get(pk=pk)
 	except Order.DoesNotExist as e:
-		return errorResponse('La commande est introuvable', [], httpStatus=status.HTTP_404_NOT_FOUND)
+		return ErrorResponse("La commande est introuvable", status=status.HTTP_404_NOT_FOUND)
 
 	if order.status not in OrderStatus.VALIDATED_LIST.value:
-		return errorResponse("La commande n'est pas valide", [], httpStatus=status.HTTP_400_BAD_REQUEST)
+		return ErrorResponse("La commande n'est pas valide",
+		                     [f"Status: {order.get_status_display()}"],
+		                     status=status.HTTP_400_BAD_REQUEST)
 
 
 	# Process tickets
@@ -377,19 +391,25 @@ def generate_pdf(request, pk:int, **kwargs):
 	for orderline in order.orderlines.all():
 		for orderlineitem in orderline.orderlineitems.all():
 			# Process QRCode
+			# TODO Move to helpers
 			qr_buffer = BytesIO()
 			code = data_to_qrcode(orderlineitem.id)
 			code.save(qr_buffer)
 			qr_code = base64.b64encode(qr_buffer.getvalue()).decode("utf-8")
 
 			# Add Nom et Prénom to orderline
+			first_name = last_name = None
 			for orderlinefield in orderlineitem.orderlinefields.all():
 				if orderlinefield.field.name == 'Nom':
 					first_name = orderlinefield.value
-					continue
-				if orderlinefield.field.name == 'Prénom':
+				elif orderlinefield.field.name == 'Prénom':
 					last_name = orderlinefield.value
-			
+				
+			if first_name is None:
+				first_name = order.owner.first_name
+			if last_name is None:
+				last_name = order.owner.last_name
+
 			# Add a ticket with this data
 			tickets.append({
 				'nom': first_name,
@@ -400,7 +420,7 @@ def generate_pdf(request, pk:int, **kwargs):
 			})
 	data = {
 		'tickets': tickets,
-		'order': order
+		'order': order,
 	}
 
 	# Render template

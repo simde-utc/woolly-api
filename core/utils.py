@@ -1,21 +1,28 @@
+from rest_framework.renderers import BrowsableAPIRenderer as BaseAPIRenderer
+from django.conf import settings
+
 import os
 import qrcode
 from io import BytesIO
-
 from xhtml2pdf import pisa
-
-from woolly_api import settings
-from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import get_template
-from rest_framework.renderers import BrowsableAPIRenderer
 
-class BrowsableAPIRendererWithoutForms(BrowsableAPIRenderer):
-    """Renders the browsable api, but excludes the forms."""
-    def get_context(self, *args, **kwargs):
-        ctx = super().get_context(*args, **kwargs)
-        ctx['display_edit_forms'] = False
-        return ctx
+
+class BrowsableAPIRenderer(BaseAPIRenderer):
+	"""
+	Renders the Browsable API with or without forms
+	"""
+	def get_rendered_html_form(self, *args, **kwargs):
+		if settings.BROWSABLE_API_WITH_FORMS:
+			return super().get_rendered_html_form(*args, **kwargs)
+		else:
+			return None
+
+	def get_context(self, *args, **kwargs):
+			ctx = super().get_context(*args, **kwargs)
+			ctx['display_edit_forms'] = settings.BROWSABLE_API_WITH_FORMS
+			return ctx
 
 
 # ===============================================================================

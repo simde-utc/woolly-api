@@ -93,7 +93,7 @@ ENV/
 
 #Confidential identification informations for foreign APIs
 settings_confidential.py
-db.*
+db*
 
 # Static files
-/static
+static/

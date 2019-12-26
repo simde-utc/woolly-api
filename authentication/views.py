@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import redirect
-from core.viewsets import ModelViewSet
+from core.viewsets import ModelViewSet, ApiModelViewSet
 
 from rest_framework.permissions import AllowAny
 from .permissions import *
@@ -12,18 +12,10 @@ from .models import UserType, User
 from .oauth import OAuthAPI, OAuthError
 
 
-class UserViewSet(ModelViewSet):
+class UserViewSet(ApiModelViewSet):
 	queryset = User.objects.all()
 	serializer_class = UserSerializer
 	permission_classes = (IsUserOrAdmin,)
-
-	# Block create and redirect to login
-	def create(self, request, *args, **kwargs):
-		return redirect('login')
-
-	# TODO : block self is_admin -> True
-	# def update(self, request, *args, **kwargs):
-		# pass
 
 class UserTypeViewSet(ModelViewSet):
 	queryset = UserType.objects.all()
@@ -73,10 +65,10 @@ class AuthView:
 		else:
 			include_query = request.GET.get('include')
 			include_map = ModelViewSet.get_include_map(include_query)
-			user = UserSerializer(me, context={ 'include_map': include_map}).data
+			user = UserSerializer(me, context={ 'include_map': include_map }).data
 		return Response({
 			'authenticated': me.is_authenticated,
-			'user': user
+			'user': user,
 		})
 
 	@classmethod

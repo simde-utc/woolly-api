@@ -1,12 +1,11 @@
 from rest_framework.urlpatterns import format_suffix_patterns
 from django.urls import path
 
-from core.helpers import merge_sets, gen_url_set
+from core.routing import merge_sets, gen_url_set
 from authentication.views import *
 from .views import *
 
 urlpatterns = merge_sets(
-	
 	# Association
 	gen_url_set(AssociationViewSet),
 	gen_url_set([AssociationViewSet, SaleViewSet]),

@@ -2,7 +2,7 @@ from rest_framework.urlpatterns import format_suffix_patterns
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import re_path, path, include
 
-from core.helpers import gen_url_set, merge_sets
+from core.routing import gen_url_set, merge_sets
 from .views import *
 from sales.views import *
 

@@ -1,19 +1,12 @@
 from sales.models import *
 import pandas as pd
 from payment.services.payutc import Payutc
-from woolly_api.settings import BASE_DIR, PAYUTC_KEY
+from woolly_api.settings import EXPORTS_DIR, PAYUTC_KEY, MAX_ONGOING_TIME, MAX_PAYMENT_TIME
 from payment.views import updateOrderStatus, createOrderLineItemsAndFields
 from os import path
 from tqdm.auto import tqdm
 from django.utils import timezone
 from django.db.models import Count
-
-BASE_EXPORTS = path.join(BASE_DIR, 'exports')
-
-# TODO mettre dans config
-from datetime import timedelta
-MAX_ONGOING_TIME = timedelta(minutes=15)
-MAX_PAYMENT_TIME = timedelta(hours=1)
 
 
 def full_process(sale_pk: int=None, backup_after: bool=False):
@@ -27,7 +20,7 @@ def full_process(sale_pk: int=None, backup_after: bool=False):
 def _export_name(prefix: str, sale_pk: int=None):
 	dt = str(timezone.now())[:19].replace(':', '-')
 	_id = ('all' if sale_pk is None else sale_pk)
-	return path.join(BASE_EXPORTS, "{}_{}_{}.xlsx".format(prefix, _id, dt))
+	return path.join(EXPORTS_DIR, "{}_{}_{}.xlsx".format(prefix, _id, dt))
 
 def dump_cat_excel(sale_pk: int=None):
 	orders = Order.objects.prefetch_related('owner', 'orderlines', 'orderlines__orderlineitems',
@@ -116,7 +109,7 @@ def update_orders(sale_pk: int=None):
 				order.save()
 				message = "Outdated"
 
-		elif order.status == OrderStatus.NOT_PAID.value: 								# TODO AWAITING_PAYMENT
+		elif order.status == OrderStatus.AWAITING_PAYMENT.value:
 			transaction = payutc.getTransactionInfo({ 'tra_id': order.tra_id, 'fun_id': order.sale.association.fun_id })
 			if 'error' in transaction:
 				message = "Payutc Error: " + transaction['error']['message']

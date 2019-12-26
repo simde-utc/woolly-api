@@ -1,6 +1,9 @@
+from rest_framework.response import Response
 from rest_framework import viewsets
+from django.core.cache import cache
+from core.models import gen_model_key
 
-class ModelViewSet(viewsets.ModelViewSet):
+class ModelViewSetMixin(object):
 	"""
 	Supercharged DRF ModelViewSet
 	- Automatic sub urls filterings (ex: assos/1/sales)
@@ -12,8 +15,16 @@ class ModelViewSet(viewsets.ModelViewSet):
 	- Security checks
 	"""
 
+	def query_params_is_true(self, key: str) -> bool:
+		"""
+		Whether the request as the specified params and it is not false
+		"""
+		return key in self.request.GET and self.request.GET.get(key, '').lower() != 'false'
+
 	def get_queryset(self):
-		"""Override from GenericAPIView"""
+		"""
+		Override from GenericAPIView
+		"""
 		queryset = super().get_queryset()
 
 		# Prefetch included sub models
@@ -43,10 +54,9 @@ class ModelViewSet(viewsets.ModelViewSet):
 	# def get_object(self):
 	# 	return super().get_object()
 
-
 	def get_serializer_context(self) -> dict:
 		"""
-		Pass the include_map to the 
+		Pass the include_map to the serializer
 		"""
 		include_query = self.request.GET.get('include')
 		return {
@@ -85,3 +95,51 @@ class ModelViewSet(viewsets.ModelViewSet):
 	# 	return super().handle_exception(exc)
 
 
+class ModelViewSet(ModelViewSetMixin, viewsets.ModelViewSet):
+	pass
+
+class ApiModelViewSet(ModelViewSetMixin, viewsets.ReadOnlyModelViewSet):
+	"""
+	Supercharged ReadOnlyModelViewSet linked to an external OAuth API
+	"""
+	_oauth_client = None
+
+	@property
+	def oauth_client(self):
+		if self._oauth_client is None:
+			from authentication.oauth import OAuthAPI
+			self._oauth_client = OAuthAPI(session=self.request.session)
+		return self._oauth_client
+
+	def list(self, request, *args, **kwargs):
+		"""
+		List and paginate ApiModel with additional data
+		"""
+		queryset = self.filter_queryset(self.get_queryset())
+		queryset = queryset.get_with_api_data(self.oauth_client, **kwargs)
+		page = self.paginate_queryset(queryset)
+		if page is not None:
+			serializer = self.get_serializer(page, many=True)
+			return self.get_paginated_response(serializer.data)
+
+		serializer = self.get_serializer(queryset, many=True)
+		return Response(serializer.data)
+
+	def retrieve(self, request, *args, **kwargs):
+		"""
+		Try to retrieve ApiModel from cache
+		else fetch it with additional data
+		"""
+		key = gen_model_key(self.queryset.model, **kwargs)
+		instance = cache.get(key, None)
+
+		if not (instance or instance.fetched_data):
+			instance = self.get_object()
+			instance.get_with_api_data(self.oauth_client)
+		else:
+			# Check permission manually if not going through get_object
+			self.check_object_permissions(self.request, instance)
+
+
+		serializer = self.get_serializer(instance)
+		return Response(serializer.data)
