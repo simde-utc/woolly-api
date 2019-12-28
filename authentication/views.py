@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import redirect
-from core.viewsets import ModelViewSet, ApiModelViewSet
+from core.viewsets import ModelViewSet, APIModelViewSet
 
 from rest_framework.permissions import AllowAny
 from .permissions import *
@@ -12,7 +12,7 @@ from .models import UserType, User
 from .oauth import OAuthAPI
 
 
-class UserViewSet(ApiModelViewSet):
+class UserViewSet(APIModelViewSet):
 	queryset = User.objects.all()
 	serializer_class = UserSerializer
 	permission_classes = (IsUserOrAdmin,)

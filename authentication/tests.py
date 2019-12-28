@@ -1,9 +1,9 @@
-from core.testcases import ApiModelViewSetTestCase, ModelViewSetTestCase, get_permissions_from_compact
+from core.testcases import APIModelViewSetTestCase, ModelViewSetTestCase, get_permissions_from_compact
 from rest_framework import status
 from .models import *
 
 
-class UserViewSetTestCase(ApiModelViewSetTestCase):
+class UserViewSetTestCase(APIModelViewSetTestCase):
 	model = User
 	permissions = get_permissions_from_compact({
 		'list':     '...a',    # Only admin can list

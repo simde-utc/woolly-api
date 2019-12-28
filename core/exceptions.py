@@ -26,7 +26,11 @@ class APIException(exceptions.APIException):
 			self.status_code = status_code
 
 	def get_full_details(self) -> dict:
+		"""
+		Return the full detailed error for the response
+		"""
 		return {
+			'error': type(self).__name__,
 			'message': self.message,
 			'code': self.code,
 			'details': self.details,
@@ -44,10 +48,10 @@ def exception_handler(error: Exception, context: dict):
 
 	# Unhandled error
 	if response is None:
-		print('ERROR', error) # TODO Better logging
+		print('UNHANDLED ERROR', error) # TODO Better logging
 		return None
 
-	if isinstance(type(error), APIException):
+	if isinstance(error, APIException):
 		response.data = error.get_full_details()
 
 	return response

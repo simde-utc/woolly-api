@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from django.http import HttpResponse
 
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from core.viewsets import ModelViewSet, ApiModelViewSet
+from core.viewsets import ModelViewSet, APIModelViewSet
 from core.permissions import *
 from sales.serializers import *
 from sales.permissions import *
@@ -22,7 +22,7 @@ import base64
 # 	Association
 # ============================================
 
-class AssociationViewSet(ApiModelViewSet):
+class AssociationViewSet(APIModelViewSet):
 	"""
 	Defines the behavior of the association view
 	"""
@@ -203,6 +203,10 @@ class OrderViewSet(ModelViewSet):
 			order.status = OrderStatus.CANCELLED.value
 			order.save()
 			return Response(None, status=status.HTTP_204_NO_CONTENT)
+		# elif order.status == OrderStatus.ONGOING.value:
+		# 	# TODO A tester
+		# 	order.delete()
+		# 	return Response(None, status=status.HTTP_204_NO_CONTENT)
 		else:
 			raise OrderValidationException("La commande n'est pas annulable.", 'uncancellable_order')
 

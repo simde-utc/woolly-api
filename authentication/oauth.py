@@ -9,7 +9,6 @@ from authlib.common.errors import AuthlibBaseError
 
 from woolly_api.settings import OAUTH as OAuthConfig
 from core.exceptions import APIException
-from core.models import gen_model_key
 from core.helpers import filter_dict_keys
 
 OAUTH_TOKEN_NAME = 'oauth_token'
@@ -35,7 +34,7 @@ class OAuthException(APIException):
 		if 'unauthenticated' in message.lower():
 			details = message
 			code = code or 'unauthenticated'
-			message = "Requête non authentifié" # TODO Better message
+			message = "Requête OAuth non authentifié" # TODO Better message
 
 		return cls(message, code, details)
 
@@ -193,8 +192,7 @@ class OAuthBackend(ModelBackend):
 
 	def get_user(self, user_id):
 		# Try to get full user from cache
-		key = gen_model_key(UserModel, pk=user_id)
-		cached_user = cache.get(key, None)
+		cached_user = UserModel.get_from_cache({ 'pk': user_id })
 		if cached_user is not None:
 			return cached_user
 

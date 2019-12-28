@@ -1,9 +1,9 @@
 from django.contrib.auth.models import AbstractBaseUser
 from core.exceptions import APIException
 from django.db import models
-from core.models import ApiModel
+from core.models import APIModel
+from woolly_api.settings import TEST_MODE
 import datetime
-
 
 class UserTypeValidationError(APIException):
 	"""
@@ -67,7 +67,7 @@ class UserType(models.Model):
 		"""
 		if not isinstance(user, User):
 			raise ValueError("Provided user must be an instance of authentication.User")
-		if not getattr(user, 'fetched_data', None):
+		if not TEST_MODE and not getattr(user, 'fetched_data', None):
 			raise ValueError("User full data must be fetched first")
 		try:
 			return eval(self.validation, {}, { 'user': user })
@@ -81,7 +81,7 @@ class UserType(models.Model):
 		verbose_name = "User Type"
 		ordering = ('id',)
 
-class User(AbstractBaseUser, ApiModel):
+class User(AbstractBaseUser, APIModel):
 	"""
 	Woolly User, directly linked to the Portail
 	"""

@@ -1,4 +1,4 @@
-from core.serializers import ApiModelSerializer, ModelSerializer
+from core.serializers import APIModelSerializer, ModelSerializer
 from rest_framework import serializers
 
 from authentication.models import User, UserType
@@ -12,7 +12,7 @@ class UserTypeSerializer(ModelSerializer):
 		model = UserType
 		fields = ('id', 'name')
 
-class UserSerializer(ApiModelSerializer):
+class UserSerializer(APIModelSerializer):
 
 	# usertype     = RelatedField(read_only=True, required=False)
 	# associations = RelatedField(queryset=AssociationMember.objects, many=True, required=False)

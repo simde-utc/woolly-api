@@ -1,6 +1,6 @@
 from authentication.serializers import UserSerializer, UserTypeSerializer
 from authentication.models import User, UserType
-from core.serializers import ModelSerializer, ApiModelSerializer
+from core.serializers import ModelSerializer, APIModelSerializer
 from rest_framework import serializers
 from .models import *
 
@@ -60,7 +60,7 @@ class SaleSerializer(ModelSerializer):
 # 	Associations
 # ============================================
 
-class AssociationSerializer(ApiModelSerializer):
+class AssociationSerializer(APIModelSerializer):
 	sales = RelatedField(queryset=Sale.objects.all(), many=True, required=False)
 	# members
 

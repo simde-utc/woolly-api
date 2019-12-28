@@ -1,22 +1,14 @@
 from django.db.utils import IntegrityError
 from django.db.models import QuerySet, Model
 from django.db.models.manager import BaseManager
+from typing import Union, Sequence, Set, Tuple
+
 from core.helpers import filter_dict_keys, iterable_to_map
+from woolly_api.settings import API_MODEL_CACHE_TIMEOUT
 from django.core.cache import cache
-from abc import abstractmethod
-from typing import Set, Tuple
 
-API_MODEL_CACHE_TIMEOUT = 3600
 
-def gen_model_key(model_class: str, *args, **kwargs) -> str:
-	"""
-	Generate a key for a model from a set of specifications
-	"""
-	name = model_class.__name__.lower()
-	spec = ','.join(f"{k}={v}" for k, v in kwargs.items())
-	return f"model-{name}-{spec or 'all'}"
-
-def fetch_data_from_api(model, oauth_client=None, **params):
+def fetch_data_from_api(model: 'Model', oauth_client: 'OAuthAPI'=None, **params):
 	"""
 	Fetched additional data from the OAuth API
 	"""
@@ -66,8 +58,7 @@ class ApiQuerySet(QuerySet):
 			single_result = True
 
 		# Try cache
-		key = gen_model_key(self.model, **params)
-		results = cache.get(key, None)
+		results = self.model.get_from_cache(params)
 		if results is not None:
 			return results
 
@@ -118,22 +109,21 @@ class ApiQuerySet(QuerySet):
 			assert len(results) == 1
 			results = results[0]
 		
-		cache.set(key, results, API_MODEL_CACHE_TIMEOUT)
+		self.model.save_to_cache(results, params)
 		return results
-
 
 class ApiManager(BaseManager.from_queryset(ApiQuerySet)):
 	pass
 
-class ApiModel(Model):
+class APIModel(Model):
 	"""
 	Model with additional data that can be fetched from the OAuth API
 	"""
 	objects = ApiManager()
 	fetched_data = None
-	fetch_api_data = classmethod(fetch_data_from_api)
+	CACHE_TIMEOUT = API_MODEL_CACHE_TIMEOUT
 
-	def __getattr__(self, attr):
+	def __getattr__(self, attr: str):
 		"""
 		Try getting data from fetched_data if possible to act as a model field
 		"""
@@ -147,6 +137,13 @@ class ApiModel(Model):
 			raise error
 
 	@classmethod
+	def field_names(cls) -> Tuple[str]:
+		"""
+		Get a list of the field names
+		"""
+		return tuple(field.name for field in cls._meta.fields)	
+
+	@classmethod
 	def get_api_endpoint(cls, params: dict) -> str:
 		raise NotImplementedError("get_api_endpoint must be implemented")
 
@@ -156,6 +153,52 @@ class ApiModel(Model):
 			return f"/[{','.join(str(_pk) for _pk in pk)}]"
 		else:
 			return f"/{pk}" if pk else ''
+
+	# ---------------------------------------------------------------------
+	# 		Cache system
+	# ---------------------------------------------------------------------
+
+	@classmethod
+	def _gen_key(cls, params: dict) -> str:
+		"""
+		Generate a key from a set of specifications
+		"""
+		name = cls.__name__.lower()
+		spec = ','.join(f"{k}={v}" for k, v in params.items())
+		return f"APIModel-{name}-{spec or 'all'}"
+
+	@classmethod
+	def get_from_cache(cls, params: dict) -> Union['APIModel', None]:
+		"""
+		Try getting model instance with fetched data from
+		# TODO Improve for multiple queries
+		"""
+		key = cls._gen_key(params)
+		return cache.get(key, None)
+
+	@classmethod
+	def save_to_cache(cls, data: Union[Sequence, 'APIModel'], params: dict):
+		"""
+		Save instances to cache
+		"""
+		key = cls._gen_key(params)
+		cache.set(key, data, cls.CACHE_TIMEOUT)
+
+		# TODO Improve for multiple queries
+		# if isinstance(data, cls):
+		# 	data = [ data ]
+		# 
+		# for instance in data:
+		# 	if not isinstance(instance, cls):
+		# 		raise ValueError(f"Mixing class when saving to cache between {type(instance)} and {cls}")
+		# 	key = cls._gen_key(params)
+		# 	cache.set(key, instance, cls.CACHE_TIMEOUT)
+
+	# ---------------------------------------------------------------------
+	# 		API Fetch and Sync methods
+	# ---------------------------------------------------------------------
+
+	fetch_api_data = classmethod(fetch_data_from_api)
 
 	def sync_data(self, data: dict=None, oauth_client=None, save: bool=True) -> Set[str]:
 		"""
@@ -186,8 +229,7 @@ class ApiModel(Model):
 		Get and sync additional data from OAuth API
 		"""
 		# Try cache
-		key = gen_model_key(type(self), pk=self.pk)
-		cached = cache.get(key, None)
+		cached = self.get_from_cache({ 'pk': self.pk })
 		if cached is not None:
 			return cached
 
@@ -199,17 +241,8 @@ class ApiModel(Model):
 		"""
 		Override to update cache on save
 		"""
-		result = super().save(*args, **kwargs)
-		key = gen_model_key(type(self), pk=self.pk)
-		cache.set(key, self, API_MODEL_CACHE_TIMEOUT)
-		return result
-
-	@classmethod
-	def field_names(cls) -> Tuple[str]:
-		"""
-		Get a list of the field names
-		"""
-		return tuple(field.name for field in cls._meta.fields)	
+		super().save(*args, **kwargs)
+		self.save_to_cache(self, { 'pk': self.pk })
 
 	class Meta:
 		abstract = True

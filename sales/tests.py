@@ -1,4 +1,4 @@
-from core.testcases import ApiModelViewSetTestCase, ModelViewSetTestCase, get_permissions_from_compact
+from core.testcases import APIModelViewSetTestCase, ModelViewSetTestCase, get_permissions_from_compact
 from rest_framework import status
 from sales.models import *
 
@@ -21,7 +21,7 @@ OrderOwnerOrAdmin = get_permissions_from_compact({
 })
 
 
-class AssociationViewSetTestCase(ApiModelViewSetTestCase):
+class AssociationViewSetTestCase(APIModelViewSetTestCase):
 	model = Association
 	permissions = ManagerOrReadOnly
 

@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework import viewsets
-from django.core.cache import cache
-from core.models import gen_model_key
+from authentication.oauth import OAuthAPI
+
 
 class ModelViewSetMixin(object):
 	"""
@@ -98,25 +98,24 @@ class ModelViewSetMixin(object):
 class ModelViewSet(ModelViewSetMixin, viewsets.ModelViewSet):
 	pass
 
-class ApiModelViewSet(ModelViewSetMixin, viewsets.ReadOnlyModelViewSet):
+class APIModelViewSet(ModelViewSetMixin, viewsets.ReadOnlyModelViewSet):
 	"""
 	Supercharged ReadOnlyModelViewSet linked to an external OAuth API
 	"""
-	_oauth_client = None
 
 	@property
-	def oauth_client(self):
-		if self._oauth_client is None:
-			from authentication.oauth import OAuthAPI
-			self._oauth_client = OAuthAPI(session=self.request.session)
-		return self._oauth_client
+	def oauth_client(self) -> OAuthAPI:
+		"""
+		Get OAuthClient from request's session
+		"""
+		return OAuthAPI(session=self.request.session)
 
 	def list(self, request, *args, **kwargs):
 		"""
-		List and paginate ApiModel with additional data
+		List and paginate APIModel with additional data
 		"""
 		queryset = self.filter_queryset(self.get_queryset())
-		queryset = queryset.get_with_api_data(self.oauth_client, **kwargs)
+		queryset = queryset.get_with_api_data(self.oauth_client, single_result=False, **kwargs)
 		page = self.paginate_queryset(queryset)
 		if page is not None:
 			serializer = self.get_serializer(page, many=True)
@@ -127,19 +126,17 @@ class ApiModelViewSet(ModelViewSetMixin, viewsets.ReadOnlyModelViewSet):
 
 	def retrieve(self, request, *args, **kwargs):
 		"""
-		Try to retrieve ApiModel from cache
+		Try to retrieve APIModel from cache
 		else fetch it with additional data
 		"""
-		key = gen_model_key(self.queryset.model, **kwargs)
-		instance = cache.get(key, None)
+		instance = self.queryset.model.get_from_cache(kwargs)
 
-		if not (instance or instance.fetched_data):
+		if not getattr(instance, 'fetched_data', None):
 			instance = self.get_object()
 			instance.get_with_api_data(self.oauth_client)
 		else:
 			# Check permission manually if not going through get_object
 			self.check_object_permissions(self.request, instance)
-
 
 		serializer = self.get_serializer(instance)
 		return Response(serializer.data)

@@ -69,7 +69,7 @@ class ModelSerializer(serializers.ModelSerializer):
 		# Return updated fields
 		return fields
 
-class ApiModelSerializer(ModelSerializer):
+class APIModelSerializer(ModelSerializer):
 	"""
 	ModelSerializer that can display additional data from APIModels
 	"""

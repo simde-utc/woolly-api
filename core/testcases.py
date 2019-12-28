@@ -283,9 +283,9 @@ class ModelViewSetTestCase(CRUDTestCaseMixin, metaclass=CRUDViewSetTestMeta):
 	"""
 	crud_actions = CRUD_ACTIONS
 
-class ApiModelViewSetTestCase(CRUDTestCaseMixin, metaclass=CRUDViewSetTestMeta):
+class APIModelViewSetTestCase(CRUDTestCaseMixin, metaclass=CRUDViewSetTestMeta):
 	"""
-	Implementation of CRUD TestCase for ApiModelViewSet
+	Implementation of CRUD TestCase for APIModelViewSet
 	"""
 	crud_actions = READ_ONLY_CRUD_ACTIONS
 

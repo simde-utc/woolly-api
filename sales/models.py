@@ -1,5 +1,5 @@
 from authentication.models import User, UserType
-from core.models import ApiModel
+from core.models import APIModel
 from django.db import models
 from enum import Enum
 import uuid
@@ -16,7 +16,7 @@ from django.utils import timezone
 # 	Association
 # ============================================
 
-class Association(ApiModel):
+class Association(APIModel):
 	"""
 	Defines an Association
 	"""
