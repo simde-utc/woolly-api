@@ -259,10 +259,10 @@ LOGGING = {
 	},
 	'handlers': {
 		'console': {
-			'level': 'WARNING',
+			'level': 'DEBUG',
 			'filters': ['require_debug_true'],
 			'class': 'logging.StreamHandler',
-			# 'formatter': 'simple',
+			'formatter': 'simple',
 		},
 		'file': {
 			'level': 'WARNING',
@@ -280,7 +280,7 @@ LOGGING = {
 			'level': 'WARNING',
 			'propagate': True,
 		},
-		'custom': {
+		'woolly': {
 			'handlers': ['console', 'file'],
 			'level': 'DEBUG',
 			'propagate': True,

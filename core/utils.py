@@ -8,6 +8,10 @@ from xhtml2pdf import pisa
 from django.http import HttpResponse
 from django.template.loader import get_template
 
+import logging
+
+logger = logging.getLogger(f"woolly.{__name__}")
+logger.debug("Logger enabled for DEBUG mode")
 
 class BrowsableAPIRenderer(BaseAPIRenderer):
 	"""
