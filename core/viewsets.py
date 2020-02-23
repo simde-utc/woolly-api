@@ -129,7 +129,7 @@ class APIModelViewSet(ModelViewSetMixin, viewsets.ReadOnlyModelViewSet):
 		Try to retrieve APIModel from cache
 		else fetch it with additional data
 		"""
-		instance = self.queryset.model.get_from_cache(kwargs)
+		instance = self.queryset.model.get_from_cache(kwargs, single_result=True)
 
 		if not getattr(instance, 'fetched_data', None):
 			instance = self.get_object()

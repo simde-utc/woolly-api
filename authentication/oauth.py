@@ -192,7 +192,7 @@ class OAuthBackend(ModelBackend):
 
 	def get_user(self, user_id):
 		# Try to get full user from cache
-		cached_user = UserModel.get_from_cache({ 'pk': user_id })
+		cached_user = UserModel.get_from_cache({ 'pk': user_id }, single_result=True)
 		if cached_user is not None:
 			return cached_user
 
