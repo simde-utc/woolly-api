@@ -92,6 +92,7 @@ class User(AbstractBaseUser, APIModel):
 
 	# Relations
 	types = None
+	assos = None
 
 	# Rights
 	is_admin = models.BooleanField(default=False)
@@ -166,6 +167,36 @@ class User(AbstractBaseUser, APIModel):
 			for usertype in usertypes
 		}
 
+	def sync_assos(self, assos: list=None, oauth_client=None):
+		# Fetch assos if needed
+		if assos is None:
+			user_uri = self.get_api_endpoint({ 'me': True, 'with_types': False })
+			assos = oauth_client.fetch_resource(f"{user_uri}/assos")
+
+		# Attach asso by id
+		# FIXME Set comprehension not working, invalid character in identifier
+		# self.assos = { asso['id'] for asso in assos }
+		self.assos = set(asso['id'] for asso in assos)
+
+	def get_with_api_data_and_assos(self, oauth_client=None, save: bool=True, try_cache: bool=True):
+		# Try to get at least fetched_data from cache
+		fetched_data = None
+		if try_cache:
+			cached = self.get_from_cache({ 'pk': self.pk }, single_result=True, need_full_data=True)
+			if cached is not None:
+				# Try to get fetched_data and assos from cache
+				if cached.assos is not None:
+					return cached
+				fetched_data = cached.fetched_data
+
+		# If fetched_data cannot be retrieved from cache, fetch it and save it if required
+		self.sync_data(fetched_data, oauth_client, save=(fetched_data is None and save))
+
+		# Sync assos
+		self.sync_assos(oauth_client=oauth_client)
+
+		return self
+
 	def is_type(self, usertype: UserType) -> bool:
 		"""
 		Check if user is of specified type
@@ -173,6 +204,11 @@ class User(AbstractBaseUser, APIModel):
 		if self.types is None:
 			self.sync_types()
 		return self.types.get(usertype, False)
+
+	def is_manager_of(asso: 'Association') -> bool:
+		if self.assos is None:
+			raise ValueError("Must fetch assos from API first")
+		return asso.id in self.assos
 
 	# required by Django.admin TODO
 	

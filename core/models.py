@@ -264,7 +264,7 @@ class APIModel(Model):
 
 		return updated_fields
 
-	def get_with_api_data(self, oauth_client=None, save: bool=True, try_cache: bool=False):
+	def get_with_api_data(self, oauth_client=None, save: bool=True, try_cache: bool=True):
 		"""
 		Get and sync additional data from OAuth API
 		"""
