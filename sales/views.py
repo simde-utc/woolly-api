@@ -51,6 +51,8 @@ class SaleViewSet(ModelViewSet):
 	serializer_class = SaleSerializer
 	permission_classes = (IsManagerOrReadOnly,)
 
+	# TODO Check for association in data or url for create/update
+
 	def get_queryset(self):
 		queryset = super().get_queryset()
 					# .filter(items__itemspecifications__user_type__name=self.request.user.usertype.name)

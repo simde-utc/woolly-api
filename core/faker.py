@@ -8,6 +8,7 @@ from sales.models import *
 
 Pk = Union[str, int, 'UUID']
 
+
 class FakeModelFactory:
 	"""
 	Factory that generates instances of specified models filled with fake values.
@@ -61,9 +62,6 @@ class FakeModelFactory:
 			NotImplementedError: in case the model is not implemented
 		"""
 
-		def cast_to_uuid(uuid: 'UUID') -> 'UUID':
-			return uuid
-
 		def get_related_model(key: str, model: Model) -> Union[Pk, Model]:
 			"""
 			Helper to get or create a related Model
@@ -84,7 +82,7 @@ class FakeModelFactory:
 
 		if model == User:
 			return {
-				'id':         kwargs.get('id',         self.faker.uuid4(cast_to=cast_to_uuid)),
+				'id':         kwargs.get('id',         self.faker.uuid4()),
 				'email':      kwargs.get('email',      self.faker.email()),
 				'first_name': kwargs.get('first_name', self.faker.first_name()),
 				'last_name':  kwargs.get('last_name',  self.faker.last_name()),
@@ -93,7 +91,7 @@ class FakeModelFactory:
 
 		if model == UserType:
 			return {
-				'id':   kwargs.get('id',   self.faker.uuid4(cast_to=str)[:25]),
+				'id':   kwargs.get('id',   self.faker.uuid4()[:25]),
 				'name': kwargs.get('name', self.faker.sentence(nb_words=4)),
 				'validation': kwargs.get('validation', 'False'),
 			}
@@ -104,7 +102,7 @@ class FakeModelFactory:
 
 		if model == Association:
 			return {
-				'id':        kwargs.get('id',      self.faker.uuid4(cast_to=cast_to_uuid)),
+				'id':        kwargs.get('id',      self.faker.uuid4()),
 				'shortname': kwargs.get('name',    self.faker.company()),
 				'fun_id':    kwargs.get('fun_id',  self.faker.random_digit()),
 			}
@@ -123,9 +121,6 @@ class FakeModelFactory:
 					self.faker.date_time_this_year(before_now=False, after_now=True)
 				)),
 				'max_item_quantity': kwargs.get('max_item_quantity', self.faker.random_number()),
-				'max_payment_date':  format_date(kwargs.get('max_payment_date',
-					self.faker.date_time_this_year(before_now=False, after_now=True)
-				)),
 			}
 
 		# ============================================
@@ -213,4 +208,3 @@ class FakeModelFactory:
 			}
 
 		raise NotImplementedError(f"The model {model} isn't fakable yet")
-

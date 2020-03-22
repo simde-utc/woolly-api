@@ -1,14 +1,11 @@
 from rest_framework.test import APITestCase, APITransactionTestCase
-from django.urls import reverse, exceptions
 from django.utils import timezone
-from rest_framework import status
 from django.db import transaction
 from django.test import tag
 from typing import Sequence
 
-from collections import Counter, namedtuple
+from collections import Counter
 from threading import Thread
-from math import ceil
 import random
 
 from core.testcases import get_api_client
@@ -34,7 +31,7 @@ def start_and_wait_jobs(jobs: Sequence[Thread]):
 
 @tag('validation')
 class OrderValidatorTestCase(APITestCase):
-	
+
 	modelFactory = FakeModelFactory()
 
 	def setUp(self):
@@ -55,7 +52,6 @@ class OrderValidatorTestCase(APITestCase):
 			begin_at  = self.datetimes['before'],
 			end_at    = self.datetimes['after'],
 			max_item_quantity = 400,
-			max_payment_date  = self.datetimes['after'],
 		)
 
 		self.users = [
@@ -152,13 +148,13 @@ class OrderValidatorTestCase(APITestCase):
 		"""
 		# Cannot pay before sale
 		self.sale.begin_at = self.datetimes['after']
-		self.sale.max_payment_date = self.datetimes['after']
+		self.sale.end_at = self.datetimes['after']
 		self.sale.save()
 		self._test_validation(False)
 
 		# Cannot pay after sale
 		self.sale.begin_at = self.datetimes['before']
-		self.sale.max_payment_date = self.datetimes['before']
+		self.sale.end_at = self.datetimes['before']
 		self.sale.save()
 		self._test_validation(False)
 

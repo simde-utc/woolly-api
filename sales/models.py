@@ -4,6 +4,7 @@ from django.db import models
 from enum import Enum
 import uuid
 
+from core.helpers import get_field_default_value
 from core.exceptions import APIException
 from rest_framework import status
 from woolly_api.settings import MAX_ONGOING_TIME, MAX_PAYMENT_TIME, MAX_VALIDATION_TIME
@@ -45,12 +46,12 @@ class Sale(models.Model):
 	# slug        = models.CharField(max_length=200, unique=True)
 	name        = models.CharField(max_length=200)
 	description = models.CharField(max_length=1000, blank=True)
-	association = models.ForeignKey(Association, on_delete=None, related_name='sales') #, editable=False)
+	association = models.ForeignKey(Association, on_delete=None, related_name='sales')  # editable=False)
 	# cgv = TODO
-	
+
 	# Visibility
 	is_active   = models.BooleanField(default=True)
-	public      = models.BooleanField(default=True)
+	public      = models.BooleanField(default=True)  # TODO is_public
 
 	# Timestamps
 	created_at  = models.DateTimeField(auto_now_add=True, editable=False)
@@ -58,13 +59,12 @@ class Sale(models.Model):
 	end_at      = models.DateTimeField()
 
 	max_item_quantity = models.PositiveIntegerField(blank=True, null=True)
-	max_payment_date  = models.DateTimeField() # TODO
 
 	# TODO v2
 	# paymentmethods = models.ManyToManyField(PaymentMethod)
 
 	def __str__(self) -> str:
-		return "%s par %s" % (self.name, self.association)
+		return f"{self.name} par {self.association}"
 
 	class Meta:
 		ordering = ('-created_at',)
@@ -78,7 +78,7 @@ class ItemGroup(models.Model):
 	Gathers items under a common group
 	for better display or management
 	"""
-	name 	 = models.CharField(max_length = 200)
+	name     = models.CharField(max_length=200)
 	quantity = models.PositiveIntegerField(blank=True, null=True)
 	max_per_user = models.PositiveIntegerField(blank=True, null=True)		# TODO V2 : moteur de contraintes
 	# sale 		 = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
@@ -111,8 +111,10 @@ class Item(models.Model):
 			return None
 		allOrders = self.sale.orders.filter(orderlines__item__pk=self.pk, status__in=OrderStatus.BOOKING_LIST.value) \
 						.prefetch_related('orderlines').all()
-		allItemsBought = sum(orderline.quantity for order in allOrders
-																						for orderline in order.orderlines.filter(item=self).all())
+		allItemsBought = sum(orderline.quantity
+		                     for order in allOrders
+		                     for orderline in order.orderlines.filter(item=self).all())
+
 		return self.quantity - allItemsBought
 
 	def __str__(self) -> str:
@@ -130,8 +132,7 @@ class OrderValidationException(APIException):
 	status_code = status.HTTP_406_NOT_ACCEPTABLE
 	default_detail = "La commande n'est pas valide"
 	default_code = 'invalid_order'
-	
-	
+
 
 class OrderStatus(Enum):
 	"""
@@ -185,8 +186,8 @@ class Order(models.Model):
 	Defines the Order object
 	This is the central model of all the project
 	"""
-	owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')#, editable=False)
-	sale  = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='orders')#, editable=False)
+	owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')  # editable=False)
+	sale  = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='orders')  # editable=False)
 
 	created_at = models.DateTimeField(auto_now_add=True, editable=False)
 	updated_at = models.DateTimeField(auto_now=True)
@@ -210,7 +211,7 @@ class Order(models.Model):
 			return False
 
 		delta = timezone.now() - self.created_at
-		return self.status == OrderStatus.ONGOING.value and	delta > MAX_ONGOING_TIME \
+		return self.status == OrderStatus.ONGOING.value and delta > MAX_ONGOING_TIME \
 		    or self.status == OrderStatus.AWAITING_PAYMENT.value and delta > MAX_PAYMENT_TIME \
 		    or self.status == OrderStatus.AWAITING_VALIDATION.value and delta > MAX_VALIDATION_TIME
 

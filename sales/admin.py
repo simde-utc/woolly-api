@@ -55,7 +55,7 @@ class SaleAdmin(admin.ModelAdmin):
 	fieldsets = (
 		(None, 			{ 'fields': ('name', 'description', 'association', 'max_item_quantity') }),
 		('Visibility', 	{ 'fields': ('is_active', 'public') }),
-		('Timing', 		{ 'fields': ('begin_at', 'end_at', 'max_payment_date') }),
+		('Timing', 		{ 'fields': ('begin_at', 'end_at') }),
 	)
 
 	search_fields = ('name', 'association')

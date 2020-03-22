@@ -40,7 +40,7 @@ class OrderValidator:
 				"La commande doit être vérifiée avant d'être validée",
 				'check_order_before_is_valid',
 				status_code=500)
-			
+
 		return len(self.errors) == 0
 
 	def get_errors(self) -> List[str]:
@@ -53,7 +53,6 @@ class OrderValidator:
 		self.errors.append(message)
 		if self.raise_on_error:
 			raise OrderValidationException(message, code)
-
 
 	# ===============================================
 	# 			Check functions
@@ -72,8 +71,6 @@ class OrderValidator:
 			self._add_error("La vente n'a pas encore commencé.")
 		if self.now > self.sale.end_at:
 			self._add_error("La vente est terminée.")
-		if self.now > self.sale.max_payment_date:
-			self._add_error("Le paiement n'est plus possible.")
 
 	def _check_order(self):
 		"""
@@ -114,7 +111,6 @@ class OrderValidator:
 							.prefetch_related('item', 'item__group')
 		# Orders that the user already booked
 		user_orderlines = sale_orderlines.filter(order__owner__pk=self.owner.pk)
-
 
 		# ======= Part II - Process quantities
 
@@ -158,7 +154,7 @@ class OrderValidator:
 			if is_quantity(item.quantity) and sale_qt.per_item.get(item, 0) + qt > item.quantity:
 				self._add_error(f"Il ne reste pas assez de {item.name}.")
 
-			# Check max_per_user per item 
+			# Check max_per_user per item
 			if is_quantity(item.max_per_user) and user_qt.per_item.get(item, 0) + qt > item.max_per_user:
 				self._add_error(f"Vous ne pouvez pas prendre plus de {item.max_per_user} {item.name} par utilisateur.")
 
@@ -171,4 +167,3 @@ class OrderValidator:
 			# Check max_per_user per group
 			if is_quantity(group.max_per_user) and user_qt.per_group.get(group, 0) + qt > group.max_per_user:
 				self._add_error(f"Vous ne pouvez pas prendre plus de {group.max_per_user} {group.name} par utilisateur.")
-

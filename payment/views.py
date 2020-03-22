@@ -1,9 +1,7 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from django.db import transaction
 
-from core.helpers import get_field_default_value
 from rest_framework import status
 from django.urls import reverse
 from threading import Lock
@@ -89,6 +87,7 @@ class PaymentView:
 		# Update order status
 		order = Order.objects.select_related('sale__association').get(pk=pk)
 		resp = order.update_status()
+		pay_service = get_pay_service(order, request)
 
 		# Return the response
 		if resp.pop('redirect_to_payment', False):

@@ -19,13 +19,11 @@ def check_manager(request, view) -> bool:
 	asso_id = None
 	if model == Sale:
 		asso_id = request.data.get('association')
-		# TODO Deal with /assos/azd/sale
+		# TODO Deal with /assos/azd/sale from request.path
 	elif model == Item:
-		# TODO
-		pass
+		pass  # TODO
 	elif model == ItemGroup:
-		# TODO
-		pass
+		pass  # TODO
 
 	if asso_id is None:
 		raise ValueError("Could not retrieve asso id")
