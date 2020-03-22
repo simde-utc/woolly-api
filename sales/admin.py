@@ -46,15 +46,15 @@ class SaleAdmin(admin.ModelAdmin):
 	def number_of_items(self, obj):
 		return obj._items_count
 
-	list_display = ('name', 'association', 'is_active', 'public', 'number_of_items', 'created_at', 'begin_at', 'end_at')
-	list_filter = ('is_active', 'public')
+	list_display = ('name', 'association', 'is_active', 'is_public', 'number_of_items', 'created_at', 'begin_at', 'end_at')
+	list_filter = ('is_active', 'is_public')
 	list_editable = tuple()
 
 	def get_readonly_fields(self, request, obj=None):
 		return adaptable_editability_fields(request, obj, ('association',))
 	fieldsets = (
 		(None, 			{ 'fields': ('name', 'description', 'association', 'max_item_quantity') }),
-		('Visibility', 	{ 'fields': ('is_active', 'public') }),
+		('Visibility', 	{ 'fields': ('is_active', 'is_public') }),
 		('Timing', 		{ 'fields': ('begin_at', 'end_at') }),
 	)
 

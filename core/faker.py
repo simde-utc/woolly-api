@@ -112,8 +112,8 @@ class FakeModelFactory:
 				'name':         kwargs.get('name',          self.faker.company()),
 				'description':  kwargs.get('description',   self.faker.paragraph()),
 				'association':  get_related_model('association', Association),
-				'is_active':    kwargs.get('is_active',     True),
-				'public':       kwargs.get('public',        True),
+				'is_active':    kwargs.get('is_active', True),
+				'is_public':    kwargs.get('is_public', True),
 				'begin_at':     format_date(kwargs.get('begin_at',
 					self.faker.date_time_this_year(before_now=True, after_now=False)
 				)),

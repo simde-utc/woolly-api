@@ -58,11 +58,11 @@ class SaleViewSet(ModelViewSet):
 					# .filter(items__itemspecifications__user_type__name=self.request.user.usertype.name)
 					# TODO filtrer par date ?
 
-		# queryset = queryset.filter(is_active=True, public=True)
+		# queryset = queryset.filter(is_active=True, is_public=True)
 		if not self.request.GET.get('include_inactive', False):
 			queryset = queryset.filter(is_active=True)
 		if 'pk' not in self.kwargs:
-			queryset = queryset.filter(public=True)
+			queryset = queryset.filter(is_public=True)
 
 		# TODO V2 : filtering
 		# filters = ('active', )

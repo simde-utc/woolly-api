@@ -26,6 +26,7 @@ def check_manager(request, view) -> bool:
 		pass  # TODO
 
 	if asso_id is None:
+		# TODO Return 400 BAD REQUEST
 		raise ValueError("Could not retrieve asso id")
 
 	oauth_client = OAuthAPI(session=request.session)
@@ -49,13 +50,7 @@ def object_check_manager(request, view, obj) -> bool:
 class IsManagerOrReadOnly(CustomPermission):
 	allow_read_only = True
 	permission_functions = (check_manager,)
-	object_permission_functions = (object_check_manager,)
-
-# Used for AssociationMember
-class IsManager(CustomPermission):
-	require_authentication = True
-	allow_admin = True
-	object_permission_functions = (object_check_manager,)
+	# object_permission_functions = (object_check_manager,)
 
 
 def check_order_ownership(request, view, obj):

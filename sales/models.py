@@ -51,7 +51,7 @@ class Sale(models.Model):
 
 	# Visibility
 	is_active   = models.BooleanField(default=True)
-	public      = models.BooleanField(default=True)  # TODO is_public
+	is_public   = models.BooleanField(default=True)
 
 	# Timestamps
 	created_at  = models.DateTimeField(auto_now_add=True, editable=False)
