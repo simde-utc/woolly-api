@@ -4,7 +4,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from django.contrib import auth as django_auth
 from django.core.cache import cache
 
-from authlib.client import OAuth2Session
+from authlib.integrations.requests_client import OAuth2Session
 from authlib.common.errors import AuthlibBaseError
 
 from woolly_api.settings import OAUTH as OAuthConfig
@@ -24,7 +24,7 @@ class OAuthException(APIException):
 	default_code = 'oauth_error'
 
 	@classmethod
-	def from_response(cls, response: 'Response', code: str=None) -> 'OAuthException':
+	def from_response(cls, response, code: str=None) -> 'OAuthException':
 		"""
 		Create a OAuthException from an OAuth response
 		"""
@@ -170,7 +170,7 @@ class OAuthAPI:
 			fields_data = filter_dict_keys(data, UserModel.field_names())
 			user = UserModel(**fields_data)
 			new_user = True
-		
+
 		# Update with fetched data and return
 		updated_fields = user.sync_data(data, save=False)
 		if updated_fields or new_user:

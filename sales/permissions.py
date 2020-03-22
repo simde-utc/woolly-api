@@ -1,16 +1,56 @@
 from core.permissions import CustomPermission
-from .models import *
+from authentication.oauth import OAuthAPI
+from .models import (
+	Association, Sale, Item, ItemGroup,
+	Order, OrderLine, OrderLineItem, OrderLineField
+)
 
 
+def check_manager(request, view) -> bool:
 
-def object_check_manager(request, view, obj):
-	user = request.user
-	# TODO
-	return user.is_authenticated and user.is_admin
+	model = view.queryset.model
+	if model not in (Sale, Item, ItemGroup):
+		raise NotImplementedError(f"Object {view.queryset.model} is not managed")
+
+	if not request.user.is_authenticated:
+		return False
+
+	# Get the related association
+	asso_id = None
+	if model == Sale:
+		asso_id = request.data.get('association')
+		# TODO Deal with /assos/azd/sale
+	elif model == Item:
+		# TODO
+		pass
+	elif model == ItemGroup:
+		# TODO
+		pass
+
+	if asso_id is None:
+		raise ValueError("Could not retrieve asso id")
+
+	oauth_client = OAuthAPI(session=request.session)
+
+	try:
+		asso = Association.objects.get(pk=asso_id)
+	except Association.DoesNotExists:
+		asso = Association.objects.get_with_api_data(oauth_client, pk=asso_id)
+
+	# Get user's associations and check if is manager
+	user = request.user.get_with_api_data_and_assos(oauth_client)
+	return user.is_manager_of(asso)
+
+def object_check_manager(request, view, obj) -> bool:
+	return True  # TODO Needed ??
+	# assert view.queryset.model in (Sale, Item, ItemGroup)
+	# # TODO
+	# return user.is_authenticated and user.is_admin
 
 # Used for Association, Sale, ItemGroup, Item, ItemField
 class IsManagerOrReadOnly(CustomPermission):
 	allow_read_only = True
+	permission_functions = (check_manager,)
 	object_permission_functions = (object_check_manager,)
 
 # Used for AssociationMember

@@ -46,13 +46,13 @@ class ApiQuerySet(QuerySet):
 			# Return empty list if no results
 			if not self:
 				return []
-	
+
 			# Add pk specifications if filtered, else fetch all
 			params['pk'] = tuple(self.values_list('pk', flat=True))
 
 		# Fetch data
 		return fetch_data_from_api(self.model, oauth_client, **params)
-		
+
 	def get_with_api_data(self, oauth_client=None, single_result: bool=False, try_cache: bool=True, **params):
 		"""
 		Execute query and add extra data from the API
@@ -118,7 +118,7 @@ class ApiQuerySet(QuerySet):
 		if single_result:
 			assert len(results) == 1
 			results = results[0]
-		
+
 		self.model.save_to_cache(results, params)
 		return results
 
@@ -141,11 +141,6 @@ class APIModel(Model):
 		"""
 		Try getting data from fetched_data if possible to act as a model field
 		"""
-		# try:
-		# 	# Try getting real attribute first
-		# 	return super().__getattr__(self, attr)
-		# except AttributeError as error:
-			# Then, search in fetched data
 		if self.fetched_data and attr in self.fetched_data:
 			return self.fetched_data[attr]
 		raise AttributeError(f"'{self.__class__.__name__}' has no attribute '{attr}'")
@@ -155,7 +150,7 @@ class APIModel(Model):
 		"""
 		Get a list of the field names
 		"""
-		return tuple(field.name for field in cls._meta.fields)	
+		return tuple(field.name for field in cls._meta.fields)
 
 	@classmethod
 	def get_api_endpoint(cls, params: dict) -> str:
@@ -232,7 +227,6 @@ class APIModel(Model):
 		if key in cache:
 			# TODO WIP REMOVE
 			return cache.get(key)
-
 
 	# ---------------------------------------------------------------------
 	# 		API Fetch and Sync methods

@@ -3,7 +3,7 @@ from core.exceptions import APIException
 from django.db import models
 from core.models import APIModel
 from woolly_api.settings import TEST_MODE
-import datetime
+
 
 class UserTypeValidationError(APIException):
 	"""
@@ -86,7 +86,7 @@ class User(AbstractBaseUser, APIModel):
 	Woolly User, directly linked to the Portail
 	"""
 	id = models.UUIDField(primary_key=True, editable=False)
-	email = models.EmailField(unique=True) # TODO
+	email = models.EmailField(unique=True)  # TODO
 	first_name = models.CharField(max_length=100)
 	last_name  = models.CharField(max_length=100)
 
@@ -101,7 +101,7 @@ class User(AbstractBaseUser, APIModel):
 	password = None
 
 	USERNAME_FIELD = 'id'
-	EMAIL_FIELD = 'email' # TODO ???
+	EMAIL_FIELD = 'email'  # TODO ???
 
 	def __str__(self) -> str:
 		return self.get_full_name()
@@ -176,7 +176,7 @@ class User(AbstractBaseUser, APIModel):
 		# Attach asso by id
 		# FIXME Set comprehension not working, invalid character in identifier
 		# self.assos = { asso['id'] for asso in assos }
-		self.assos = set(asso['id'] for asso in assos)
+		self.assos = set(str(asso['id']) for asso in assos)
 
 	def get_with_api_data_and_assos(self, oauth_client=None, save: bool=True, try_cache: bool=True):
 		# Try to get at least fetched_data from cache
@@ -205,13 +205,13 @@ class User(AbstractBaseUser, APIModel):
 			self.sync_types()
 		return self.types.get(usertype, False)
 
-	def is_manager_of(asso: 'Association') -> bool:
+	def is_manager_of(self, asso) -> bool:
 		if self.assos is None:
-			raise ValueError("Must fetch assos from API first")
-		return asso.id in self.assos
+			raise ValueError("Must fetch associations from API first")
+		return str(asso.id) in self.assos
 
 	# required by Django.admin TODO
-	
+
 	@property
 	def is_staff(self):
 		return self.is_admin
