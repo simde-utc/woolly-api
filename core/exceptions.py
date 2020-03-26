@@ -1,17 +1,18 @@
 from rest_framework import exceptions, status
-from typing import Sequence, Any
+from typing import Any
+
 
 class APIException(exceptions.APIException):
 	"""
 	Custom APIException for better uniformity
-	
+
 	Attributes:
-		status_code:    the status code of the response
-		default_detail: the default error message
-		default_code:   the default error code
 		message:        the error message explaining the error
 		code:           the short string code error
 		details:        possible serializabled details
+		status_code:    the status code of the response
+		default_detail: the default error message
+		default_code:   the default error code
 	"""
 	status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 	default_detail = "Une erreur interne est survenue, veuillez contactez un administrateur"
@@ -39,20 +40,20 @@ class APIException(exceptions.APIException):
 	def __str__(self) -> str:
 		return f"<{type(self).__name__} [{self.code}]>"
 
+
 def exception_handler(error: Exception, context: dict):
 	"""
 	Custom exception handler for more detailled errors
 	"""
-	from rest_framework.views import exception_handler as base_exception_handler 
+	from rest_framework.views import exception_handler as base_exception_handler
 	response = base_exception_handler(error, context)
 
 	# Unhandled error
 	if response is None:
-		print('UNHANDLED ERROR', error) # TODO Better logging
+		print('UNHANDLED ERROR', error)  # TODO Better logging
 		return None
 
 	if isinstance(error, APIException):
 		response.data = error.get_full_details()
 
 	return response
-
