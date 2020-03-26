@@ -1,8 +1,11 @@
-from django.contrib.auth.models import AbstractBaseUser
-from core.exceptions import APIException
 from django.db import models
+from django.contrib.auth.models import AbstractBaseUser
+
+from core.exceptions import APIException
 from core.models import APIModel
 from woolly_api.settings import TEST_MODE
+
+NAME_FIELD_MAXLEN = 100
 
 
 class UserTypeValidationError(APIException):
@@ -23,7 +26,7 @@ class UserTypeValidationError(APIException):
 class UserType(models.Model):
 	id = models.CharField(max_length=25, primary_key=True)
 	name = models.CharField(max_length=50)
-	validation = models.CharField(max_length=250)
+	validation = models.CharField(max_length=255)
 
 	@staticmethod
 	def init_defaults():
@@ -86,9 +89,9 @@ class User(AbstractBaseUser, APIModel):
 	Woolly User, directly linked to the Portail
 	"""
 	id = models.UUIDField(primary_key=True, editable=False)
-	email = models.EmailField(unique=True)  # TODO
-	first_name = models.CharField(max_length=100)
-	last_name  = models.CharField(max_length=100)
+	email = models.EmailField(unique=True)
+	first_name = models.CharField(max_length=NAME_FIELD_MAXLEN)
+	last_name  = models.CharField(max_length=NAME_FIELD_MAXLEN)
 
 	# Relations
 	types = None
@@ -134,7 +137,28 @@ class User(AbstractBaseUser, APIModel):
 		data['is_admin'] = data['types']['admin']
 		return data
 
-	def sync_data(self, *args, usertypes: 'UserTypes'=None, save: bool=True, **kwargs):
+	def get_with_api_data_and_assos(self, oauth_client=None, save: bool=True, try_cache: bool=True):
+		# Try to get at least fetched_data from cache
+		fetched_data = None
+		if try_cache:
+			cached = self.get_from_cache({ 'pk': self.pk }, single_result=True, need_full_data=True)
+			if cached is not None:
+				# Try to get fetched_data and assos from cache
+				if cached.assos is not None:
+					return cached
+				fetched_data = cached.fetched_data
+
+		# If fetched_data cannot be retrieved from cache, fetch it and save it if required
+		self.sync_data(fetched_data, oauth_client, save=(fetched_data is None and save))
+
+		# Sync assos
+		self.sync_assos(oauth_client=oauth_client)
+
+		return self
+
+	# Sync methods
+
+	def sync_data(self, *args, usertypes=None, save: bool=True, **kwargs):
 		"""
 		Synchronise data, keep manually-set admin and also types
 		"""
@@ -178,24 +202,7 @@ class User(AbstractBaseUser, APIModel):
 		# self.assos = { asso['id'] for asso in assos }
 		self.assos = set(str(asso['id']) for asso in assos)
 
-	def get_with_api_data_and_assos(self, oauth_client=None, save: bool=True, try_cache: bool=True):
-		# Try to get at least fetched_data from cache
-		fetched_data = None
-		if try_cache:
-			cached = self.get_from_cache({ 'pk': self.pk }, single_result=True, need_full_data=True)
-			if cached is not None:
-				# Try to get fetched_data and assos from cache
-				if cached.assos is not None:
-					return cached
-				fetched_data = cached.fetched_data
-
-		# If fetched_data cannot be retrieved from cache, fetch it and save it if required
-		self.sync_data(fetched_data, oauth_client, save=(fetched_data is None and save))
-
-		# Sync assos
-		self.sync_assos(oauth_client=oauth_client)
-
-		return self
+	# Control methods
 
 	def is_type(self, usertype: UserType) -> bool:
 		"""

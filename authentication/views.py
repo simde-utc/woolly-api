@@ -1,15 +1,12 @@
+from django.shortcuts import redirect
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status
-from django.shortcuts import redirect
+
 from core.viewsets import ModelViewSet, APIModelViewSet
-
-from rest_framework.permissions import AllowAny
-from .permissions import *
-
-from .serializers import UserSerializer, UserTypeSerializer
-from .models import UserType, User
-from .oauth import OAuthAPI
+from authentication.oauth import OAuthAPI
+from authentication.models import UserType, User
+from authentication.permissions import IsUserOrAdmin, IsAdminOrReadOnly
+from authentication.serializers import UserSerializer, UserTypeSerializer
 
 
 class UserViewSet(APIModelViewSet):
@@ -73,6 +70,7 @@ class AuthView:
 		redirection = request.GET.get('redirect', None)
 		url = cls.oauth.logout(request, redirection)
 		return redirect(url)
+
 
 # Set all method from AuthView as API View
 for key in ('login', 'login_callback', 'me', 'logout'):

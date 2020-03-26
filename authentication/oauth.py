@@ -1,42 +1,17 @@
+from authlib.common.errors import AuthlibBaseError
+from authlib.integrations.requests_client import OAuth2Session
+from django.core.cache import cache
+from django.contrib import auth as django_auth
 from django.contrib.auth.backends import ModelBackend
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.exceptions import AuthenticationFailed
-from django.contrib import auth as django_auth
-from django.core.cache import cache
-
-from authlib.integrations.requests_client import OAuth2Session
-from authlib.common.errors import AuthlibBaseError
 
 from woolly_api.settings import OAUTH as OAuthConfig
-from core.exceptions import APIException
 from core.helpers import filter_dict_keys
+from authentication.exceptions import OAuthException
 
 OAUTH_TOKEN_NAME = 'oauth_token'
 UserModel = django_auth.get_user_model()
-
-
-class OAuthException(APIException):
-	"""
-	Custom OAuth Error for better feedback
-	"""
-	status_code = 500
-	default_detail = "Une erreur est survenue avec l'authentification, veuillez contactez un administrateur"
-	default_code = 'oauth_error'
-
-	@classmethod
-	def from_response(cls, response, code: str=None) -> 'OAuthException':
-		"""
-		Create a OAuthException from an OAuth response
-		"""
-		message = response.json().get('message', 'Unknown error')
-		details = None
-
-		if 'unauthenticated' in message.lower():
-			details = message
-			code = code or 'unauthenticated'
-			message = "Requête OAuth non authentifié" # TODO Better message
-
-		return cls(message, code, details)
 
 
 def get_user_from_request(request):

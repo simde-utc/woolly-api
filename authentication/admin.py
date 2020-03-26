@@ -11,15 +11,15 @@ class UserAdmin(BaseUserAdmin):
 	list_editable = tuple()
 
 	fieldsets = (
-		(None, { 'fields': ('email', 'first_name', 'last_name') }),
+		(None,          { 'fields': ('email', 'first_name', 'last_name') }),
 		('Permissions', { 'fields': ('is_admin',) }),
 	)
 
 	add_fieldsets = (
 		(None, {
 			'classes': ('wide'),
-			'fields': ('email', 'first_name', 'last_name')}
-		 ),
+			'fields': ('email', 'first_name', 'last_name')
+		}),
 	)
 	search_fields = ('email', 'first_name', 'last_name')
 	ordering = ('last_name', 'first_name')

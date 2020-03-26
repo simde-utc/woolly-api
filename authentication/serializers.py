@@ -1,6 +1,6 @@
-from core.serializers import APIModelSerializer, ModelSerializer
 from rest_framework import serializers
 
+from core.serializers import APIModelSerializer, ModelSerializer
 from authentication.models import User, UserType
 from sales.models import Order
 
@@ -29,4 +29,3 @@ class UserSerializer(APIModelSerializer):
 		model = User
 		fields = '__all__'
 		# read_only_fields = tuple()
-

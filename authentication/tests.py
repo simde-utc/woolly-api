@@ -1,6 +1,5 @@
 from core.testcases import APIModelViewSetTestCase, ModelViewSetTestCase, get_permissions_from_compact
-from rest_framework import status
-from .models import *
+from authentication.models import User, UserType
 
 
 class UserViewSetTestCase(APIModelViewSetTestCase):
