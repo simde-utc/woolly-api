@@ -51,6 +51,7 @@ class IsManagerOrReadOnly(CustomPermission):
 	allow_read_only = True
 	permission_functions = (check_manager,)
 	# object_permission_functions = (object_check_manager,)
+	default_obj = True  # No additional check for object
 
 
 def check_order_ownership(request, view, obj):
