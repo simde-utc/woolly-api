@@ -1,8 +1,13 @@
+from rest_framework import serializers
+
+from core.serializers import ModelSerializer, APIModelSerializer
 from authentication.serializers import UserSerializer, UserTypeSerializer
 from authentication.models import User, UserType
-from core.serializers import ModelSerializer, APIModelSerializer
-from rest_framework import serializers
-from .models import *
+
+from sales.models import (
+	Association, Sale, ItemGroup, Item, Order,
+	OrderLine, OrderLineItem, Field, ItemField, OrderLineField
+)
 
 RelatedField = serializers.PrimaryKeyRelatedField
 
@@ -12,7 +17,13 @@ RelatedField = serializers.PrimaryKeyRelatedField
 # ============================================
 
 class ItemGroupSerializer(ModelSerializer):
+	sale  = RelatedField(queryset=Sale.objects.all())
 	items = RelatedField(queryset=Item.objects.all(), many=True, required=False)
+
+	included_serializers = {
+		'sale': 'sales.serializers.SaleSerializer',
+		'items': 'sales.serializers.ItemSerializer',
+	}
 
 	class Meta:
 		model = ItemGroup
@@ -23,7 +34,7 @@ class ItemSerializer(ModelSerializer):
 	group    = RelatedField(queryset=ItemGroup.objects.all())
 	usertype = RelatedField(queryset=UserType.objects.all())
 	fields   = RelatedField(queryset=Field.objects.all(), many=True, required=False)
-	
+
 	quantity_left = serializers.IntegerField(read_only=True)
 
 	included_serializers = {
@@ -37,18 +48,21 @@ class ItemSerializer(ModelSerializer):
 		model = Item
 		fields = '__all__'		# DEBUG
 		# fields = ('id', 'name', 'description', 'remaining_quantity',
-				  # 'initial_quantity','sale_id', 'itemspecifications')
+		#           'initial_quantity','sale_id', 'itemspecifications')
 
 
 class SaleSerializer(ModelSerializer):
+	id          = serializers.SlugField(max_length=50, min_length=6, allow_blank=False)
 	association = RelatedField(queryset=Association.objects.all(), required=True)
 	orders      = RelatedField(queryset=Order.objects.all(), many=True, required=False)
+	itemgroups  = RelatedField(queryset=ItemGroup.objects.all(), many=True, required=False)
 	items       = RelatedField(queryset=Item.objects.all(), many=True, required=False)
 
 	included_serializers = {
 		'association': 'sales.serializers.AssociationSerializer',
 		'orders': 'sales.serializers.OrderSerializer',
-		'items': ItemSerializer
+		'itemgroups': ItemGroupSerializer,
+		'items': ItemSerializer,
 	}
 
 	class Meta:
@@ -62,7 +76,6 @@ class SaleSerializer(ModelSerializer):
 
 class AssociationSerializer(APIModelSerializer):
 	sales = RelatedField(queryset=Sale.objects.all(), many=True, required=False)
-	# members
 
 	included_serializers = {
 		'sales': SaleSerializer
@@ -82,7 +95,7 @@ class OrderSerializer(ModelSerializer):
 	owner = RelatedField(queryset=User.objects.all(), required=False)
 	sale  = RelatedField(queryset=Sale.objects.all())
 	orderlines = RelatedField(queryset=OrderLine.objects.all(),
-														many=True, required=False, allow_null=True)
+	                          many=True, required=False, allow_null=True)
 
 	included_serializers = {
 		'owner': UserSerializer,
@@ -100,8 +113,7 @@ class OrderLineSerializer(ModelSerializer):
 	order = RelatedField(queryset=Order.objects.all())
 	item  = RelatedField(queryset=Item.objects.all())
 	orderlineitems = RelatedField(queryset=OrderLineItem.objects.all(),
-		many=True, required=False, allow_null=True
-	)
+	                              many=True, required=False, allow_null=True)
 
 	included_serializers = {
 		'item': ItemSerializer,
@@ -163,8 +175,8 @@ class OrderLineFieldSerializer(ModelSerializer):
 	field         = RelatedField(queryset=Field.objects.all())
 
 	# For easier access
-	name 	 = serializers.CharField(read_only=True, source='field.name')
-	type 	 = serializers.CharField(read_only=True, source='field.type')
+	name     = serializers.CharField(read_only=True, source='field.name')
+	type     = serializers.CharField(read_only=True, source='field.type')
 	editable = serializers.BooleanField(read_only=True, source='isEditable')
 
 	included_serializers = {

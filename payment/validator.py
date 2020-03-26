@@ -1,7 +1,10 @@
-from sales.models import OrderValidationException, Order, OrderLine, OrderStatus
-from django.utils import timezone
 from typing import List, Sequence
 from collections import namedtuple
+
+from django.utils import timezone
+
+from sales.exceptions import OrderValidationException
+from sales.models import Order, OrderLine, OrderStatus
 
 
 class OrderValidator:

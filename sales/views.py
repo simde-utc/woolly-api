@@ -1,21 +1,32 @@
-from django.views import View
+import base64
+from io import BytesIO
+
+from django.shortcuts import render
+from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.response import Response
-from django.http import HttpResponse
-
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from core.viewsets import ModelViewSet, APIModelViewSet
-from core.permissions import *
-from sales.serializers import *
-from sales.permissions import *
-from sales.models import *
-
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+
 from authentication.oauth import OAuthAuthentication
 from core.utils import render_to_pdf, data_to_qrcode
-from django.shortcuts import render
-from io import BytesIO
-import base64
+from core.viewsets import ModelViewSet, APIModelViewSet
+from core.permissions import IsAdminOrReadOnly
+from sales.permissions import (
+	IsManagerOrReadOnly, IsOrderOwnerOrAdmin,
+	IsOrderOwnerReadOnlyOrAdmin, IsOrderOwnerReadUpdateOrAdmin
+)
+from sales.exceptions import OrderValidationException
+from sales.models import (
+	Association, Sale, ItemGroup, Item,
+	OrderStatus, Order, OrderLine, OrderLineItem,
+	Field, ItemField, OrderLineField
+)
+from sales.serializers import (
+	AssociationSerializer, SaleSerializer, ItemGroupSerializer, ItemSerializer,
+	OrderSerializer, OrderLineSerializer, OrderLineItemSerializer,
+	FieldSerializer, ItemFieldSerializer, OrderLineFieldSerializer,
+)
 
 
 # ============================================
@@ -55,8 +66,8 @@ class SaleViewSet(ModelViewSet):
 
 	def get_queryset(self):
 		queryset = super().get_queryset()
-					# .filter(items__itemspecifications__user_type__name=self.request.user.usertype.name)
-					# TODO filtrer par date ?
+		# .filter(items__itemspecifications__user_type__name=self.request.user.usertype.name)
+		# TODO filtrer par date ?
 
 		# queryset = queryset.filter(is_active=True, is_public=True)
 		if not self.request.GET.get('include_inactive', False):
@@ -179,7 +190,7 @@ class OrderViewSet(ModelViewSet):
 
 			serializer = self.get_serializer(instance=order)
 			httpStatus = status.HTTP_200_OK
-		except Order.DoesNotExist as err:
+		except Order.DoesNotExist:
 			# Configure new Order
 			serializer = OrderSerializer(data={
 				'sale': sale_pk,

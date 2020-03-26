@@ -1,12 +1,13 @@
+from threading import Lock
+
+from django.urls import reverse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
 from rest_framework import status
-from django.urls import reverse
-from threading import Lock
 
-from sales.models import OrderValidationException, Order, OrderStatus
+from sales.exceptions import OrderValidationException
+from sales.models import Order, OrderStatus
 from payment.services.base import TransactionException
 from payment.validator import OrderValidator
 from payment.helpers import get_pay_service
