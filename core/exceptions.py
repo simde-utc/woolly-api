@@ -41,6 +41,12 @@ class APIException(exceptions.APIException):
 		return f"<{type(self).__name__} [{self.code}]>"
 
 
+class InvalidRequest(APIException):
+	status_code = status.HTTP_400_BAD_REQUEST
+	default_detail = "Votre requête n'est pas valide"
+	default_code = 'invalid_request'
+
+
 def exception_handler(error: Exception, context: dict):
 	"""
 	Custom exception handler for more detailled errors

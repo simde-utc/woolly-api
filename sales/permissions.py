@@ -1,3 +1,4 @@
+from core.exceptions import InvalidRequest
 from core.permissions import CustomPermission
 from authentication.oauth import OAuthAPI
 from .models import (
@@ -6,51 +7,73 @@ from .models import (
 )
 
 
+def get_url_param(request, view, name: str):
+	param_request = request.data.get(name)
+	if param_request:
+		return param_request
+	else:
+		raise InvalidRequest(f"Could not retrieve parameter '{name}' from request")
+
+	# TODO Needed ?
+	param_kwargs = view.kwargs.get(f"{name}_pk")
+
+	# Need one or the other or both equal
+	if param_request:
+		if param_kwargs:
+			if param_request != param_kwargs:
+				raise InvalidRequest(f"Got different parameter values for '{name}' from request")
+			return param_request
+	elif param_kwargs:
+		return param_kwargs
+
+	raise InvalidRequest(f"Could not retrieve parameter '{name}' from request")
+
+
 def check_manager(request, view) -> bool:
 
-	model = view.queryset.model
-	if model not in (Sale, Item, ItemGroup):
+	Model = view.queryset.model
+	if Model not in (Sale, Item, ItemGroup):
 		raise NotImplementedError(f"Object {view.queryset.model} is not managed")
 
 	if not request.user.is_authenticated:
 		return False
 
 	# Get the related association
-	asso_id = None
-	if model == Sale:
-		asso_id = request.data.get('association')
-		# TODO Deal with /assos/azd/sale from request.path
-	elif model == Item:
-		pass  # TODO
-	elif model == ItemGroup:
-		pass  # TODO
+	asso_id = sale_id = None
+	if Model == Sale:
+		if 'pk' not in view.kwargs:
+			asso_id = get_url_param(request, view, 'association')
+		else:
+			sale_id = view.kwargs['pk']
+	elif Model in { Item, ItemGroup }:
+		if 'pk' not in view.kwargs:
+			sale_id = get_url_param(request, view, 'sale')
+		else:
+			try:
+				sale_id = Model.objects.get(pk=view.kwargs['pk']).sale_id
+			except Model.DoesNotExist:
+				raise InvalidRequest(f"Could not retrieve related {Model.__name__}")
 
-	if asso_id is None:
-		# TODO Return 400 BAD REQUEST
-		raise ValueError("Could not retrieve asso id")
+	if sale_id:
+		try:
+			sale = Sale.objects.get(pk=sale_id)
+			asso_id = sale.association_id
+		except Sale.DoesNotExist:
+			raise InvalidRequest("Could not retrieve related Sale")
 
-	oauth_client = OAuthAPI(session=request.session)
-
-	try:
-		asso = Association.objects.get(pk=asso_id)
-	except Association.DoesNotExists:
-		asso = Association.objects.get_with_api_data(oauth_client, pk=asso_id)
+	if not Association.objects.filter(pk=asso_id).exists():
+		raise InvalidRequest(f"Could not retrieve association '{asso_id}'")
 
 	# Get user's associations and check if is manager
+	oauth_client = OAuthAPI(session=request.session)
 	user = request.user.get_with_api_data_and_assos(oauth_client)
-	return user.is_manager_of(asso)
+	return user.is_manager_of(asso_id)
 
-def object_check_manager(request, view, obj) -> bool:
-	return True  # TODO Needed ??
-	# assert view.queryset.model in (Sale, Item, ItemGroup)
-	# # TODO
-	# return user.is_authenticated and user.is_admin
 
 # Used for Association, Sale, ItemGroup, Item, ItemField
 class IsManagerOrReadOnly(CustomPermission):
 	allow_read_only = True
 	permission_functions = (check_manager,)
-	# object_permission_functions = (object_check_manager,)
 	default_obj = True  # No additional check for object
 
 
