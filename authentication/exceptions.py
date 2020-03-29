@@ -25,3 +25,18 @@ class OAuthException(APIException):
             message = "Requête OAuth non authentifié"  # TODO Better message
 
         return cls(message, code, details)
+
+
+class UserTypeValidationError(APIException):
+    """
+    UserType validation error
+    """
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    default_detail = "Une erreur est survenue lors de la vérification du type d'utilisateur," \
+                     " veuillez contactez un administrateur"
+    default_code = 'usertype_validation_error'
+
+    @classmethod
+    def from_usertype(cls, usertype):
+        return cls(f"Impossible de vérifier le type d'utilisateur {usertype},"
+                    " veuillez contactez un administrateur")

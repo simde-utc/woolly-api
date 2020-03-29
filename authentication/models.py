@@ -1,26 +1,11 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser
 
-from core.exceptions import APIException
-from core.models import APIModel
 from woolly_api.settings import TEST_MODE
+from core.models import APIModel
+from authentication.exceptions import UserTypeValidationError
 
 NAME_FIELD_MAXLEN = 100
-
-
-class UserTypeValidationError(APIException):
-	"""
-	UserType validation error
-	"""
-	status_code = 500
-	default_detail = "Une erreur est survenue lors de la vérification du type d'utilisateur," \
-	                 " veuillez contactez un administrateur"
-	default_code = 'usertype_validation_error'
-
-	@classmethod
-	def from_usertype(cls, usertype: 'UserType'):
-		return cls(f"Impossible de vérifier le type d'utilisateur {usertype},"
-		            " veuillez contactez un administrateur")
 
 
 class UserType(models.Model):
@@ -62,7 +47,9 @@ class UserType(models.Model):
 				created.append(pk)
 
 		if created:
-			print(f"Created {', '.join(created)}")
+			print(f"Created {', '.join(created)}.")
+		else:
+			print("No new usertype to create.")
 
 	def check_user(self, user: 'User') -> bool:
 		"""
@@ -212,10 +199,10 @@ class User(AbstractBaseUser, APIModel):
 			self.sync_types()
 		return self.types.get(usertype, False)
 
-	def is_manager_of(self, asso) -> bool:
+	def is_manager_of(self, asso_id: str) -> bool:
 		if self.assos is None:
 			raise ValueError("Must fetch associations from API first")
-		return str(asso.id) in self.assos
+		return str(asso_id) in self.assos
 
 	# required by Django.admin TODO
 
