@@ -48,13 +48,11 @@ class ModelSerializer(serializers.ModelSerializer):
 		# Update all included fields with included serializers
 		for key, sub_map in include_map.items():
 			if key not in fields:
-				raise KeyError("Key '{key}' is not a declared field of {base}"
-											 .format(key=key, base=self.__class__.__name__))
+				raise KeyError(f"Key '{key}' is not a declared field of {type(self).__name__}")
 
 			included_serializer = self.included_serializers.get(key)
 			if not included_serializer:
-				raise KeyError("Key '{key}' not attached in {base}.included_serializers"
-											 .format(key=key, base=self.__class__.__name__))
+				raise KeyError(f"Key '{key}' is not attached in {type(self).__name__}.included_serializers")
 
 			# Create and attach new serializer with right kwargs
 			field_kwargs = filter_dict_keys(fields[key]._kwargs, FIELD_KWARGS)
@@ -73,6 +71,7 @@ class APIModelSerializer(ModelSerializer):
 	"""
 	ModelSerializer that can display additional data from APIModels
 	"""
+	id = serializers.UUIDField(format='hex_verbose', read_only=True)
 
 	def to_representation(self, instance) -> dict:
 		data = super().to_representation(instance)

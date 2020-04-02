@@ -19,7 +19,8 @@ class ModelViewSetMixin(object):
 		"""
 		Whether the request as the specified params and it is not false
 		"""
-		return key in self.request.GET and self.request.GET.get(key, '').lower() != 'false'
+		value = self.request.GET.get(key)
+		return value is None or value.lower() != 'false'
 
 	def get_queryset(self):
 		"""

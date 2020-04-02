@@ -14,6 +14,7 @@ NAME_FIELD_MAXLEN = 150
 DESC_FIELD_MAXLEN = 512
 URL_FIELD_MAXLEN = 254
 
+
 # --------------------------------------------
 # 	Association
 # --------------------------------------------

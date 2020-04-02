@@ -241,11 +241,11 @@ LOGGING = {
 	'disable_existing_loggers': False,
 	'formatters': {
 		'verbose': {
-			'format': '[{asctime}] {levelname} in {filename}@{lineno} : {message}',
+			'format': '[{asctime}] {levelname} in {filename}@{lineno} - {message}',
 			'style': '{',
 		},
 		'simple': {
-			'format': '[{asctime}] {levelname} : {message}',
+			'format': '[{asctime}] {levelname} - {message}',
 			'style': '{',
 		},
 	},

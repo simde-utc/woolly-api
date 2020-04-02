@@ -204,14 +204,13 @@ class User(AbstractBaseUser, APIModel):
 			raise ValueError("Must fetch associations from API first")
 		return str(asso_id) in self.assos
 
-	# required by Django.admin TODO
-
 	@property
-	def is_staff(self):
+	def is_staff(self) -> bool:
+		"""Grant access to django admin site"""
 		return self.is_admin
 
 	def has_perm(self, perm, obj=None):
-		return True		# ???
+		return True		# TODO ???
 
 	def has_module_perms(self, app_label):
-		return True		# ???
+		return True		# TODO ???
