@@ -27,6 +27,11 @@ class OAuthException(APIException):
         return cls(message, code, details)
 
 
+class OAuthTokenException(OAuthException):
+
+    default_code = 'token_error'
+
+
 class UserTypeValidationError(APIException):
     """
     UserType validation error

@@ -8,9 +8,10 @@ from rest_framework.exceptions import AuthenticationFailed
 
 from woolly_api.settings import OAUTH as OAuthConfig
 from core.helpers import filter_dict_keys
-from authentication.exceptions import OAuthException
+from authentication.exceptions import OAuthException, OAuthTokenException
 
 OAUTH_TOKEN_NAME = 'oauth_token'
+
 UserModel = django_auth.get_user_model()
 
 
@@ -27,8 +28,13 @@ def get_user_from_request(request):
 			return user
 
 		# Add api data and return user
-		oauth_client = OAuthAPI(session=request.session)
-		return user.get_with_api_data(oauth_client)
+		try:
+			oauth_client = OAuthAPI(session=request.session)
+			return user.get_with_api_data(oauth_client)
+		except OAuthTokenException:
+			# Flush session
+			oauth_client.logout(request)
+			return None
 
 	# Get the user from the session
 	user_id = request.session.get('user_id')
@@ -40,6 +46,10 @@ def get_user_from_request(request):
 		return UserModel.objects.get_with_api_data(oauth_client, pk=user_id)
 	except UserModel.DoesNotExist:
 		raise AuthenticationFailed("user_id does not match a user")
+	except OAuthTokenException:
+		# Flush session
+		oauth_client.logout(request)
+		return None
 
 
 class OAuthAPI:
@@ -112,6 +122,7 @@ class OAuthAPI:
 		# 	self.client.revoke_token(url, token)
 
 		# Logout from Django
+		request.user = None
 		django_auth.logout(request)
 
 		# Redirect to logout
@@ -121,11 +132,16 @@ class OAuthAPI:
 		"""
 		Return data from the API if valid else raise an OAuthException
 		"""
-		resp = self.client.get(self.config['base_url'] + query)
+		try:
+			resp = self.client.get(self.config['base_url'] + query)
+		except AuthlibBaseError as error:
+			code = getattr(error, 'error', None)
+			raise OAuthTokenException(code=code) from error
+
 		if resp.status_code == 200:
 			return resp.json()
-		else:
-			raise OAuthException.from_response(resp)
+
+		raise OAuthException.from_response(resp)
 
 	def fetch_user(self, user_id: str=None) -> UserModel:
 		"""
