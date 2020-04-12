@@ -32,6 +32,8 @@ MAX_ONGOING_TIME = timedelta(minutes=15)
 MAX_PAYMENT_TIME = timedelta(hours=1)
 MAX_VALIDATION_TIME = timedelta(days=30)
 
+API_MODEL_CACHE_TIMEOUT = 3600
+
 
 # --------------------------------------------------------------------------
 # 		Services Configuration
@@ -90,10 +92,12 @@ CORS_ORIGIN_WHITELIST = confidentials.CORS_ORIGIN_WHITELIST
 # --------------------------------------------------------------------------
 
 BROWSABLE_API_WITH_FORMS = getattr(confidentials, 'BROWSABLE_API_WITH_FORMS', DEBUG)
+APPEND_SLASH = False
 REST_FRAMEWORK = {
 	'DEFAULT_AUTHENTICATION_CLASSES': (
 		'authentication.oauth.OAuthAuthentication',
 	),
+	'EXCEPTION_HANDLER': 'core.exceptions.exception_handler',
 
 	'PAGE_SIZE': 10,
 	'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
@@ -107,9 +111,6 @@ REST_FRAMEWORK = {
 		'rest_framework.renderers.JSONRenderer',
 		'core.utils.BrowsableAPIRenderer',
 	),
-	
-	# 'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
-
 	'TEST_REQUEST_RENDERER_CLASSES': (
 		'rest_framework.renderers.MultiPartRenderer',
 		'rest_framework.renderers.JSONRenderer',
@@ -178,10 +179,10 @@ AUTHENTICATION_BACKENDS = (
 
 # Password validation : https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
 AUTH_PASSWORD_VALIDATORS = [
-	{'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
-	{'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', },
-	{'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator', },
-	{'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
+	{ 'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
+	{ 'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', },
+	{ 'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator', },
+	{ 'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
 ]
 
 # Mails
@@ -240,11 +241,11 @@ LOGGING = {
 	'disable_existing_loggers': False,
 	'formatters': {
 		'verbose': {
-			'format': '[{asctime}] {levelname} in {filename}@{lineno} : {message}',
+			'format': '[{asctime}] {levelname} in {filename}@{lineno} - {message}',
 			'style': '{',
 		},
 		'simple': {
-			'format': '[{asctime}] {levelname} : {message}',
+			'format': '[{asctime}] {levelname} - {message}',
 			'style': '{',
 		},
 	},
@@ -258,10 +259,10 @@ LOGGING = {
 	},
 	'handlers': {
 		'console': {
-			'level': 'WARNING',
+			'level': 'DEBUG',
 			'filters': ['require_debug_true'],
 			'class': 'logging.StreamHandler',
-			# 'formatter': 'simple',
+			'formatter': 'simple',
 		},
 		'file': {
 			'level': 'WARNING',
@@ -279,7 +280,7 @@ LOGGING = {
 			'level': 'WARNING',
 			'propagate': True,
 		},
-		'custom': {
+		'woolly': {
 			'handlers': ['console', 'file'],
 			'level': 'DEBUG',
 			'propagate': True,

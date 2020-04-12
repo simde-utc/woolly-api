@@ -73,8 +73,9 @@ def build_nested_url(path, converters: Dict[str, str]={}) -> Tuple[str, str]:
 def filter_viewset_methods(route_type: str, viewset: ModelViewSetType) -> Dict[str, str]:
 	"""Helper to filter viewset methods for viewset.as_view usage"""
 	return {
-		method: action for method, action in VIEWSET_METHODS[route_type].items()
-		               if hasattr(viewset, action)
+		method: action
+		for method, action in VIEWSET_METHODS[route_type].items()
+		if hasattr(viewset, action)
 	}
 
 def gen_url_set(viewsets: Union[ModelViewSetType, Sequence[ModelViewSetType]],
@@ -89,7 +90,7 @@ def gen_url_set(viewsets: Union[ModelViewSetType, Sequence[ModelViewSetType]],
 	# Build url patterns
 	viewset = viewsets[-1] if isinstance(viewsets, (list, tuple)) else viewsets
 	list_params = {
-		'route': url.rsplit('/', 1)[0], 	# Remove last model_pk 
+		'route': url.rsplit('/', 1)[0],  # Remove last model_pk
 		'name': f"{name}-list",
 		'view': viewset.as_view(filter_viewset_methods('list', viewset)),
 		**path_options.get('list', path_options),

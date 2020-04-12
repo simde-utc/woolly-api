@@ -1,28 +1,39 @@
-from django.views import View
+import base64
+from io import BytesIO
+
+from django.shortcuts import render
+from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.response import Response
-from django.http import HttpResponse
-
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from core.viewsets import ModelViewSet, ApiModelViewSet
-from core.helpers import ErrorResponse
-from core.permissions import *
-from sales.serializers import *
-from sales.permissions import *
-from sales.models import OrderStatus
 
 from authentication.oauth import OAuthAuthentication
 from core.utils import render_to_pdf, data_to_qrcode
-from django.shortcuts import render
-from io import BytesIO
-import base64
+from core.viewsets import ModelViewSet, APIModelViewSet
+from core.permissions import IsAdminOrReadOnly
+from sales.permissions import (
+	IsManagerOrReadOnly, IsOrderOwnerOrAdmin,
+	IsOrderOwnerReadOnlyOrAdmin, IsOrderOwnerReadUpdateOrAdmin
+)
+from sales.exceptions import OrderValidationException
+from sales.models import (
+	Association, Sale, ItemGroup, Item,
+	OrderStatus, Order, OrderLine, OrderLineItem,
+	Field, ItemField, OrderLineField
+)
+from sales.serializers import (
+	AssociationSerializer, SaleSerializer, ItemGroupSerializer, ItemSerializer,
+	OrderSerializer, OrderLineSerializer, OrderLineItemSerializer,
+	FieldSerializer, ItemFieldSerializer, OrderLineFieldSerializer,
+)
 
 
 # ============================================
 # 	Association
 # ============================================
 
-class AssociationViewSet(ApiModelViewSet):
+class AssociationViewSet(APIModelViewSet):
 	"""
 	Defines the behavior of the association view
 	"""
@@ -35,9 +46,8 @@ class AssociationViewSet(ApiModelViewSet):
 		Override of core.viewsets.ModelViewSet for owner-user correspondance
 		"""
 		filters = super().get_sub_urls_filters(queryset)
-		# TODO
-		if 'user__pk' in filters:
-			filters['members__pk'] = filters.pop('user__pk')
+		# Remove user__pk because it is not used for model lookup
+		filters.pop('user__pk', None)
 		return filters
 
 # ============================================
@@ -52,16 +62,18 @@ class SaleViewSet(ModelViewSet):
 	serializer_class = SaleSerializer
 	permission_classes = (IsManagerOrReadOnly,)
 
+	# TODO Check for association in data or url for create/update
+
 	def get_queryset(self):
 		queryset = super().get_queryset()
-					# .filter(items__itemspecifications__user_type__name=self.request.user.usertype.name)
-					# TODO filtrer par date ?
+		# .filter(items__itemspecifications__user_type__name=self.request.user.usertype.name)
+		# TODO filtrer par date ?
 
-		# queryset = queryset.filter(is_active=True, public=True)
+		# queryset = queryset.filter(is_active=True, is_public=True)
 		if not self.request.GET.get('include_inactive', False):
 			queryset = queryset.filter(is_active=True)
 		if 'pk' not in self.kwargs:
-			queryset = queryset.filter(public=True)
+			queryset = queryset.filter(is_public=True)
 
 		# TODO V2 : filtering
 		# filters = ('active', )
@@ -178,7 +190,7 @@ class OrderViewSet(ModelViewSet):
 
 			serializer = self.get_serializer(instance=order)
 			httpStatus = status.HTTP_200_OK
-		except Order.DoesNotExist as err:
+		except Order.DoesNotExist:
 			# Configure new Order
 			serializer = OrderSerializer(data={
 				'sale': sale_pk,
@@ -204,9 +216,15 @@ class OrderViewSet(ModelViewSet):
 			order.status = OrderStatus.CANCELLED.value
 			order.save()
 			return Response(None, status=status.HTTP_204_NO_CONTENT)
+		# elif order.status == OrderStatus.ONGOING.value:
+		# 	# TODO A tester
+		# 	order.delete()
+		# 	return Response(None, status=status.HTTP_204_NO_CONTENT)
 		else:
-			msg = "La commande n'est pas annulable."
-			return ErrorResponse(msg, status=status.HTTP_406_NOT_ACCEPTABLE)
+			raise OrderValidationException(
+				f"La commande n'est pas annulable ({order.get_status_display()}).",
+				'uncancellable_order'
+			)
 
 class OrderLineViewSet(ModelViewSet):
 	"""
@@ -236,30 +254,26 @@ class OrderLineViewSet(ModelViewSet):
 		"""
 		# Retrieve Order or fail
 		order_pk = kwargs.get('order_pk', request.data.get('order'))
-		try:
-			order = Order.objects.get(pk=order_pk)
-		except Order.DoesNotExist as error:
-			return ErrorResponse("Impossible de trouver la commande.",
-			                     status=status.HTTP_404_NOT_FOUND)
+		order = Order.objects.get(pk=order_pk)
 
 		# Check Order owner
 		user = request.user
 		if not (user.is_authenticated and user.is_admin or str(order.owner.pk) == str(user.pk)):
-			return ErrorResponse("Vous n'avez pas la permission d'effectuer cette action.",
-			                     status=status.HTTP_403_FORBIDDEN)
+			raise PermissionDenied()
 
 		# Check if Order is open
 		if order.status != OrderStatus.ONGOING.value:
-			return ErrorResponse("La commande n'accepte plus de changement.",
-			                     status=status.HTTP_400_BAD_REQUEST)
+			raise OrderValidationException("La commande n'accepte plus de changement.", 'unchangable_order')
 
 		item_pk = request.data.get('item')
 		try:
 			quantity = int(request.data.get('quantity'))
 			assert quantity >= 0
 		except (ValueError, AssertionError) as error:
-			return ErrorResponse("La quantité d'article à acheter doit être positive ou nulle.",
-			                     status=status.HTTP_400_BAD_REQUEST)
+			raise OrderValidationException(
+				"La quantité d'article à acheter doit être positive ou nulle.",
+				'order_quantity_null',
+				status_code=status.HTTP_400_BAD_REQUEST) from error
 
 		# Try to retrieve a similar OrderLine...
 		# TODO ajout de la vérification de la limite de temps
@@ -372,18 +386,17 @@ class OrderLineFieldViewSet(ModelViewSet):
 @permission_classes([IsOrderOwnerOrAdmin])
 def generate_pdf(request, pk: int, **kwargs):
 	# Get order
-	try:
-		order = Order.objects.all() \
-					.prefetch_related('orderlines', 'orderlines__orderlineitems', 'orderlines__item',
-						'orderlines__orderlineitems__orderlinefields', 'orderlines__orderlineitems__orderlinefields__field') \
-					.get(pk=pk)
-	except Order.DoesNotExist as e:
-		return ErrorResponse("La commande est introuvable", status=status.HTTP_404_NOT_FOUND)
+	order = Order.objects.all().prefetch_related(
+					'orderlines', 'orderlines__orderlineitems', 'orderlines__item',
+					'orderlines__orderlineitems__orderlinefields',
+					'orderlines__orderlineitems__orderlinefields__field'
+				).get(pk=pk)
 
 	if order.status not in OrderStatus.VALIDATED_LIST.value:
-		return ErrorResponse("La commande n'est pas valide",
-		                     [f"Status: {order.get_status_display()}"],
-		                     status=status.HTTP_400_BAD_REQUEST)
+		raise OrderValidationException(
+			"La commande n'est pas valide", 'unvalid_order_tickets',
+			details=f"Status: {order.get_status_display()}",
+			status=status.HTTP_400_BAD_REQUEST)
 
 
 	# Process tickets

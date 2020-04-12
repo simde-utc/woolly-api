@@ -1,6 +1,6 @@
 from .base import AbstractPaymentService, TransactionException
-from core.exceptions import TransactionException
 from sales.models import Order, OrderStatus
+from rest_framework import status
 from typing import Sequence
 import requests
 import json
@@ -15,31 +15,29 @@ PAYUTC_TO_ORDER_STATUS = {
 
 class PayutcException(TransactionException):
 	"""
-	Payutc specific exception
-	
-	Extends:
-		TransactionException
+	PayUTC transaction service specific exception
 	"""
-
+	
 	@classmethod
-	def from_response(cls, resp: dict):
+	def from_response(cls, response: dict) -> 'PayutcException':
 		"""
-		Create an exception from an API response
+		Create an PayutcException from an API response
 		"""
-		if 'error' not in resp:
-			return cls("Erreur inconnue")
+		if 'error' not in response:
+			return cls("Erreur inconnue", 'unknown_payutc_error')
 
-		# Build error
-		error = resp['error']
-		message = error.get('message', "Erreur inconnue")
-		detail = [ f"{k}: {m}" for k, m in error.get('data', {}).items() ]
-		return cls(message, detail)
+		message = error.get('message', "Une erreur inconnue est survenue avec PayUTC")
+		code = response['error']
+		details = [ f"{k}: {m}" for k, m in error.get('data', {}).items() ]
+
+		return cls(message, code, details)
+
 
 class Payutc(AbstractPaymentService):
 
 	def __init__(self, params: dict):
 		if 'app_key' not in params:
-			raise PayutcException("Payutc service need an app_key")
+			raise PayutcException("Le service PayUTC a besoin d'une app_key", 'no_app_key_provided')
 
 		self.config = {
 			'url': 'https://api.nemopay.net',
@@ -72,8 +70,11 @@ class Payutc(AbstractPaymentService):
 		if self.config['sessionID'] is not None:
 				url += f"&sessionid={self.config['sessionID']}"
 
-		response = requests.post(url, json=data, headers={ 'Content-Type': 'application/json' })
-		return json.loads(response.text)
+		try:
+			response = requests.post(url, json=data, headers={ 'Content-Type': 'application/json' })
+			return response.json()
+		except Exception as error:
+			raise PayutcException("Error lors de la requête de transaction", 'payutc_request') from error
 
 	def _create_transaction(self, params: dict) -> dict:
 		"""
@@ -82,14 +83,14 @@ class Payutc(AbstractPaymentService):
 		keys = ('items', 'mail', 'return_url', 'fun_id', 'callback_url')
 		data = self._filter_params(params, keys)
 		data['fun_id'] = str(data['fun_id'])
-		return self._call("WEBSALE", "createTransaction", data)
+		return self._call('WEBSALE', 'createTransaction', data)
 
 	def _get_transaction(self, params: dict) -> dict:
 		"""
 		API call to create a transaction
 		"""
 		data = self._filter_params(params, ('tra_id', 'fun_id'))
-		return self._call("WEBSALE", "getTransactionInfo", data)
+		return self._call('WEBSALE', 'getTransactionInfo', data)
 
 	# ============================================
 	# 	Transactions
@@ -127,13 +128,19 @@ class Payutc(AbstractPaymentService):
 		try:
 			return PAYUTC_TO_ORDER_STATUS.get(trans['status'], None)
 		except KeyError as error:
-			raise TransactionException("Le statut de la transaction est inconnue",
-			                           [f"Status: {trans['status']}"])
+			raise PayutcException(
+				"Le statut de la transaction est inconnue",
+				"unknown_transaction_status",
+				details=f"Status: {trans['status']}")
 
 	def get_redirection_to_payment(self, order: Order) -> str:
 		"""
 		Get the redirection url to the order payment
 		"""
 		if not order.tra_id:
-			raise PayutcException("Order has not transaction id registered")
+			raise PayutcException(
+				"La commande n'a pas de transaction enregistrée",
+				'order_has_no_transaction',
+				status_code=status.HTTP_400_BAD_REQUEST)
+
 		return PAYUTC_TRANSACTION_BASE_URL + str(order.tra_id)

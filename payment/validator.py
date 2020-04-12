@@ -1,10 +1,11 @@
-from sales.models import Order, OrderLine, OrderStatus
-from django.utils import timezone
 from typing import List, Sequence
 from collections import namedtuple
 
-class OrderValidationException(Exception):
-	pass
+from django.utils import timezone
+
+from sales.exceptions import OrderValidationException
+from sales.models import Order, OrderLine, OrderStatus
+
 
 class OrderValidator:
 	"""
@@ -16,8 +17,9 @@ class OrderValidator:
 		# self.order = Order.objects.select_related('sale', 'owner') \
 		# 					.prefetch_related('orderlines', 'orderlines__item', 'sale__items', 'owner__orders') \
 		# 					.get(pk=order.pk)
+		# TODO Check if oauth not needed or find oauth in cache
 		self.order = order
-		self.user = self.order.owner
+		self.owner = self.order.owner.get_with_api_data()
 		self.sale = self.order.sale
 
 		self.raise_on_error = raise_on_error
@@ -37,20 +39,23 @@ class OrderValidator:
 	@property
 	def is_valid(self) -> bool:
 		if not self.checked:
-			raise OrderValidationException("Must launch the validation process before")
+			raise OrderValidationException(
+				"La commande doit être vérifiée avant d'être validée",
+				'check_order_before_is_valid',
+				status_code=500)
+
 		return len(self.errors) == 0
 
 	def get_errors(self) -> List[str]:
 		return self.errors
 
-	def _add_error(self, error: str):
+	def _add_error(self, message: str, code: str=None):
 		"""
 		Raise or add a new error
 		"""
-		self.errors.append(error)
+		self.errors.append(message)
 		if self.raise_on_error:
-			raise OrderValidationException(error)
-
+			raise OrderValidationException(message, code)
 
 	# ===============================================
 	# 			Check functions
@@ -69,8 +74,6 @@ class OrderValidator:
 			self._add_error("La vente n'a pas encore commencé.")
 		if self.now > self.sale.end_at:
 			self._add_error("La vente est terminée.")
-		if self.now > self.sale.max_payment_date:
-			self._add_error("Le paiement n'est plus possible.")
 
 	def _check_order(self):
 		"""
@@ -82,14 +85,17 @@ class OrderValidator:
 
 		# TODO Check if expired
 
-		# Check if no previous ongoing order
-		user_prev_ongoing_orders = self.user.orders.filter(status=OrderStatus.ONGOING.value).exclude(pk=self.order.pk)
-		if len(user_prev_ongoing_orders) > 0:
+		# Check if no previous ongoing order on the same sale
+		user_prev_ongoing_orders = self.owner.orders.filter(
+			status=OrderStatus.ONGOING.value,
+			sale=self.sale.pk
+		).exclude(pk=self.order.pk)
+		if user_prev_ongoing_orders:
 			self._add_error("Vous avez déjà une commande en cours pour cette vente.")
 
 		# Check if user can buy items
 		for orderline in self.order.orderlines.prefetch_related('item', 'item__usertype').all():
-			if not orderline.item.usertype.check_user(self.order.owner):
+			if not orderline.item.usertype.check_user(self.owner):
 				self._add_error(f"L'article {orderline.item.name} est réservé à {orderline.item.usertype.name}")
 
 	def _check_quantities(self):
@@ -107,8 +113,7 @@ class OrderValidator:
 							.exclude(order__pk=self.order.pk) \
 							.prefetch_related('item', 'item__group')
 		# Orders that the user already booked
-		user_orderlines = sale_orderlines.filter(order__owner__pk=self.user.pk)
-
+		user_orderlines = sale_orderlines.filter(order__owner__pk=self.owner.pk)
 
 		# ======= Part II - Process quantities
 
@@ -152,7 +157,7 @@ class OrderValidator:
 			if is_quantity(item.quantity) and sale_qt.per_item.get(item, 0) + qt > item.quantity:
 				self._add_error(f"Il ne reste pas assez de {item.name}.")
 
-			# Check max_per_user per item 
+			# Check max_per_user per item
 			if is_quantity(item.max_per_user) and user_qt.per_item.get(item, 0) + qt > item.max_per_user:
 				self._add_error(f"Vous ne pouvez pas prendre plus de {item.max_per_user} {item.name} par utilisateur.")
 
@@ -165,4 +170,3 @@ class OrderValidator:
 			# Check max_per_user per group
 			if is_quantity(group.max_per_user) and user_qt.per_group.get(group, 0) + qt > group.max_per_user:
 				self._add_error(f"Vous ne pouvez pas prendre plus de {group.max_per_user} {group.name} par utilisateur.")
-

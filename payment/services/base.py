@@ -1,15 +1,15 @@
 from abc import ABC, abstractmethod
 from sales.models import Order, OrderStatus
+from core.exceptions import APIException
 
-
-class TransactionException(Exception):
+class TransactionException(APIException):
 	"""
 	Exception that is raised during payment transactions
 	"""
+	status_code = 500
+	default_detail = "Une erreur est survenue au cours de la transaction, veuillez contactez un administrateur"
+	default_code = 'unknown_transaction_error'
 
-	def __init__(self, message, detail=None):
-		super().__init__(message)
-		self.detail = detail
 
 class AbstractPaymentService(ABC):
 	"""

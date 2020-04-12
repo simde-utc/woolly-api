@@ -1,25 +1,22 @@
 from django.db.utils import IntegrityError
 from django.db.models import QuerySet, Model
 from django.db.models.manager import BaseManager
+from typing import Union, Sequence, Set, Tuple
+
 from core.helpers import filter_dict_keys, iterable_to_map
+from woolly_api.settings import API_MODEL_CACHE_TIMEOUT
 from django.core.cache import cache
-from abc import abstractmethod
-from typing import Set, Tuple
+import logging
 
-API_MODEL_CACHE_TIMEOUT = 3600
+logger = logging.getLogger(f"woolly.{__name__}")
 
-def gen_model_key(model_class: str, *args, **kwargs) -> str:
-	"""
-	Generate a key for a model from a set of specifications
-	"""
-	name = model_class.__name__.lower()
-	spec = ','.join(f"{k}={v}" for k, v in kwargs.items())
-	return f"model-{name}-{spec or 'all'}"
 
-def fetch_data_from_api(model, oauth_client=None, **params):
+def fetch_data_from_api(model: Model, oauth_client: 'OAuthAPI'=None, **params):
 	"""
 	Fetched additional data from the OAuth API
 	"""
+	logger.debug(f"[API] Fetching {model.__name__} from the API with params {params}")
+
 	# Create a client if not given
 	if oauth_client is None:
 		from authentication.oauth import OAuthAPI
@@ -37,7 +34,7 @@ def fetch_data_from_api(model, oauth_client=None, **params):
 	return data
 
 
-class ApiQuerySet(QuerySet):
+class APIQuerySet(QuerySet):
 	"""
 	QuerySet that can also fetch additional data from the OAuth API
 	"""
@@ -46,66 +43,74 @@ class ApiQuerySet(QuerySet):
 		"""
 		Fetch data from the OAuth API
 		"""
+		# Deals with filters
 		if self.query.has_filters():
-			# Return empty list if no results
+			# Return empty list if filtered bu has no results
 			if not self:
 				return []
-	
+
 			# Add pk specifications if filtered, else fetch all
 			params['pk'] = tuple(self.values_list('pk', flat=True))
 
 		# Fetch data
 		return fetch_data_from_api(self.model, oauth_client, **params)
-		
-	def get_with_api_data(self, oauth_client=None, single_result: bool=False, **params):
+
+	def get_with_api_data(self, oauth_client=None, single_result: bool=False, try_cache: bool=True, **params):
 		"""
 		Execute query and add extra data from the API
+		Try to get data from cache if possible
 		"""
 		# Set single_result automatically if only one result is expected
 		if 'pk' in params and not hasattr(params['pk'], '__len__'):
 			single_result = True
 
 		# Try cache
-		key = gen_model_key(self.model, **params)
-		results = cache.get(key, None)
-		if results is not None:
-			return results
+		if try_cache:
+			cached = self.model.get_from_cache(params, single_result=False, need_full_data=True)
+			if cached is not None:
+				return cached
 
-		# Get database results, fetched data and some params
-		field_names = self.model.field_names()
+		# Get all data from the API with params
 		fetched_data = self.fetch_api_data(oauth_client, **params)
-		# TODO Fix potential errors
+
+		# Get database results if they exists
+		field_names = self.model.field_names()
 		can_filter = all(key in field_names for key in params)
 		if can_filter:
-			results = self.filter(**params)
-			results = iterable_to_map(results, get_key=lambda obj: str(obj.id))
+			db_results = self.filter(**params)
+			db_results = iterable_to_map(db_results, get_key=lambda obj: str(obj.id))
 		else:
-			results = {}
+			db_results = {}
 
-		# Iter through fetched data and extend results
+		# Iter through fetched data and extend database results
 		to_create = []
 		to_update = []
 		updated_fields = set()
-		for _data in fetched_data:
-			obj = results.get(_data['id'], None)
+		for data in fetched_data:
+			obj = db_results.get(data['id'], None)
 
 			# Object is not in database, create it and add it
 			if obj is None:
-				obj = self.model(**filter_dict_keys(_data, field_names))
+				obj = self.model(**filter_dict_keys(data, field_names))
+				obj.sync_data(data, save=False)
 				to_create.append(obj)
 
-			# Object exists, update it
+			# Object exists in database, update it
 			else:
-				obj_updated_fields = obj.sync_data(_data, save=False)
+				obj_updated_fields = obj.sync_data(data, save=False)
 				if obj_updated_fields:
 					to_update.append(obj)
 					updated_fields |= obj_updated_fields
 
-		# Create and update objects if needed
+		# Create and update modified objects
 		if to_create:
 			try:
 				to_create = self.bulk_create(to_create)
+				logger.debug(f"Created {len(to_create)} new {self.model.__class__.__name__}")
 			except IntegrityError as error:
+				# Some filtering may not work with the database even though the data
+				# is already in the database so we simply skip trying to create
+				# if we cannot be sure filtering went well
 				if can_filter:
 					raise error
 
@@ -113,38 +118,43 @@ class ApiQuerySet(QuerySet):
 			self.bulk_update(to_update, updated_fields)
 
 		# Cache and return list of models instance
-		results = list(results.values()) + to_create
+		results = list(db_results.values()) + to_create
 		if single_result:
 			assert len(results) == 1
 			results = results[0]
-		
-		cache.set(key, results, API_MODEL_CACHE_TIMEOUT)
+
+		self.model.save_to_cache(results, params)
 		return results
 
-
-class ApiManager(BaseManager.from_queryset(ApiQuerySet)):
+class APIManager(BaseManager.from_queryset(APIQuerySet)):
 	pass
 
-class ApiModel(Model):
+class APIModel(Model):
 	"""
 	Model with additional data that can be fetched from the OAuth API
 	"""
-	objects = ApiManager()
+	objects = APIManager()
 	fetched_data = None
-	fetch_api_data = classmethod(fetch_data_from_api)
+	CACHE_TIMEOUT = API_MODEL_CACHE_TIMEOUT
 
-	def __getattr__(self, attr):
+	@property
+	def is_synched(self) -> bool:
+		return self.fetched_data is not None
+
+	def __getattr__(self, attr: str):
 		"""
 		Try getting data from fetched_data if possible to act as a model field
 		"""
-		try:
-			# Try getting real attribute first
-			return super().__getattr__(self, attr)
-		except AttributeError as error:
-			# Then, search in fetched data
-			if self.fetched_data and attr in self.fetched_data:
-				return self.fetched_data[attr]
-			raise error
+		if self.fetched_data and attr in self.fetched_data:
+			return self.fetched_data[attr]
+		raise AttributeError(f"'{self.__class__.__name__}' has no attribute '{attr}'")
+
+	@classmethod
+	def field_names(cls) -> Tuple[str]:
+		"""
+		Get a list of the field names
+		"""
+		return tuple(field.name for field in cls._meta.fields)
 
 	@classmethod
 	def get_api_endpoint(cls, params: dict) -> str:
@@ -156,6 +166,73 @@ class ApiModel(Model):
 			return f"/[{','.join(str(_pk) for _pk in pk)}]"
 		else:
 			return f"/{pk}" if pk else ''
+
+	# ---------------------------------------------------------------------
+	# 		Cache system
+	# ---------------------------------------------------------------------
+
+	@classmethod
+	def _gen_key(cls, params: dict={}) -> str:
+		"""
+		Generate a key from a set of specifications
+		"""
+		name = cls.__name__.lower()
+		spec = ','.join(f"{k}={v}" for k, v in params.items())
+		return f"APIModel-{name}-{spec or 'all'}"
+
+	@classmethod
+	def get_from_cache(cls, params: dict, single_result: bool=False, need_full_data: bool=True) -> Union['APIModel', None]:
+		"""
+		Try getting model instance with fetched data from
+		# TODO Improve for multiple queries
+		"""
+		key = cls._gen_key(params)
+		# logger.debug(f"[CACHE] Trying to get {cls.__name__} with key '{key}' and params {params}")
+		if key in cache:
+			logger.debug(f"[CACHE] Got {cls.__name__} with params {params}")
+			return cache.get(key)
+
+		# Try to get from cached -all
+		if params:
+			all_key = cls._gen_key()
+			if all_key in cache:
+				data = cache.get(all_key)
+
+				# Find the right instances among all data
+				results = []
+				for instance in data:
+					if all(getattr(instance, attr) == value for attr, value in params.items()):
+						if need_full_data and not instance.fetched_data:
+							logger.warning(f"[CACHE] Skipped because needed full data for {cls.__name__} with params {params}")
+							return None
+
+						if single_result:
+							logger.debug(f"[CACHE] Got {cls.__name__} with params {params}")
+							return instance
+						else:
+							results.append(instance)
+
+				if results:
+					logger.debug(f"[CACHE] Got {cls.__name__} with params {params}")
+					return results
+
+		return None
+
+	@classmethod
+	def save_to_cache(cls, data: Union[Sequence, 'APIModel'], params: dict):
+		"""
+		Save single or multiple instances to cache
+		"""
+		# TODO set_many ?
+		key = cls._gen_key(params)
+		cache.set(key, data, cls.CACHE_TIMEOUT)
+		# logger.debug(f"[CACHE] Saved {len(data) if hasattr(data, '__len__') else 1} data with key '{key}'")
+
+	# ---------------------------------------------------------------------
+	# 		API Fetch and Sync methods
+	# ---------------------------------------------------------------------
+
+	fetch_api_data = classmethod(fetch_data_from_api)
 
 	def sync_data(self, data: dict=None, oauth_client=None, save: bool=True) -> Set[str]:
 		"""
@@ -181,35 +258,28 @@ class ApiModel(Model):
 
 		return updated_fields
 
-	def get_with_api_data(self, oauth_client=None, save: bool=True):
+	def get_with_api_data(self, oauth_client=None, save: bool=True, try_cache: bool=True):
 		"""
+		Main function
 		Get and sync additional data from OAuth API
 		"""
 		# Try cache
-		key = gen_model_key(type(self), pk=self.pk)
-		cached = cache.get(key, None)
-		if cached is not None:
-			return cached
+		if try_cache:
+			cached = self.get_from_cache({ 'pk': self.pk }, single_result=True, need_full_data=True)
+			if cached is not None:
+				return cached
 
 		# Else fetched and sync data
 		self.sync_data(None, oauth_client, save=save)
+		self.save_to_cache(self, { 'pk': self.pk })
 		return self
 
 	def save(self, *args, **kwargs):
 		"""
 		Override to update cache on save
 		"""
-		result = super().save(*args, **kwargs)
-		key = gen_model_key(type(self), pk=self.pk)
-		cache.set(key, self, API_MODEL_CACHE_TIMEOUT)
-		return result
-
-	@classmethod
-	def field_names(cls) -> Tuple[str]:
-		"""
-		Get a list of the field names
-		"""
-		return tuple(field.name for field in cls._meta.fields)	
+		super().save(*args, **kwargs)
+		self.save_to_cache(self, { 'pk': self.pk })
 
 	class Meta:
 		abstract = True

@@ -1,36 +1,25 @@
+from authlib.common.errors import AuthlibBaseError
+from authlib.integrations.requests_client import OAuth2Session
+from django.core.cache import cache
+from django.contrib import auth as django_auth
 from django.contrib.auth.backends import ModelBackend
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.exceptions import AuthenticationFailed
-from django.contrib import auth as django_auth
-from django.core.cache import cache
 
-from authlib.client import OAuth2Session
-from authlib.common.errors import AuthlibBaseError
-
-from core.models import gen_model_key
-from core.helpers import filter_dict_keys
 from woolly_api.settings import OAUTH as OAuthConfig
+from core.helpers import filter_dict_keys
+from authentication.exceptions import OAuthException, OAuthTokenException
 
 OAUTH_TOKEN_NAME = 'oauth_token'
+
 UserModel = django_auth.get_user_model()
 
-
-class OAuthError(Exception):
-	"""
-	OAuth Error
-	"""
-	def __init__(self, message: str=None, response=None):
-		if not message and response is not None:
-			message = response.json().get('message', 'Unknown error')
-
-		super().__init__(message)
-		self.response = response
 
 def get_user_from_request(request):
 	"""
 	Get the user from the request session
 	Can debug logged user like this:
-	> return UserModel(email='test@woolly.com') # DEBUG
+	> return UserModel(email='test@woolly.com')
 	"""
 	# Try to get the user logged in the request
 	user = getattr(request, '_request', request).user
@@ -39,8 +28,13 @@ def get_user_from_request(request):
 			return user
 
 		# Add api data and return user
-		oauth_client = OAuthAPI(session=request.session)
-		return user.get_with_api_data(oauth_client)
+		try:
+			oauth_client = OAuthAPI(session=request.session)
+			return user.get_with_api_data(oauth_client)
+		except OAuthTokenException:
+			# Flush session
+			oauth_client.logout(request)
+			return None
 
 	# Get the user from the session
 	user_id = request.session.get('user_id')
@@ -52,6 +46,10 @@ def get_user_from_request(request):
 		return UserModel.objects.get_with_api_data(oauth_client, pk=user_id)
 	except UserModel.DoesNotExist:
 		raise AuthenticationFailed("user_id does not match a user")
+	except OAuthTokenException:
+		# Flush session
+		oauth_client.logout(request)
+		return None
 
 
 class OAuthAPI:
@@ -96,7 +94,11 @@ class OAuthAPI:
 		try:
 			token = self.client.fetch_access_token(self.config['access_token_url'], code=code)
 		except AuthlibBaseError as error:
-			raise OAuthError(error)
+			raise OAuthException(
+				"Impossible de récuperer le Token OAuth",
+				"fetch_access_token_error",
+				details=str(error)
+			) from error
 
 		# Fetch and login user into Django, then create session
 		user = self.fetch_user()
@@ -120,6 +122,7 @@ class OAuthAPI:
 		# 	self.client.revoke_token(url, token)
 
 		# Logout from Django
+		request.user = None
 		django_auth.logout(request)
 
 		# Redirect to logout
@@ -127,13 +130,18 @@ class OAuthAPI:
 
 	def fetch_resource(self, query: str):
 		"""
-		Return infos from the API if 200 else an OAuthError
+		Return data from the API if valid else raise an OAuthException
 		"""
-		resp = self.client.get(self.config['base_url'] + query)
+		try:
+			resp = self.client.get(self.config['base_url'] + query)
+		except AuthlibBaseError as error:
+			code = getattr(error, 'error', None)
+			raise OAuthTokenException(code=code) from error
+
 		if resp.status_code == 200:
 			return resp.json()
-		else:
-			raise OAuthError(response=resp)
+
+		raise OAuthException.from_response(resp)
 
 	def fetch_user(self, user_id: str=None) -> UserModel:
 		"""
@@ -153,7 +161,7 @@ class OAuthAPI:
 			fields_data = filter_dict_keys(data, UserModel.field_names())
 			user = UserModel(**fields_data)
 			new_user = True
-		
+
 		# Update with fetched data and return
 		updated_fields = user.sync_data(data, save=False)
 		if updated_fields or new_user:
@@ -175,8 +183,7 @@ class OAuthBackend(ModelBackend):
 
 	def get_user(self, user_id):
 		# Try to get full user from cache
-		key = gen_model_key(UserModel, pk=user_id)
-		cached_user = cache.get(key, None)
+		cached_user = UserModel.get_from_cache({ 'pk': user_id }, single_result=True)
 		if cached_user is not None:
 			return cached_user
 

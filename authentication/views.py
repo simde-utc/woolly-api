@@ -1,18 +1,15 @@
+from django.shortcuts import redirect
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status
-from django.shortcuts import redirect
-from core.viewsets import ModelViewSet, ApiModelViewSet
 
-from rest_framework.permissions import AllowAny
-from .permissions import *
-
-from .serializers import UserSerializer, UserTypeSerializer
-from .models import UserType, User
-from .oauth import OAuthAPI, OAuthError
+from core.viewsets import ModelViewSet, APIModelViewSet
+from authentication.oauth import OAuthAPI
+from authentication.models import UserType, User
+from authentication.permissions import IsUserOrAdmin, IsAdminOrReadOnly
+from authentication.serializers import UserSerializer, UserTypeSerializer
 
 
-class UserViewSet(ApiModelViewSet):
+class UserViewSet(APIModelViewSet):
 	queryset = User.objects.all()
 	serializer_class = UserSerializer
 	permission_classes = (IsUserOrAdmin,)
@@ -45,14 +42,8 @@ class AuthView:
 		Get user from API, find or create it in Woolly, store the OAuth token,
 		and redirect to the front with a session
 		"""
-		try:
-			resp = cls.oauth.callback_and_create_session(request)
-			return redirect(resp)
-		except OAuthError as error:
-			return Response({
-				'error': 'OAuthError',
-				'message': str(error)
-			}, status=status.HTTP_400_BAD_REQUEST)
+		resp = cls.oauth.callback_and_create_session(request)
+		return redirect(resp)
 
 	@classmethod
 	def me(cls, request):
@@ -79,6 +70,7 @@ class AuthView:
 		redirection = request.GET.get('redirect', None)
 		url = cls.oauth.logout(request, redirection)
 		return redirect(url)
+
 
 # Set all method from AuthView as API View
 for key in ('login', 'login_callback', 'me', 'logout'):

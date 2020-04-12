@@ -1,8 +1,8 @@
+from core.helpers import adaptable_editability_fields
 from django.utils.safestring import mark_safe
 from django.db.models import Count
 from django.contrib import admin
 from .models import *
-from core.helpers import custom_editable_fields
 
 
 # ============================================
@@ -46,16 +46,16 @@ class SaleAdmin(admin.ModelAdmin):
 	def number_of_items(self, obj):
 		return obj._items_count
 
-	list_display = ('name', 'association', 'is_active', 'public', 'number_of_items', 'created_at', 'begin_at', 'end_at')
-	list_filter = ('is_active', 'public')
+	list_display = ('name', 'association', 'is_active', 'is_public', 'number_of_items', 'created_at', 'begin_at', 'end_at')
+	list_filter = ('is_active', 'is_public')
 	list_editable = tuple()
 
 	def get_readonly_fields(self, request, obj=None):
-		return custom_editable_fields(request, obj, ('association',))
+		return adaptable_editability_fields(request, obj, ('association',))
 	fieldsets = (
 		(None, 			{ 'fields': ('name', 'description', 'association', 'max_item_quantity') }),
-		('Visibility', 	{ 'fields': ('is_active', 'public') }),
-		('Timing', 		{ 'fields': ('begin_at', 'end_at', 'max_payment_date') }),
+		('Visibility', 	{ 'fields': ('is_active', 'is_public') }),
+		('Timing', 		{ 'fields': ('begin_at', 'end_at') }),
 	)
 
 	search_fields = ('name', 'association')
@@ -112,7 +112,7 @@ class OrderAdmin(admin.ModelAdmin):
 
 
 	def get_readonly_fields(self, request, obj=None):
-		return custom_editable_fields(request, obj, ('sale', 'owner'))
+		return adaptable_editability_fields(request, obj, ('sale', 'owner'))
 	fieldsets = (
 		(None, 				{ 'fields': ('sale', 'owner', 'status') }),
 		('Payment', 		{ 'fields': ('tra_id',) }),
@@ -144,7 +144,7 @@ class OrderLineAdmin(admin.ModelAdmin):
 
 	list_display = ('id', 'order_id', 'order_status', 'owner', 'sale_name', 'item_name', 'get_uuids', 'quantity')
 	def get_readonly_fields(self, request, obj=None):
-		return custom_editable_fields(request, obj, ('order', 'item'))
+		return adaptable_editability_fields(request, obj, ('order', 'item'))
 
 	inlines = (OrderLineItemInline,)
 	fieldsets = (
@@ -185,7 +185,7 @@ class OrderLineItemAdmin(admin.ModelAdmin):
 	inlines = (OrderLineFieldInline,)
 
 	def get_readonly_fields(self, request, obj=None):
-		return custom_editable_fields(request, obj, ('orderline',), ('id',))
+		return adaptable_editability_fields(request, obj, ('orderline',), ('id',))
 	search_fields = ('id', 'orderline__order__owner__email', 'orderline__order__sale__name')
 
 class OrderLineFieldAdmin(admin.ModelAdmin):
@@ -197,7 +197,7 @@ class OrderLineFieldAdmin(admin.ModelAdmin):
 	list_filter = ('field',)
 
 	def get_readonly_fields(self, request, obj=None):
-		return custom_editable_fields(request, obj, ('orderlineitem', 'field'))
+		return adaptable_editability_fields(request, obj, ('orderlineitem', 'field'))
 	fieldsets = (
 		(None, { 'fields': ('orderlineitem', 'field', 'value') }),
 	)

@@ -3,10 +3,15 @@ from core.helpers import format_date
 from faker import Faker
 
 from django.db.models import Model
-from authentication.models import *
-from sales.models import *
+from authentication.models import User, UserType
+from sales.models import (
+	Association, Sale, ItemGroup, Item,
+	Order, OrderStatus, OrderLine, OrderLineItem,
+	Field, ItemField, OrderLineField
+)
 
 Pk = Union[str, int, 'UUID']
+
 
 class FakeModelFactory:
 	"""
@@ -22,13 +27,13 @@ class FakeModelFactory:
 	def create(self, model: Model, nb: int=None, **kwargs) -> Union[Model, List[Model]]:
 		"""
 		Generates one or multiple instances of a specified Model
-		
+
 		Args:
 			model: the Model class to generate
 			nb: the number of instances to generate,
 			    None returns a single instance (default: None)
 			**kwargs: the fixed attributes for the models
-		
+
 		Returns:
 			Union[Model, List[Model]]: one or multiple generated instances of Model
 		"""
@@ -48,30 +53,27 @@ class FakeModelFactory:
 	def get_attributes(self, model: Model, withPk: bool=False, **kwargs) -> Dict[str, Any]:
 		"""
 		Generates the attributes required to create a specified Model
-		
+
 		Args:
 			model (Model): the Model whose attributes are to be created
 			withPk: whether to return related Model or simply its Primary key (default: False)
 			kwargs: fixed attributes
-		
+
 		Returns:
 			Dict[str, Any]: the attributes generated
-		
+
 		Raises:
 			NotImplementedError: in case the model is not implemented
 		"""
 
-		def cast_to_uuid(uuid: 'UUID') -> 'UUID':
-			return uuid
-
 		def get_related_model(key: str, model: Model) -> Union[Pk, Model]:
 			"""
 			Helper to get or create a related Model
-			
+
 			Args:
 				key: the key to the related model in the kwargs
-				model (Model): the type of model to create as a fallback 
-			
+				model (Model): the type of model to create as a fallback
+
 			Returns:
 				Union[Pk, Model]: the model or its primary key
 			"""
@@ -84,7 +86,7 @@ class FakeModelFactory:
 
 		if model == User:
 			return {
-				'id':         kwargs.get('id',         self.faker.uuid4(cast_to=cast_to_uuid)),
+				'id':         kwargs.get('id',         self.faker.uuid4()),
 				'email':      kwargs.get('email',      self.faker.email()),
 				'first_name': kwargs.get('first_name', self.faker.first_name()),
 				'last_name':  kwargs.get('last_name',  self.faker.last_name()),
@@ -93,7 +95,7 @@ class FakeModelFactory:
 
 		if model == UserType:
 			return {
-				'id':   kwargs.get('id',   self.faker.uuid4(cast_to=str)[:25]),
+				'id':   kwargs.get('id',   self.faker.uuid4()[:25]),
 				'name': kwargs.get('name', self.faker.sentence(nb_words=4)),
 				'validation': kwargs.get('validation', 'False'),
 			}
@@ -104,28 +106,26 @@ class FakeModelFactory:
 
 		if model == Association:
 			return {
-				'id':        kwargs.get('id',      self.faker.uuid4(cast_to=cast_to_uuid)),
+				'id':        kwargs.get('id',      self.faker.uuid4()),
 				'shortname': kwargs.get('name',    self.faker.company()),
 				'fun_id':    kwargs.get('fun_id',  self.faker.random_digit()),
 			}
 
 		if model == Sale:
 			return {
-				'name':         kwargs.get('name',          self.faker.company()),
-				'description':  kwargs.get('description',   self.faker.paragraph()),
+				'id':           kwargs.get('id',          self.faker.slug()),
+				'name':         kwargs.get('name',        self.faker.company()),
+				'description':  kwargs.get('description', self.faker.paragraph()),
 				'association':  get_related_model('association', Association),
-				'is_active':    kwargs.get('is_active',     True),
-				'public':       kwargs.get('public',        True),
+				'is_active':    kwargs.get('is_active', True),
+				'is_public':    kwargs.get('is_public', True),
 				'begin_at':     format_date(kwargs.get('begin_at',
 					self.faker.date_time_this_year(before_now=True, after_now=False)
 				)),
 				'end_at':       format_date(kwargs.get('end_at',
 					self.faker.date_time_this_year(before_now=False, after_now=True)
 				)),
-				'max_item_quantity': kwargs.get('max_item_quantity', self.faker.random_number()),
-				'max_payment_date':  format_date(kwargs.get('max_payment_date',
-					self.faker.date_time_this_year(before_now=False, after_now=True)
-				)),
+				'max_item_quantity': kwargs.get('max_item_quantity', self.faker.random_int()),
 			}
 
 		# ============================================
@@ -134,25 +134,25 @@ class FakeModelFactory:
 
 		if model == ItemGroup:
 			return {
-				'name':          kwargs.get('name',         self.faker.word()),
-				'quantity':      kwargs.get('quantity',     self.faker.random_number()),
-				'max_per_user':  kwargs.get('max_per_user', self.faker.random_number()),
+				'name':         kwargs.get('name',         self.faker.word()),
+				'sale':         get_related_model('sale',  Sale),
+				'is_active':    kwargs.get('is_active',    True),
+				'quantity':     kwargs.get('quantity',     self.faker.random_int()),
+				'max_per_user': kwargs.get('max_per_user', self.faker.random_int()),
 			}
 
 		if model == Item:
 			return {
-				'name':          kwargs.get('name',         self.faker.word()),
-				'description':   kwargs.get('description',  self.faker.paragraph()),
-				'sale':          get_related_model('sale',       Sale),
-				'group':         get_related_model('group',      ItemGroup),
-				'usertype':      get_related_model('usertype',   UserType),
-				'quantity':      kwargs.get('quantity',     self.faker.random_number()),
-				'max_per_user':  kwargs.get('max_per_user', self.faker.random_number()),
-				'is_active':     kwargs.get('is_active',    True),
-				'quantity':      kwargs.get('quantity',     self.faker.random_number()),
-				'price':         float(kwargs.get('price',  self.faker.random_number()/10.)),
-				'nemopay_id':    kwargs.get('nemopay_id',   self.faker.random_number()),
-				'max_per_user':  kwargs.get('max_per_user', self.faker.random_number()),
+				'name':         kwargs.get('name',         self.faker.word()),
+				'description':  kwargs.get('description',  self.faker.paragraph()),
+				'sale':         get_related_model('sale',       Sale),
+				'group':        get_related_model('group',      ItemGroup),
+				'usertype':     get_related_model('usertype',   UserType),
+				'quantity':     kwargs.get('quantity',     self.faker.random_int()),
+				'max_per_user': kwargs.get('max_per_user', self.faker.random_int()),
+				'is_active':    kwargs.get('is_active',    True),
+				'price':        float(kwargs.get('price',  self.faker.random_number() / 10.)),
+				'nemopay_id':   kwargs.get('nemopay_id',   self.faker.random_int()),
 				# 'fields':
 			}
 
@@ -164,14 +164,14 @@ class FakeModelFactory:
 			return {
 				'owner':      get_related_model('owner', User),
 				'sale':       get_related_model('sale',  Sale),
-				'created_at': format_date(kwargs.get('created_at', 
+				'created_at': format_date(kwargs.get('created_at',
 					self.faker.date_time_this_year(before_now=True, after_now=False)
 				)),
-				'updated_at': format_date(kwargs.get('updated_at', 
+				'updated_at': format_date(kwargs.get('updated_at',
 					self.faker.date_time_this_year(before_now=True, after_now=False)
 				)),
 				'status': kwargs.get('status', OrderStatus.ONGOING.value),
-				'tra_id': kwargs.get('tra_id', self.faker.random_number()),
+				'tra_id': kwargs.get('tra_id', self.faker.random_int()),
 			}
 
 		if model == OrderLine:
@@ -195,7 +195,7 @@ class FakeModelFactory:
 				'name':     kwargs.get('name',    self.faker.word()),
 				'type':     kwargs.get('type',    self.faker.word()),
 				'default':  kwargs.get('default', self.faker.word()),
-				# 'items': 	
+				# 'items':
 			}
 
 		if model == ItemField:
@@ -213,4 +213,3 @@ class FakeModelFactory:
 			}
 
 		raise NotImplementedError(f"The model {model} isn't fakable yet")
-

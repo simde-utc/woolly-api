@@ -1,10 +1,10 @@
-from rest_framework.urlpatterns import format_suffix_patterns
-from django.views.decorators.csrf import csrf_exempt
 from django.urls import re_path, path, include
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.urlpatterns import format_suffix_patterns
 
 from core.routing import gen_url_set, merge_sets
-from .views import *
-from sales.views import *
+from authentication.views import AuthView, UserViewSet, UserTypeViewSet
+from sales.views import AssociationViewSet, OrderViewSet
 
 urlpatterns = merge_sets(
 	# User
