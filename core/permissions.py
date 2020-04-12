@@ -1,4 +1,5 @@
 from rest_framework import permissions
+from rest_framework.exceptions import MethodNotAllowed
 
 
 class CustomPermission(permissions.BasePermission):
@@ -17,15 +18,17 @@ class CustomPermission(permissions.BasePermission):
 	object_permission_functions = []
 	check_with_or = True
 
-	def _check_functions(self, permission_gen):
-		return any(permission_gen) if self.check_with_or else all(permission_gen)
-
-	def _is_not_authenticated(self, request, view):
-		return not request.user.is_authenticated
+	@property
+	def _check_functions(self):
+		return any if self.check_with_or else all
 
 	def has_permission(self, request, view):
+		# Action is not configured with as_view, ie not allowed
+		if view.action is None:
+			raise MethodNotAllowed(request.method)
+
 		# Is Authenticated option
-		if self.require_authentication and self._is_not_authenticated(request, view):
+		if self.require_authentication and not request.user.is_authenticated:
 			return False
 		# Read Only option
 		if self.allow_read_only and request.method in permissions.SAFE_METHODS:
@@ -67,21 +70,26 @@ class CustomPermission(permissions.BasePermission):
 		return self.default_obj
 
 
-
-class IsAdmin(CustomPermission):
-	"""Only Woolly admins have the permission"""
+class IsAdmin(permissions.BasePermission):
+	"""
+	Only Woolly admins have the permission
+	"""
 	def has_permission(self, request, view):
 		return request.user.is_authenticated and request.user.is_admin
 
 class IsAdminOrReadOnly(permissions.BasePermission):
-	"""Only Woolly admins have the permission to modify, anyone can read"""
+	"""
+	Only Woolly admins have the permission to modify, anyone can read
+	"""
 	def has_permission(self, request, view):
 		if request.method in permissions.SAFE_METHODS:
 			return True
 		return request.user.is_authenticated and request.user.is_admin
 
 class IsAdminOrAuthenticatedReadOnly(permissions.BasePermission):
-	"""Only Woolly admins have the permission to modify, authenticated users can read"""
+	"""
+	Only Woolly admins have the permission to modify, authenticated users can read
+	"""
 	def has_permission(self, request, view):
 		if not request.user.is_authenticated:
 			return False

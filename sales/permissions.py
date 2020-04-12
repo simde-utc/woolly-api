@@ -32,25 +32,29 @@ def get_url_param(request, view, name: str):
 def check_manager(request, view) -> bool:
 
 	Model = view.queryset.model
-	if Model not in (Sale, Item, ItemGroup):
-		raise NotImplementedError(f"Object {view.queryset.model} is not managed")
+	if Model not in {Association, Sale, Item, ItemGroup}:
+		raise NotImplementedError(f"Object {Model} is not managed")
 
 	if not request.user.is_authenticated:
 		return False
 
 	# Get the related association
 	asso_id = sale_id = None
-	if Model == Sale:
+	if Model == Association:
+		if view.action in {'create', 'delete'}:
+			return False
+		asso_id = view.kwargs.get('pk')
+	elif Model == Sale:
 		if 'pk' not in view.kwargs:
 			asso_id = get_url_param(request, view, 'association')
 		else:
-			sale_id = view.kwargs['pk']
+			sale_id = view.kwargs.get('pk')
 	elif Model in { Item, ItemGroup }:
 		if 'pk' not in view.kwargs:
 			sale_id = get_url_param(request, view, 'sale')
 		else:
 			try:
-				sale_id = Model.objects.get(pk=view.kwargs['pk']).sale_id
+				sale_id = Model.objects.get(pk=view.kwargs.get('pk')).sale_id
 			except Model.DoesNotExist:
 				raise InvalidRequest(f"Could not retrieve related {Model.__name__}")
 

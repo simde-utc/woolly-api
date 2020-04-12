@@ -1,5 +1,9 @@
-from rest_framework import exceptions, status
 from typing import Any
+import logging
+
+from rest_framework import exceptions, status
+
+logger = logging.getLogger(f"woolly.{__name__}")
 
 
 class APIException(exceptions.APIException):
@@ -56,10 +60,11 @@ def exception_handler(error: Exception, context: dict):
 
 	# Unhandled error
 	if response is None:
-		print('UNHANDLED ERROR', error)  # TODO Better logging
+		logger.critical("Unhandled error", error)
 		return None
 
 	if isinstance(error, APIException):
 		response.data = error.get_full_details()
+		logger.warning("Handled error", response.data)
 
 	return response

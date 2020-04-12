@@ -1,16 +1,21 @@
 from rest_framework import permissions
+from rest_framework.exceptions import MethodNotAllowed
+
 
 class IsUserOrAdmin(permissions.BasePermission):
 	"""
 	Custom permission class to allow only order owners and admin to edit them.
 	"""
 	def has_permission(self, request, view):
+		if view.action is None:
+			raise MethodNotAllowed(request.method)
+
 		user = request.user
 		# Need to be connected
 		if not user.is_authenticated:
 			return False
 
-		# IMPORTANT Normal users can only retrieve and update themselves
+		# Normal users can only retrieve and update themselves
 		if view.action in ('list', 'create', 'destroy'):
 			return user.is_admin
 

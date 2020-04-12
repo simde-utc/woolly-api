@@ -2,8 +2,12 @@ from rest_framework.urlpatterns import format_suffix_patterns
 from django.urls import path
 
 from core.routing import merge_sets, gen_url_set
-from authentication.views import *
-from .views import *
+from authentication.views import UserViewSet, UserTypeViewSet
+from .views import (
+	AssociationViewSet, SaleViewSet, ItemGroupViewSet, ItemViewSet,
+	OrderViewSet, OrderLineViewSet, OrderLineItemViewSet, FieldViewSet,
+	OrderLineFieldViewSet, ItemFieldViewSet, generate_pdf
+)
 
 urlpatterns = merge_sets(
 	# Association
@@ -41,16 +45,16 @@ urlpatterns = merge_sets(
 	gen_url_set([OrderLineViewSet, OrderLineItemViewSet]),
 	# OrderLineItem
 	gen_url_set(OrderLineItemViewSet),
-	gen_url_set([OrderLineItemViewSet, OrderLineViewSet]),	
-	gen_url_set([OrderLineItemViewSet, OrderLineFieldViewSet]),	
+	gen_url_set([OrderLineItemViewSet, OrderLineViewSet]),
+	gen_url_set([OrderLineItemViewSet, OrderLineFieldViewSet]),
 
 	# Field
 	gen_url_set(FieldViewSet),
 	gen_url_set([FieldViewSet, ItemFieldViewSet]),
 	# OrderLineField
 	gen_url_set(OrderLineFieldViewSet),
-	gen_url_set([OrderLineFieldViewSet, FieldViewSet]),	
-	gen_url_set([OrderLineFieldViewSet, OrderLineItemViewSet]),	
+	gen_url_set([OrderLineFieldViewSet, FieldViewSet]),
+	gen_url_set([OrderLineFieldViewSet, OrderLineItemViewSet]),
 	# ItemField
 	gen_url_set(ItemFieldViewSet),
 	gen_url_set([ItemFieldViewSet, ItemViewSet]),

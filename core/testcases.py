@@ -1,16 +1,18 @@
-from django.urls import reverse, exceptions
-from rest_framework import status
-from functools import partial
-from copy import deepcopy
-from typing import Union, Sequence, Dict
-
-from rest_framework.test import APISimpleTestCase, APITestCase, APIClient
+from typing import Any, Union, Sequence, Dict
 from contextlib import contextmanager
+from copy import deepcopy
+from unittest.mock import patch
+
+from django.urls import reverse
 from django import db
+
+from rest_framework import status
+from rest_framework.test import APISimpleTestCase, APITestCase, APIClient
 
 from core.helpers import get_model_name, pluralize
 from core.faker import FakeModelFactory
 from authentication.models import User
+
 
 PermissionList = Dict[str, Dict[str, bool]]
 
@@ -36,6 +38,7 @@ ACTION_TO_METHOD_MAP = {
 	'delete':   'delete',
 }
 
+
 def get_permissions_from_compact(compact: Dict[str, str]) -> PermissionList:
 	"""
 	Helper to get a complete permission list from a compact one { 'list': "puoa", 'delete': ".u.a" }
@@ -52,7 +55,7 @@ def get_permissions_from_compact(compact: Dict[str, str]) -> PermissionList:
 def get_api_client(user: User=None) -> APIClient:
 	"""
 	Context manager to get an APIClient and clear connection if threaded
-	
+
 	Arguments:
 		user (User): if specified login the APIClient with it (default: None)
 	"""
@@ -67,12 +70,15 @@ def get_api_client(user: User=None) -> APIClient:
 
 class CRUDViewSetTestMeta(type):
 	"""
-	Metaclass to attach CRUD test methods to class automatically
+	Metaclass to attach CRUD test methods to the test class automatically
+
+	You can disable this behavior with cls.auto_add_testcase=False
+	or select the crud test methods with cls.crud_actions
 	"""
 
 	def __new__(metacls, name: str, bases: tuple, dct: dict):
 		"""
-		Attach CRUD test methods to the TestCase class 
+		Attach CRUD test methods to the TestCase class
 		"""
 		# Add APITestCase to classes that implement a model but no TestCase
 		auto_add_testcase = bool(dct.get('auto_add_testcase', True) and dct.get('model'))
@@ -89,8 +95,9 @@ class CRUDViewSetTestMeta(type):
 		for action in cls.crud_actions:
 			method_name = f"test_{action}_view"
 			if not hasattr(cls, method_name):
-				method = lambda self: self._perform_crud_test(action)
-				method.__doc__ = f"Test all users permissions to {action} {model_name}"
+				def method(self):
+					return self._perform_crud_test(action)
+				method.__doc__ = f"Test users permissions to {action} {model_name}"
 				setattr(cls, method_name, method)
 
 		return cls
@@ -98,7 +105,12 @@ class CRUDViewSetTestMeta(type):
 class CRUDTestCaseMixin:
 	"""
 	TestCase mixin specialised in testing CRUD ModelViewSet
-	
+	regarding to the specified model
+
+	First the setUp method is used to create users and the object.
+	You can add custom setup by overloading additionnal_setUp or create_object.
+	The entry point for testing is _perform_crud_test.
+
 	Variables:
 		model: the model linked to the ModemViewSet to test
 		crud_actions (tuple): the CRUD actions to test automatically
@@ -113,11 +125,11 @@ class CRUDTestCaseMixin:
 	modelFactory = FakeModelFactory()
 	auto_add_testcase = True
 
-	def setUp(self):
+	def setUp(self) -> None:
 		"""
 		Create users and object required to perform tests
 		"""
-		# Model MUST be specified
+		# model MUST be specified
 		if not self.model:
 			raise ValueError("Please specify the model")
 
@@ -136,10 +148,10 @@ class CRUDTestCaseMixin:
 		self.resource_name = pluralize(get_model_name(self.model))
 		self.object = self.create_object(self.users.get('user'))
 
-	def additionnal_setUp(self):
+	def additionnal_setUp(self) -> None:
 		"""
 		Method that can be overriden in order to perform additional actions on setUp.
-		Run just after users creation
+		Usually used to create related data. Run just after users creation.
 		"""
 		pass
 
@@ -147,20 +159,14 @@ class CRUDTestCaseMixin:
 	# 		Helpers
 	# ========================================================
 
-	def is_allowed(self, action: str, visibility: str) -> bool:
-		"""Helper to know if action is allowed with specified visibility
-		
-		Args:
-			action (str): the CRUD action
-			visibility (str): the user visibility
-		
-		Returns:
-			bool: whether the user is allowed to perform the action or not
+	def create_object(self, user: User=None):
 		"""
-		default = DEFAULT_CRUD_PERMISSIONS[action].get(visibility, False)
-		return self.permissions[action].get(visibility, default)
+		Method used to create the initial object on setUp, can be overriden
+		"""
+		data = self.get_object_attributes(user, withPk=False)
+		return self.model.objects.create(**data)
 
-	def get_url(self, pk=None) -> str:
+	def get_url(self, pk: Any=None) -> str:
 		"""
 		Helper to get url from resource_name and pk
 		"""
@@ -169,15 +175,28 @@ class CRUDTestCaseMixin:
 		else:
 			return reverse(self.resource_name + '-detail', kwargs={ 'pk': pk })
 
+	def is_allowed(self, action: str, visibility: str) -> bool:
+		"""Helper to know if action is allowed with specified visibility
+
+		Args:
+			action (str): the CRUD action
+			visibility (str): the user visibility
+
+		Returns:
+			bool: whether the user is allowed to perform the action or not
+		"""
+		default = DEFAULT_CRUD_PERMISSIONS[action].get(visibility, False)
+		return self.permissions[action].get(visibility, default)
+
 	def get_expected_status_code(self, method: str, allowed: bool, user: str) -> Union[int, Sequence[int]]:
 		"""
 		Get the HTTP status that is expected for a certain request
-		
+
 		Args:
 			method (str): the HTTP method
 			allowed (bool): whether the action should be allowed or not
 			user (str): the user key that performs the action
-		
+
 		Returns:
 			Union[int, Sequence[int]]: one or multiple expected status codes
 		"""
@@ -192,20 +211,15 @@ class CRUDTestCaseMixin:
 	def get_object_attributes(self, user: User=None, withPk: bool=True) -> dict:
 		"""
 		Method used to generate new object data with user, can be overriden
-		
+
 		Args:
 			user: the User attached to the object (default: None)
 			withPk:  (default: True)
-		
+
 		Returns:
 			dict: the generated data for the object
 		"""
 		return self.modelFactory.get_attributes(self.model, withPk=withPk, user=user)
-
-	def create_object(self, user: User=None):
-		"""Method used to create the initial object, can be overriden"""
-		data = self.get_object_attributes(user, withPk=False)
-		return self.model.objects.create(**data)
 
 	# ========================================================
 	# 		Test methods
@@ -214,8 +228,8 @@ class CRUDTestCaseMixin:
 	def _test_user_permission(self, url: str, user: str=None, allowed: bool=False,
 	                          method: str='get', data: dict=None, expected_status_code: int=None):
 		"""
-		Helper to make the user try to access the url with specified method
-		
+		Helper to make the user try to request the url with specified method
+
 		Args:
 			url (str):                   The url to access
 			user (str):                  The user key which does the request (default: None)
@@ -226,7 +240,8 @@ class CRUDTestCaseMixin:
 		"""
 		# Authenticate with specified user and request resource
 		self.client.force_authenticate(user=self.users.get(user, None))
-		response = getattr(self.client, method)(url, data, format='json')
+		request_method = getattr(self.client, method)
+		response = request_method(url, data, format='json')
 
 		# Get expected status_code if needed
 		if expected_status_code is None:
@@ -234,11 +249,11 @@ class CRUDTestCaseMixin:
 
 		# Build detailled error message
 		# TODO Improve with general ErrorResponse
-		error_message = f"for '{user}' user"
-		if hasattr(response, 'data') and response.data:
-			error_details = response.data.get('detail')
-			error_message += f" ({error_details})"
+		error_message = f"for user '{user}'"
+		if getattr(response, 'data', None):
+			error_message += f"\nErrorDetails: {response.data}"
 
+		# Assert that we get the right status_code
 		assert_method = self.assertEqual if type(expected_status_code) is int else self.assertIn
 		assert_method(response.status_code, expected_status_code, error_message)
 		# TODO Improve tests
@@ -246,7 +261,10 @@ class CRUDTestCaseMixin:
 	def _perform_crud_test(self, action: str):
 		"""
 		Method to perform CRUD action tests for all users
-		
+
+		It makes an API call to the model's and action's related url
+		with all 4 different users and check if the response is as expected.
+
 		Args:
 			action: the CRUD action to perform
 		"""
@@ -257,24 +275,26 @@ class CRUDTestCaseMixin:
 		}
 
 		# Test permissions for all users
-		for user in self.users:
-			with self.subTest(user=user):
-				# Re-save the object in the db in order to have the same after each user modifications
-				self.object.save()
+		# Patch OAuthAPI.fetch_resource
+		with patch('authentication.oauth.OAuthAPI.fetch_resource'):
+			for user in self.users:
+				with self.subTest(user=user):
+					# Re-save the object in the db in order to have the same after each user modifications
+					self.object.save()
 
-				is_allowed = self.is_allowed(action, user)
-				if action in ('create', 'update'):
-					options['data'] = self.get_object_attributes(self.users.get(user))
-				else:
-					options['data'] = None
+					is_allowed = self.is_allowed(action, user)
+					if action in ('create', 'update'):
+						options['data'] = self.get_object_attributes(self.users.get(user))
+					else:
+						options['data'] = None
 
-				# Perform the test
-				self._test_user_permission(url, user, is_allowed, **options)
-
-				# Additionnal test with PUT for update
-				if action == 'update':
-					options['method'] = 'put'
+					# Perform the test
 					self._test_user_permission(url, user, is_allowed, **options)
+
+					# Additionnal test with PUT for update
+					if action == 'update':
+						options['method'] = 'put'
+						self._test_user_permission(url, user, is_allowed, **options)
 
 
 class ModelViewSetTestCase(CRUDTestCaseMixin, metaclass=CRUDViewSetTestMeta):

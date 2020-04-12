@@ -221,7 +221,10 @@ class OrderViewSet(ModelViewSet):
 		# 	order.delete()
 		# 	return Response(None, status=status.HTTP_204_NO_CONTENT)
 		else:
-			raise OrderValidationException("La commande n'est pas annulable.", 'uncancellable_order')
+			raise OrderValidationException(
+				f"La commande n'est pas annulable ({order.get_status_display()}).",
+				'uncancellable_order'
+			)
 
 class OrderLineViewSet(ModelViewSet):
 	"""

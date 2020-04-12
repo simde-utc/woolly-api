@@ -11,7 +11,7 @@ import logging
 logger = logging.getLogger(f"woolly.{__name__}")
 
 
-def fetch_data_from_api(model: 'Model', oauth_client: 'OAuthAPI'=None, **params):
+def fetch_data_from_api(model: Model, oauth_client: 'OAuthAPI'=None, **params):
 	"""
 	Fetched additional data from the OAuth API
 	"""
