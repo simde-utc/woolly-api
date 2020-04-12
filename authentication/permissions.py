@@ -18,7 +18,7 @@ class IsUserOrAdmin(permissions.BasePermission):
 
 	def has_object_permission(self, request, view, obj):
 		user = request.user
-		return user.is_admin or obj == user
+		return user.is_admin or str(obj.pk) == str(user.pk)
 
 class IsAdminOrReadOnly(permissions.BasePermission):
 	def has_permission(self, request, view):
