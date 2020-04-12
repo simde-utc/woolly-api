@@ -46,7 +46,6 @@ class Sale(models.Model):
 	Defines a Sale
 	"""
 	# Description
-	# TODO Deal with it
 	id          = models.SlugField(primary_key=True, max_length=64, blank=False)
 	name        = models.CharField(max_length=NAME_FIELD_MAXLEN)
 	description = models.CharField(max_length=DESC_FIELD_MAXLEN, blank=True)
@@ -92,6 +91,8 @@ class ItemGroup(models.Model):
 	name         = models.CharField(max_length=NAME_FIELD_MAXLEN)
 	description  = models.CharField(max_length=DESC_FIELD_MAXLEN, blank=True)
 	sale         = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='itemgroups')
+
+	is_active    = models.BooleanField(default=True)
 	quantity     = models.PositiveIntegerField(blank=True, null=True)
 	max_per_user = models.PositiveIntegerField(blank=True, null=True)
 

@@ -109,8 +109,9 @@ class FakeModelFactory:
 
 		if model == Sale:
 			return {
-				'name':         kwargs.get('name',          self.faker.company()),
-				'description':  kwargs.get('description',   self.faker.paragraph()),
+				'id':           kwargs.get('id',          self.faker.slug()),
+				'name':         kwargs.get('name',        self.faker.company()),
+				'description':  kwargs.get('description', self.faker.paragraph()),
 				'association':  get_related_model('association', Association),
 				'is_active':    kwargs.get('is_active', True),
 				'is_public':    kwargs.get('is_public', True),
@@ -120,7 +121,7 @@ class FakeModelFactory:
 				'end_at':       format_date(kwargs.get('end_at',
 					self.faker.date_time_this_year(before_now=False, after_now=True)
 				)),
-				'max_item_quantity': kwargs.get('max_item_quantity', self.faker.random_number()),
+				'max_item_quantity': kwargs.get('max_item_quantity', self.faker.random_int()),
 			}
 
 		# ============================================
@@ -129,25 +130,25 @@ class FakeModelFactory:
 
 		if model == ItemGroup:
 			return {
-				'name':          kwargs.get('name',         self.faker.word()),
-				'quantity':      kwargs.get('quantity',     self.faker.random_number()),
-				'max_per_user':  kwargs.get('max_per_user', self.faker.random_number()),
+				'name':         kwargs.get('name',         self.faker.word()),
+				'sale':         get_related_model('sale',  Sale),
+				'is_active':    kwargs.get('is_active',    True),
+				'quantity':     kwargs.get('quantity',     self.faker.random_int()),
+				'max_per_user': kwargs.get('max_per_user', self.faker.random_int()),
 			}
 
 		if model == Item:
 			return {
-				'name':          kwargs.get('name',         self.faker.word()),
-				'description':   kwargs.get('description',  self.faker.paragraph()),
-				'sale':          get_related_model('sale',       Sale),
-				'group':         get_related_model('group',      ItemGroup),
-				'usertype':      get_related_model('usertype',   UserType),
-				'quantity':      kwargs.get('quantity',     self.faker.random_number()),
-				'max_per_user':  kwargs.get('max_per_user', self.faker.random_number()),
-				'is_active':     kwargs.get('is_active',    True),
-				'quantity':      kwargs.get('quantity',     self.faker.random_number()),
-				'price':         float(kwargs.get('price',  self.faker.random_number()/10.)),
-				'nemopay_id':    kwargs.get('nemopay_id',   self.faker.random_number()),
-				'max_per_user':  kwargs.get('max_per_user', self.faker.random_number()),
+				'name':         kwargs.get('name',         self.faker.word()),
+				'description':  kwargs.get('description',  self.faker.paragraph()),
+				'sale':         get_related_model('sale',       Sale),
+				'group':        get_related_model('group',      ItemGroup),
+				'usertype':     get_related_model('usertype',   UserType),
+				'quantity':     kwargs.get('quantity',     self.faker.random_int()),
+				'max_per_user': kwargs.get('max_per_user', self.faker.random_int()),
+				'is_active':    kwargs.get('is_active',    True),
+				'price':        float(kwargs.get('price',  self.faker.random_number() / 10.)),
+				'nemopay_id':   kwargs.get('nemopay_id',   self.faker.random_int()),
 				# 'fields':
 			}
 
@@ -166,7 +167,7 @@ class FakeModelFactory:
 					self.faker.date_time_this_year(before_now=True, after_now=False)
 				)),
 				'status': kwargs.get('status', OrderStatus.ONGOING.value),
-				'tra_id': kwargs.get('tra_id', self.faker.random_number()),
+				'tra_id': kwargs.get('tra_id', self.faker.random_int()),
 			}
 
 		if model == OrderLine:
