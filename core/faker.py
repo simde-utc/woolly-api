@@ -13,18 +13,20 @@ from sales.models import (
 
 Pk = Union[str, int, 'UUID']
 
+MODELS = (
+	User, UserType, Association, Sale, ItemGroup, Item,
+	Order, OrderStatus, OrderLine, OrderLineItem,
+	Field, ItemField, OrderLineField
+)
+
+MODELS_MAP = { Model.__name__.lower(): Model for Model in MODELS }
+
 
 class FakeModelFactory:
 	"""
 	Factory that generates instances of specified models filled with fake values.
 	Useful for testing purposes.
 	"""
-
-	MODELS = (
-		User, UserType, Association, Sale, ItemGroup, Item,
-		Order, OrderStatus, OrderLine, OrderLineItem,
-		Field, ItemField, OrderLineField
-	)
 
 	def __init__(self, seed: int=None):
 		self.faker = Faker()

@@ -1,12 +1,7 @@
 from django.core.management.base import BaseCommand
 
-from core.faker import FakeModelFactory
+from core.faker import FakeModelFactory, MODELS_MAP
 
-
-MODELS_MAP = {
-    Model.__name__.lower(): Model
-    for Model in FakeModelFactory.MODELS
-}
 
 MODELS_CHAINS = {
     'sale': ['itemgroup', 'item'],
@@ -67,6 +62,7 @@ class Command(BaseCommand):
 
             # Add model to store
             self.models[model].add(data)
+            self.kwargs[model] = data
             created_models.append(data)
 
             # Add relative models to store
