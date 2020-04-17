@@ -13,44 +13,6 @@ class UserType(models.Model):
 	name = models.CharField(max_length=50)
 	validation = models.CharField(max_length=255)
 
-	@staticmethod
-	def init_defaults():
-		"""
-		Initialize the different default UserTypes in DB
-		"""
-		DEFAULT_USER_TYPES = [
-			{
-				'id': 'cotisant_bde',
-				'name': 'Cotisant BDE',
-				'validation': 'user.fetched_data["types"]["contributorBde"]',
-			},
-			{
-				'id': 'utc',
-				'name': 'UTC',
-				'validation': 'user.fetched_data["types"]["cas"]',
-			},
-			{
-				'id': 'tremplin',
-				'name': 'Tremplin UTC',
-				'validation': 'user',
-			},
-			{
-				'id': 'exterieur',
-				'name': 'Extérieur',
-				'validation': 'True',
-			},
-		]
-		created = []
-		for type_data in DEFAULT_USER_TYPES:
-			pk = type_data.pop('id')
-			if UserType.objects.get_or_create(defaults=type_data, pk=pk)[1]:
-				created.append(pk)
-
-		if created:
-			print(f"Created {', '.join(created)}.")
-		else:
-			print("No new usertype to create.")
-
 	def check_user(self, user: 'User') -> bool:
 		"""
 		Check if the user has the current type
