@@ -1,4 +1,4 @@
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 from core.faker import FakeModelFactory, MODELS_MAP
 
@@ -95,9 +95,9 @@ class Command(BaseCommand):
 
     def handle(self, model: str, number: int=1, simple: bool=True, **options) -> str:
         if model not in MODELS_MAP:
-            raise ValueError(f"Model {model} does not exist.")
+            raise CommandError(f"Model {model} does not exist.")
         if number < 1:
-            raise ValueError(f"Must create at least one model")
+            raise CommandError(f"Must create at least one model")
 
         self.models = { key: set() for key in MODELS_MAP }
         self.kwargs = self.process_options(options)
