@@ -1,8 +1,9 @@
 from typing import Union, List, Dict, Any
-from core.helpers import format_date
-from faker import Faker
 
+from faker import Faker
 from django.db.models import Model
+
+from core.helpers import format_date
 from authentication.models import User, UserType
 from sales.models import (
 	Association, Sale, ItemGroup, Item,
@@ -11,6 +12,14 @@ from sales.models import (
 )
 
 Pk = Union[str, int, 'UUID']
+
+MODELS = (
+	User, UserType, Association, Sale, ItemGroup, Item,
+	Order, OrderStatus, OrderLine, OrderLineItem,
+	Field, ItemField, OrderLineField
+)
+
+MODELS_MAP = { Model.__name__.lower(): Model for Model in MODELS }
 
 
 class FakeModelFactory:
@@ -66,7 +75,7 @@ class FakeModelFactory:
 			NotImplementedError: in case the model is not implemented
 		"""
 
-		def get_related_model(key: str, model: Model) -> Union[Pk, Model]:
+		def get_related_model(key: str, _model: Model=None) -> Union[Pk, Model]:
 			"""
 			Helper to get or create a related Model
 
@@ -77,8 +86,12 @@ class FakeModelFactory:
 			Returns:
 				Union[Pk, Model]: the model or its primary key
 			"""
-			related = kwargs.get(key, self.create(model))
-			return getattr(related, 'pk', None) if withPk else related
+			if key in kwargs:
+				return kwargs[key]
+			elif _model is not None:
+				return self.create(_model)
+			else:
+				return None
 
 		# ============================================
 		# 	Authentication
@@ -146,7 +159,7 @@ class FakeModelFactory:
 				'name':         kwargs.get('name',         self.faker.word()),
 				'description':  kwargs.get('description',  self.faker.paragraph()),
 				'sale':         get_related_model('sale',       Sale),
-				'group':        get_related_model('group',      ItemGroup),
+				'group':        get_related_model('group',      None),
 				'usertype':     get_related_model('usertype',   UserType),
 				'quantity':     kwargs.get('quantity',     self.faker.random_int()),
 				'max_per_user': kwargs.get('max_per_user', self.faker.random_int()),
