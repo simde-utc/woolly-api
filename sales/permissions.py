@@ -130,7 +130,7 @@ def check_order_ownership(request, view, obj):
         owner = obj.orderline.order.owner
     elif isinstance(obj, OrderLineField):
         owner = obj.orderlineitem.orderline.order.owner
-    return str(owner.pk) == str(request.user.pk)
+    return owner == request.user
 
 # Used for Order, OrderLine
 class IsOrderOwnerOrAdmin(CustomPermission):

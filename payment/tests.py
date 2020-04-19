@@ -63,7 +63,7 @@ class OrderValidatorTestCase(APITestCase):
 		]
 		self.user = self.users[0]
 
-		def only_for_users(users):
+		def only_for_users(users) -> str:
 			users_id = [ str(user.id) for user in users ]
 			return f"str(user.id) in {users_id}"
 

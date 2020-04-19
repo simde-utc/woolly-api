@@ -1,5 +1,5 @@
 from django.db.utils import IntegrityError
-from django.db.models import QuerySet, Model
+from django.db.models import QuerySet, Model, UUIDField
 from django.db.models.manager import BaseManager
 from typing import Union, Sequence, Set, Tuple
 
@@ -133,6 +133,7 @@ class APIModel(Model):
 	"""
 	Model with additional data that can be fetched from the OAuth API
 	"""
+	id = UUIDField(primary_key=True, editable=False)
 	objects = APIManager()
 	fetched_data = None
 	CACHE_TIMEOUT = API_MODEL_CACHE_TIMEOUT
@@ -148,6 +149,17 @@ class APIModel(Model):
 		if self.fetched_data and attr in self.fetched_data:
 			return self.fetched_data[attr]
 		raise AttributeError(f"'{self.__class__.__name__}' has no attribute '{attr}'")
+
+	def __eq__(self, other) -> bool:
+		if not isinstance(other, APIModel):
+			return False
+		elif self._meta.concrete_model != other._meta.concrete_model:
+			return False
+		elif self.pk is None:
+			return self is other
+		else:
+			# Support UUID and string comparison
+			return str(self.pk) == str(other.pk)
 
 	@classmethod
 	def field_names(cls) -> Tuple[str]:

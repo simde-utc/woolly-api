@@ -258,7 +258,7 @@ class OrderLineViewSet(ModelViewSet):
 
 		# Check Order owner
 		user = request.user
-		if not (user.is_authenticated and user.is_admin or str(order.owner.pk) == str(user.pk)):
+		if not (user.is_authenticated and user.is_admin or order.owner == user):
 			raise PermissionDenied()
 
 		# Check if Order is open
