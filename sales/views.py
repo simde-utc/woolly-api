@@ -335,6 +335,17 @@ class FieldViewSet(ModelViewSet):
 	serializer_class = FieldSerializer
 	permission_classes = (IsAdminOrReadOnly,)
 
+	def get_sub_urls_filters(self, queryset) -> dict:
+		"""
+		Override of core.viewsets.ModelViewSet for owner-user correspondance
+		"""
+		filters = super().get_sub_urls_filters(queryset)
+		# Change item__pk for items__pk because of many-to-many relation
+		if 'item__pk' in filters:
+			filters['items__pk'] = filters.pop('item__pk')
+		return filters
+
+
 class ItemFieldViewSet(ModelViewSet):
 	"""
 	Defines the view which display the items of an orderline
