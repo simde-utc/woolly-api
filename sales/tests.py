@@ -61,15 +61,15 @@ class OrderViewSetTestCase(ModelViewSetTestCase):
 		'create': { 'public': False, 'user': True, 'other': True, 'admin': True },
 	}
 
-	def additionnal_setUp(self):
-		self.sale = self.modelFactory.create(Sale)
+	def additionnal_setUp(self) -> None:
+		self.sale = self.factory.create(Sale)
 
-	def get_object_attributes(self, user: User=None, withPk: bool=True) -> dict:
-		return self.modelFactory.get_attributes(self.model, withPk=withPk, sale=self.sale, owner=None)
+	def get_object_attributes(self, user: User=None, **kwargs) -> dict:
+		return super().get_object_attributes(sale=self.sale, owner=user, **kwargs)
 
 	def create_object(self, user: User=None) -> Order:
-		data = self.get_object_attributes(user, withPk=False)
-		data['status'] = OrderStatus.AWAITING_PAYMENT.value
+		data = self.get_object_attributes(user=user)
+		data['status'] = OrderStatus.AWAITING_VALIDATION.value
 		return self.model.objects.create(**data)
 
 	def get_url(self, pk=None) -> str:
@@ -132,17 +132,13 @@ class OrderLineViewSetTestCase(ModelViewSetTestCase):
 
 	def additionnal_setUp(self):
 		# Order is own by user for the purpose of the tests
-		self.order = self.modelFactory.create(Order, owner=self.users['user'])
+		self.order = self.factory.create(Order, owner=self.users['user'])
 		self.assertEqual(self.order.owner, self.users['user'],
 		                 "Erreur de configuration, l'order doit être faite par 'user'")
 
-	def get_object_attributes(self, user: User=None, withPk: bool=True) -> dict:
-		options = {
-			'order': self.order,
-			'quantity': 5
-		}
-		return self.modelFactory.get_attributes(self.model, withPk=withPk, **options)
-		
+	def get_object_attributes(self, user: User=None, **kwargs) -> dict:
+		return super().get_object_attributes(order=self.order, quantity=5, **kwargs)
+
 	def get_url(self, pk=None) -> str:
 		return super().get_url(pk) + "?all"
 
@@ -173,12 +169,12 @@ class OrderLineItemViewSetTestCase:
 
 	def additionnal_setUp(self):
 		# Order is own by user for the purpose of the tests
-		self.order = self.modelFactory.create(Order, owner=self.users['user'])
-		self.orderline = self.modelFactory.create(OrderLine, order=self.order)
+		self.order = self.factory.create(Order, owner=self.users['user'])
+		self.orderline = self.factory.create(OrderLine, order=self.order)
 		self.assertEqual(self.orderline.order.owner, self.users['user'], "Erreur de configuration, l'order doit être faite par 'user'")
 
-	def get_object_attributes(self, user: User=None, withPk: bool=True) -> dict:
-		return self.modelFactory.get_attributes(self.model, withPk=withPk, orderline=self.orderline)
+	def get_object_attributes(self, user: User=None, **kwargs) -> dict:
+		return super().get_object_attributes(orderline=self.orderline, **kwargs)
 
 
 # @tag('order', 'field')
@@ -194,14 +190,14 @@ class OrderLineFieldViewSetTestCase:
 	})
 
 	def additionnal_setUp(self):
-		self.item = self.modelFactory.create(Item)
-		self.field = self.modelFactory.create(Field)
-		self.itemfield = self.modelFactory.create(ItemField, item=self.item, field=self.field, editable=True)
+		self.item = self.factory.create(Item)
+		self.field = self.factory.create(Field)
+		self.itemfield = self.factory.create(ItemField, item=self.item, field=self.field, editable=True)
 
 		# Order is own by user for the purpose of the tests
-		self.order = self.modelFactory.create(Order, owner=self.users['user'])
-		self.orderline = self.modelFactory.create(OrderLine, order=self.order, item=self.item, quantity=1)
-		self.orderlineitem = self.modelFactory.create(OrderLineItem, orderline=self.orderline)
+		self.order = self.factory.create(Order, owner=self.users['user'])
+		self.orderline = self.factory.create(OrderLine, order=self.order, item=self.item, quantity=1)
+		self.orderlineitem = self.factory.create(OrderLineItem, orderline=self.orderline)
 
 		# Tests
 		self.assertEqual(self.orderlineitem.orderline.order.owner, self.users['user'])
@@ -209,9 +205,8 @@ class OrderLineFieldViewSetTestCase:
 		self.assertEqual(self.itemfield.item, self.item)
 		self.assertEqual(self.itemfield.field, self.field)
 
-	def get_object_attributes(self, user: User=None, withPk: bool=True) -> dict:
-		options = {
-			'orderlineitem': self.orderlineitem,
-			'field': self.field,
-		}
-		return self.modelFactory.get_attributes(self.model, withPk=withPk, **options)
+	def get_object_attributes(self, user: User=None, **kwargs) -> dict:
+		return super().get_object_attributes(
+			orderlineitem=self.orderlineitem,
+			field=self.field,
+			**kwargs)

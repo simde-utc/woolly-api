@@ -1,4 +1,5 @@
 from rest_framework import permissions
+from rest_framework.exceptions import MethodNotAllowed
 
 from core.exceptions import InvalidRequest
 from core.permissions import CustomPermission
@@ -53,6 +54,9 @@ class IsManagerOrReadOnly(permissions.BasePermission):
         Model = view.queryset.model
         if Model not in { Association, Sale, Item, ItemGroup, ItemField }:
             raise NotImplementedError(f"Model {Model} is not managed")
+
+        if view.action is None:
+            raise MethodNotAllowed(request.method)
 
         hasPk = 'pk' in view.kwargs
         pk = view.kwargs.get('pk')
@@ -119,14 +123,14 @@ class IsManagerOrReadOnly(permissions.BasePermission):
 
 def check_order_ownership(request, view, obj):
     if isinstance(obj, Order):
-        return obj.owner == request.user
-    if isinstance(obj, OrderLine):
-        return obj.order.owner == request.user
-    if isinstance(obj, OrderLineItem):
-        return obj.orderline.order.owner == request.user
-    if isinstance(obj, OrderLineField):
-        return obj.orderlineitem.orderline.order.owner == request.user
-    return False
+        owner = obj.owner
+    elif isinstance(obj, OrderLine):
+        owner = obj.order.owner
+    elif isinstance(obj, OrderLineItem):
+        owner = obj.orderline.order.owner
+    elif isinstance(obj, OrderLineField):
+        owner = obj.orderlineitem.orderline.order.owner
+    return str(owner.pk) == str(request.user.pk)
 
 # Used for Order, OrderLine
 class IsOrderOwnerOrAdmin(CustomPermission):

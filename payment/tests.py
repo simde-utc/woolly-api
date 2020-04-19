@@ -34,7 +34,7 @@ def start_and_await_jobs(jobs: Sequence[Thread]) -> None:
 @tag('validation')
 class OrderValidatorTestCase(APITestCase):
 
-	modelFactory = FakeModelFactory()
+	factory = FakeModelFactory()
 
 	def setUp(self):
 		now    = timezone.now()
@@ -49,7 +49,7 @@ class OrderValidatorTestCase(APITestCase):
 		}
 
 		# Default models
-		self.sale = self.modelFactory.create(Sale,
+		self.sale = self.factory.create(Sale,
 			is_active = True,
 			begin_at  = self.datetimes['before'],
 			end_at    = self.datetimes['after'],
@@ -57,9 +57,9 @@ class OrderValidatorTestCase(APITestCase):
 		)
 
 		self.users = [
-			self.modelFactory.create(User),	 # normal
-			self.modelFactory.create(User),	 # other
-			self.modelFactory.create(User),	 # different usertype
+			self.factory.create(User),	 # normal
+			self.factory.create(User),	 # other
+			self.factory.create(User),	 # different usertype
 		]
 		self.user = self.users[0]
 
@@ -68,14 +68,14 @@ class OrderValidatorTestCase(APITestCase):
 			return f"str(user.id) in {users_id}"
 
 		self.usertypes = [
-			self.modelFactory.create(UserType, validation=only_for_users(self.users[:2])),
-			self.modelFactory.create(UserType, validation=only_for_users(self.users[2:])),
+			self.factory.create(UserType, validation=only_for_users(self.users[:2])),
+			self.factory.create(UserType, validation=only_for_users(self.users[2:])),
 		]
 		self.usertype = self.usertypes[0]
 
-		self.itemgroup = self.modelFactory.create(ItemGroup, quantity=400, max_per_user=5)
+		self.itemgroup = self.factory.create(ItemGroup, quantity=400, max_per_user=5)
 		self.items = [
-			self.modelFactory.create(Item,
+			self.factory.create(Item,
 				sale         = self.sale,
 				group        = self.itemgroup,
 				usertype     = self.usertypes[0],
@@ -83,7 +83,7 @@ class OrderValidatorTestCase(APITestCase):
 				quantity     = 300,
 				max_per_user = 7,
 			),
-			self.modelFactory.create(Item,
+			self.factory.create(Item,
 				sale         = self.sale,
 				group        = self.itemgroup,
 				usertype     = self.usertypes[1],
@@ -104,14 +104,14 @@ class OrderValidatorTestCase(APITestCase):
 		Helper to create an order and one orderline
 		"""
 		item = item or self.items[0]
-		order = self.modelFactory.create(Order,
+		order = self.factory.create(Order,
 			owner=user,
 			sale=self.sale,
 			created_at=self.datetimes['now'],
 			updated_at=self.datetimes['now'],
 			status=status,
 		)
-		orderline = self.modelFactory.create(OrderLine, item=item, order=order, quantity=2)
+		orderline = self.factory.create(OrderLine, item=item, order=order, quantity=2)
 		return order, orderline
 
 	def _test_validation(self, should_pass, order=None, messages=None, *args, **kwargs):
@@ -280,7 +280,7 @@ class OrderValidatorTestCase(APITestCase):
 @tag('validation', 'shotgun')
 class ShotgunTestCase(APITransactionTestCase):
 
-	modelFactory = FakeModelFactory()
+	factory = FakeModelFactory()
 
 	n_users = 10
 	n_items = 2
@@ -297,16 +297,19 @@ class ShotgunTestCase(APITransactionTestCase):
 
 		# Create sale and users
 		with transaction.atomic():
-			self.sale = self.modelFactory.create(Sale, max_item_quantity=None)
-			self.usertype = self.modelFactory.create(UserType, validation='True')
-			self.group = self.modelFactory.create(ItemGroup, quantity=None, max_per_user=None)
+			self.sale = self.factory.create(Sale, max_item_quantity=None)
+			self.usertype = self.factory.create(UserType, validation='True')
+			self.group = self.factory.create(ItemGroup, quantity=None, max_per_user=None)
 			self.items = [
-				self.modelFactory.create(Item,
-					sale=self.sale, usertype=self.usertype, group=self.group,
-					quantity=None, max_per_user=None
+				self.factory.create(Item,
+					sale=self.sale,
+					group=self.group,
+					usertype=self.usertype,
+					quantity=None,
+					max_per_user=None
 				) for _ in range(self.n_items)
 			]
-			self.users = [ self.modelFactory.create(User) for _ in range(self.n_users) ]
+			self.users = [ self.factory.create(User) for _ in range(self.n_users) ]
 
 	# =================================================
 	# 		Tests quantity in case of shotgun
