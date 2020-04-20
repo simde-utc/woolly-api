@@ -122,7 +122,7 @@ class CRUDTestCaseMixin:
 	model = None
 	crud_actions = None
 	permissions = DEFAULT_CRUD_PERMISSIONS
-	modelFactory = FakeModelFactory()
+	factory = FakeModelFactory()
 	auto_add_testcase = True
 
 	def setUp(self) -> None:
@@ -135,9 +135,9 @@ class CRUDTestCaseMixin:
 
 		# Create test users users
 		self.users = {
-			'admin':  self.modelFactory.create(User, email="admin@woolly.com", is_admin=True),
-			'user':   self.modelFactory.create(User, email="user@woolly.com"),
-			'other':  self.modelFactory.create(User, email="other@woolly.com"),
+			'admin':  self.factory.create(User, email="admin@woolly.com", is_admin=True),
+			'user':   self.factory.create(User, email="user@woolly.com"),
+			'other':  self.factory.create(User, email="other@woolly.com"),
 			'public': None
 		}
 
@@ -163,7 +163,7 @@ class CRUDTestCaseMixin:
 		"""
 		Method used to create the initial object on setUp, can be overriden
 		"""
-		data = self.get_object_attributes(user, withPk=False)
+		data = self.get_object_attributes(user=user)
 		return self.model.objects.create(**data)
 
 	def get_url(self, pk: Any=None) -> str:
@@ -208,18 +208,12 @@ class CRUDTestCaseMixin:
 			return status.HTTP_204_NO_CONTENT
 		return status.HTTP_200_OK
 
-	def get_object_attributes(self, user: User=None, withPk: bool=True) -> dict:
+	def get_object_attributes(self, **kwargs) -> dict:
 		"""
-		Method used to generate new object data with user, can be overriden
-
-		Args:
-			user: the User attached to the object (default: None)
-			withPk:  (default: True)
-
-		Returns:
-			dict: the generated data for the object
+		Method used to generate new object data using FakeModelFactory.
+		Can be overriden to add default keyword arguments
 		"""
-		return self.modelFactory.get_attributes(self.model, withPk=withPk, user=user)
+		return self.factory.get_attributes(self.model, **kwargs)
 
 	# ========================================================
 	# 		Test methods
@@ -284,7 +278,7 @@ class CRUDTestCaseMixin:
 
 					is_allowed = self.is_allowed(action, user)
 					if action in ('create', 'update'):
-						options['data'] = self.get_object_attributes(self.users.get(user))
+						options['data'] = self.get_object_attributes(user=self.users.get(user))
 					else:
 						options['data'] = None
 
@@ -309,8 +303,8 @@ class APIModelViewSetTestCase(CRUDTestCaseMixin, metaclass=CRUDViewSetTestMeta):
 	"""
 	crud_actions = READ_ONLY_CRUD_ACTIONS
 
-	def _test_not_allowed_method(self, method: str, withPk: bool=False):
-		url = self.get_url(pk=(self.object.pk if withPk else None))
+	def _test_not_allowed_method(self, method: str, with_pk: bool=False):
+		url = self.get_url(pk=(self.object.pk if with_pk else None))
 		for user in self.users:
 			codes = (status.HTTP_403_FORBIDDEN, status.HTTP_405_METHOD_NOT_ALLOWED)
 			self._test_user_permission(url, user, method=method, expected_status_code=codes)
@@ -325,11 +319,11 @@ class APIModelViewSetTestCase(CRUDTestCaseMixin, metaclass=CRUDViewSetTestMeta):
 		"""
 		Test that it is not possible to update a resource through the API
 		"""
-		self._test_not_allowed_method('put', withPk=True)
-		self._test_not_allowed_method('patch', withPk=True)
+		self._test_not_allowed_method('put', with_pk=True)
+		self._test_not_allowed_method('patch', with_pk=True)
 
 	def test_delete_view(self):
 		"""
 		Test that it is not possible to delete a resource through the API
 		"""
-		self._test_not_allowed_method('delete', withPk=True)
+		self._test_not_allowed_method('delete', with_pk=True)

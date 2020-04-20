@@ -10,7 +10,7 @@ class UserViewSetTestCase(APIModelViewSetTestCase):
 		# 'update':   '.u.a',  # TODO Only user and admin can update ??
 	})
 
-	def create_object(self, user=None):
+	def create_object(self, user: User=None) -> User:
 		return self.users['user']
 
 class UserTypeViewSetTestCase(ModelViewSetTestCase):

@@ -258,7 +258,7 @@ class OrderLineViewSet(ModelViewSet):
 
 		# Check Order owner
 		user = request.user
-		if not (user.is_authenticated and user.is_admin or str(order.owner.pk) == str(user.pk)):
+		if not (user.is_authenticated and user.is_admin or order.owner == user):
 			raise PermissionDenied()
 
 		# Check if Order is open
@@ -334,6 +334,17 @@ class FieldViewSet(ModelViewSet):
 	queryset = Field.objects.all()
 	serializer_class = FieldSerializer
 	permission_classes = (IsAdminOrReadOnly,)
+
+	def get_sub_urls_filters(self, queryset) -> dict:
+		"""
+		Override of core.viewsets.ModelViewSet for owner-user correspondance
+		"""
+		filters = super().get_sub_urls_filters(queryset)
+		# Change item__pk for items__pk because of many-to-many relation
+		if 'item__pk' in filters:
+			filters['items__pk'] = filters.pop('item__pk')
+		return filters
+
 
 class ItemFieldViewSet(ModelViewSet):
 	"""

@@ -30,16 +30,17 @@ class ItemGroupSerializer(ModelSerializer):
 		fields = '__all__' 		# DEBUG
 
 class ItemSerializer(ModelSerializer):
-	sale     = RelatedField(queryset=Sale.objects.all())
-	group    = RelatedField(queryset=ItemGroup.objects.all(), allow_null=True, required=False)
-	usertype = RelatedField(queryset=UserType.objects.all())
+	sale       = RelatedField(queryset=Sale.objects.all())
+	group      = RelatedField(queryset=ItemGroup.objects.all(), allow_null=True, required=False)
+	usertype   = RelatedField(queryset=UserType.objects.all())
+	itemfields = RelatedField(many=True, read_only=True)
 	# fields   = RelatedField(queryset=Field.objects.all(), many=True, required=False)
 	# TODO Fix
 
 	quantity_left = serializers.IntegerField(read_only=True)
 
 	included_serializers = {
-		# 'itemfields': 'sales.serializers.ItemFieldSerializer',
+		'itemfields': 'sales.serializers.ItemFieldSerializer',
 		'sale': 'sales.serializers.SaleSerializer',
 		'itemgroup': ItemGroupSerializer,
 		'usertype': UserTypeSerializer,

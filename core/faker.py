@@ -59,13 +59,12 @@ class FakeModelFactory:
 				for __ in range(nb)
 			]
 
-	def get_attributes(self, model: Model, withPk: bool=False, **kwargs) -> Dict[str, Any]:
+	def get_attributes(self, model: Model, **kwargs) -> Dict[str, Any]:
 		"""
 		Generates the attributes required to create a specified Model
 
 		Args:
 			model (Model): the Model whose attributes are to be created
-			withPk: whether to return related Model or simply its Primary key (default: False)
 			kwargs: fixed attributes
 
 		Returns:
