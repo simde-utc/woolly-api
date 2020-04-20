@@ -1,7 +1,7 @@
 from django.db import models
+from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser
 
-from woolly_api.settings import TEST_MODE
 from core.models import APIModel
 from authentication.exceptions import UserTypeValidationError
 
@@ -19,7 +19,7 @@ class UserType(models.Model):
         """
         if not isinstance(user, User):
             raise ValueError("Provided user must be an instance of authentication.User")
-        if not TEST_MODE and not getattr(user, 'fetched_data', None):
+        if not settings.TEST_MODE and not getattr(user, 'fetched_data', None):
             raise ValueError("User full data must be fetched first")
         try:
             return eval(self.validation, {}, { 'user': user })

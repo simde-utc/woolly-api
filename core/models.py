@@ -1,12 +1,12 @@
 from typing import Union, Sequence, Set, Tuple
 import logging
 
+from django.conf import settings
 from django.core.cache import cache
 from django.db.utils import IntegrityError
 from django.db.models import QuerySet, Model, UUIDField
 from django.db.models.manager import BaseManager
 
-from woolly_api.settings import API_MODEL_CACHE_TIMEOUT
 from core.helpers import filter_dict_keys, iterable_to_map
 
 logger = logging.getLogger(f"woolly.{__name__}")
@@ -139,7 +139,7 @@ class APIModel(Model):
     id = UUIDField(primary_key=True, editable=False)
     objects = APIManager()
     fetched_data = None
-    CACHE_TIMEOUT = API_MODEL_CACHE_TIMEOUT
+    CACHE_TIMEOUT = settings.API_MODEL_CACHE_TIMEOUT
 
     @property
     def is_synched(self) -> bool:

@@ -2,13 +2,13 @@ from typing import Union
 
 from authlib.common.errors import AuthlibBaseError
 from authlib.integrations.requests_client import OAuth2Session
+from django.conf import settings
 from django.core.cache import cache
 from django.contrib import auth as django_auth
 from django.contrib.auth.backends import ModelBackend
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
-from woolly_api.settings import OAUTH as OAuthConfig
 from core.helpers import filter_dict_keys
 from authentication.exceptions import OAuthException, OAuthTokenException
 
@@ -66,7 +66,7 @@ class OAuthAPI:
         OAuth2 Client initialisation
         """
         self.provider = provider
-        self.config = config or OAuthConfig[provider].copy()
+        self.config = config or settings.OAUTH[provider].copy()
         if token:
             self.config['token'] = token
         elif session:
