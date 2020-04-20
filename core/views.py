@@ -32,6 +32,6 @@ def api_root(request, format=None):
         'orderlinefields': reverse('orderlinefields-list', request=request, format=format),
         'orderlineitems':  reverse('orderlineitems-list',  request=request, format=format),
 
-        # PaymentMethods
-        'paymentmethods':  reverse('paymentmethods-list',    request=request, format=format),
+        # TODO PaymentMethods
+        # 'paymentmethods':  reverse('paymentmethods-list',    request=request, format=format),
     })
