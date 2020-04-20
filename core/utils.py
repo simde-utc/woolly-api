@@ -1,5 +1,6 @@
 import os
 from io import BytesIO
+from base64 import b64encode
 
 from rest_framework.renderers import BrowsableAPIRenderer as BaseAPIRenderer
 from django.conf import settings
@@ -27,23 +28,11 @@ class BrowsableAPIRenderer(BaseAPIRenderer):
         return ctx
 
 
-# ===============================================================================
-#       PDF & QR Code utils
-# ===============================================================================
+# --------------------------------------------
+#   Tickets
+# --------------------------------------------
 
-def render_to_pdf(template_src: str, context_dict: dict={}) -> HttpResponse:
-    html = get_template(template_src).render(context_dict)
-
-    pdf_buffer = BytesIO()
-    html_buffer = BytesIO(html.encode('UTF-8'))
-    pdf = pisa.pisaDocument(html_buffer, pdf_buffer, link_callback=fetch_assets)
-
-    if not pdf.err:
-        return HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
-    return None
-
-
-def fetch_assets(uri: str) -> str:
+def link_asset(uri: str) -> str:
     """
     Callback to allow xhtml2pdf/reportlab to retrieve Images,Stylesheets, etc.
     `uri` is the href attribute from the html link element.
@@ -63,14 +52,27 @@ def fetch_assets(uri: str) -> str:
     return path
 
 
-def data_to_qrcode(data: str):
+def render_to_pdf(template_src: str, context_dict: dict={}) -> HttpResponse:
+    html = get_template(template_src).render(context_dict)
+
+    pdf_buffer = BytesIO()
+    html_buffer = BytesIO(html.encode('UTF-8'))
+    pdf = pisa.pisaDocument(html_buffer, pdf_buffer, link_callback=link_asset)
+
+    if not pdf.err:
+        return HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+    return None
+
+
+def base64_qrcode(data: str) -> str:
     """
     Return a qrcode image from data
     """
     # Add border to improve readability
     qr_code = QRCode(error_correction=ERROR_CORRECT_Q, box_size=8, border=2)
-
-    # Remove all - in uuid to comply to Weezevent
-    qr_code.add_data(str(data).replace('-', ''))
+    qr_code.add_data(data)
     qr_code.make(fit=True)
-    return qr_code.make_image()
+
+    image_buffer = BytesIO()
+    qr_code.make_image().save(image_buffer)
+    return b64encode(image_buffer.getvalue()).decode('utf-8')

@@ -18,8 +18,8 @@ class IsManagerOrReadOnly(permissions.BasePermission):
     Used for Association, Sale, ItemGroup, Item, ItemField
     """
 
-    def get_url_param(self, name: str):
-        param_request = self.request.data.get(name)
+    def get_url_param(self, request, name: str):
+        param_request = request.data.get(name)
         if param_request:
             return param_request
         else:
@@ -27,7 +27,7 @@ class IsManagerOrReadOnly(permissions.BasePermission):
 
         # TODO Needed ?
         """
-        param_kwargs = self.view.kwargs.get(f"{name}_pk")
+        param_kwargs = view.kwargs.get(f"{name}_pk")
 
         # Need one or the other or both equal
         if param_request:
@@ -65,26 +65,26 @@ class IsManagerOrReadOnly(permissions.BasePermission):
             if view.action in {'create', 'delete'}:
                 return False
             else:
-                return view.kwargs.get('pk')
+                return pk
 
         elif Model == Sale:
             if hasPk:
                 return self.get_related_model(Sale, pk).association_id
             else:
-                return self.get_url_param('association')
+                return self.get_url_param(request, 'association')
 
         elif Model in { Item, ItemGroup }:
             if hasPk:
                 return self.get_related_model(Model, pk, 'sale').sale.association_id
             else:
-                sale_pk = self.get_url_param('sale')
+                sale_pk = self.get_url_param(request, 'sale')
                 return self.get_related_model(Sale, sale_pk).association_id
 
         elif Model == ItemField:
             if hasPk:
                 return self.get_related_model(ItemField, pk, 'item__sale').item.sale.association_id
             else:
-                item_pk = self.get_url_param('item')
+                item_pk = self.get_url_param(request, 'item')
                 return self.get_related_model(Item, item_pk, 'sale').sale.association_id
 
         raise InvalidRequest("Could not retrieve related Association")
@@ -132,8 +132,9 @@ def check_order_ownership(request, view, obj):
         owner = obj.orderlineitem.orderline.order.owner
     return owner == request.user
 
-# Used for Order, OrderLine
+
 class IsOrderOwnerOrAdmin(CustomPermission):
+    """Used for Order, OrderLine"""
     require_authentication = True
     pass_for_obj = True
     allow_admin = True
@@ -144,17 +145,20 @@ class IsOrderOwnerOrAdmin(CustomPermission):
 def allow_only_retrieve_for_non_admin(request, view):
     return view.action == 'retrieve' or request.user.is_admin
 
-# Used for OrderLineItem
+
 class IsOrderOwnerReadOnlyOrAdmin(CustomPermission):
+    """Used for OrderLineItem"""
     require_authentication = True
     permission_functions = (allow_only_retrieve_for_non_admin,)
     object_permission_functions = (check_order_ownership,)
 
+
 def no_delete(request, view, obj):
     return not view.action == 'destroy'
 
-# Used for OrderLineField
+
 class IsOrderOwnerReadUpdateOrAdmin(CustomPermission):
+    """Used for OrderLineField"""
     require_authentication = True
     pass_for_obj = True
     allow_admin = True

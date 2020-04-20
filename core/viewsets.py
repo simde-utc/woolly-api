@@ -1,3 +1,5 @@
+from typing import Any
+
 from rest_framework.response import Response
 from rest_framework import viewsets
 
@@ -22,6 +24,9 @@ class ModelViewSetMixin(object):
         """
         value = self.request.GET.get(key)
         return value is None or value.lower() != 'false'
+
+    def get_kwarg(self, kwarg_key: str, data_key: str, default_value: Any=None) -> Any:
+        return self.kwargs.get(kwarg_key, self.request.data.get(data_key, default_value))
 
     def get_queryset(self):
         """

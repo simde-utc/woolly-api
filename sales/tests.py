@@ -4,201 +4,221 @@ from rest_framework import status
 from core.testcases import APIModelViewSetTestCase, ModelViewSetTestCase, get_permissions_from_compact
 from authentication.models import User
 from sales.models import (
-	Association, Sale, ItemGroup, Item, OrderStatus, Order, OrderLine,
-	Field, ItemField, OrderLineItem, OrderLineField
+    Association, Sale, ItemGroup, Item, OrderStatus, Order, OrderLine,
+    Field, ItemField, OrderLineItem, OrderLineField
 )
 
 
 # Used for Association, Sale, ItemGroup, Item, ItemField
 ManagerOrReadOnly = get_permissions_from_compact({
-	'list':     'puoa',    # Everyone can list
-	'retrieve': 'puoa',    # Everyone can retrieve
-	'create':   '...a',    # Only admin can create
-	'update':   '...a',    # Only managers & admin can update
-	'delete':   '...a',    # Only admin can delete
+    'list':     'puoa',    # Everyone can list
+    'retrieve': 'puoa',    # Everyone can retrieve
+    'create':   '...a',    # Only admin can create
+    'update':   '...a',    # Only managers & admin can update
+    'delete':   '...a',    # Only admin can delete
 })
 
 # Used for Order, OrderLine, OrderLineItem, OrderLineField
 OrderOwnerOrAdmin = get_permissions_from_compact({
-	'list':     '...a',    # Only admin can list
-	'retrieve': '.u.a',    # Only owner and admin can retrieve
-	'create':   '.u.a',    # Only owner and admin can create
-	'update':   '.u.a',    # Only owner and admin can update
-	'delete':   '.u.a',    # Only owner and admin can delete
+    'list':     '...a',    # Only admin can list
+    'retrieve': '.u.a',    # Only owner and admin can retrieve
+    'create':   '.u.a',    # Only owner and admin can create
+    'update':   '.u.a',    # Only owner and admin can update
+    'delete':   '.u.a',    # Only owner and admin can delete
 })
 
 
+# --------------------------------------------
+#   Associations
+# --------------------------------------------
+
 @tag('association')
 class AssociationViewSetTestCase(APIModelViewSetTestCase):
-	model = Association
-	permissions = ManagerOrReadOnly
+    model = Association
+    permissions = ManagerOrReadOnly
 
 # TODO check visibilities
 @tag('sale')
 class SaleViewSetTestCase(ModelViewSetTestCase):
-	model = Sale
-	permissions = ManagerOrReadOnly
+    model = Sale
+    permissions = ManagerOrReadOnly
 
+
+# --------------------------------------------
+#   Items
+# --------------------------------------------
 
 @tag('item')
 class ItemGroupViewSetTestCase(ModelViewSetTestCase):
-	model = ItemGroup
-	permissions = ManagerOrReadOnly
+    model = ItemGroup
+    permissions = ManagerOrReadOnly
 
 # TODO test different usertypes
 @tag('item')
 class ItemViewSetTestCase(ModelViewSetTestCase):
-	model = Item
-	permissions = ManagerOrReadOnly
+    model = Item
+    permissions = ManagerOrReadOnly
 
+
+# --------------------------------------------
+#   Orders
+# --------------------------------------------
 
 @tag('order')
 class OrderViewSetTestCase(ModelViewSetTestCase):
-	model = Order
-	permissions = {
-		**OrderOwnerOrAdmin,
-		# Every logged user can create order
-		'create': { 'public': False, 'user': True, 'other': True, 'admin': True },
-	}
+    model = Order
+    permissions = {
+        **OrderOwnerOrAdmin,
+        # Every logged user can create order
+        'create': { 'public': False, 'user': True, 'other': True, 'admin': True },
+    }
 
-	def additionnal_setUp(self) -> None:
-		self.sale = self.factory.create(Sale)
+    def additionnal_setUp(self) -> None:
+        self.sale = self.factory.create(Sale)
 
-	def get_object_attributes(self, user: User=None, **kwargs) -> dict:
-		return super().get_object_attributes(sale=self.sale, owner=user, **kwargs)
+    def get_object_attributes(self, user: User=None, **kwargs) -> dict:
+        return super().get_object_attributes(sale=self.sale, owner=user, **kwargs)
 
-	def create_object(self, user: User=None) -> Order:
-		data = self.get_object_attributes(user=user)
-		data['status'] = OrderStatus.AWAITING_VALIDATION.value
-		return self.model.objects.create(**data)
+    def create_object(self, user: User=None) -> Order:
+        data = self.get_object_attributes(user=user)
+        data['status'] = OrderStatus.AWAITING_VALIDATION.value
+        return self.model.objects.create(**data)
 
-	def get_url(self, pk=None) -> str:
-		return super().get_url(pk) + "?all"
+    def get_url(self, pk=None) -> str:
+        return super().get_url(pk) + "?all"
 
-	def get_expected_status_code(self, method: str, allowed: bool, user: str):
-		if allowed and method == 'post':
-			return status.HTTP_200_OK if user == 'user' else status.HTTP_201_CREATED
-		return super().get_expected_status_code(method, allowed, user)
+    def get_expected_status_code(self, method: str, allowed: bool, user: str):
+        if allowed and method == 'post':
+            return status.HTTP_200_OK if user == 'user' else status.HTTP_201_CREATED
+        return super().get_expected_status_code(method, allowed, user)
 
-	def test_order_update(self):
-		"""
-		Test the response generated by an order update
-		"""
-		order = self.object
+    def test_order_update(self):
+        """
+        Test the response generated by an order update
+        """
+        order = self.object
 
-		# Map of possible transitions:
-		# { (old_status, new_status): redirect_to_payment, tickets_generated }
-		POSSIBLE_TRANSITIONS = {
-			('ONGOING',             'AWAITING_VALIDATION'): (False, False),
-			('ONGOING',             'AWAITING_PAYMENT'):    (True,  False),
-			('ONGOING',             'EXPIRED'):             (False, False),
-			('ONGOING',             'CANCELLED'):           (False, False),
+        # Map of possible transitions:
+        # { (old_status, new_status): redirect_to_payment, tickets_generated }
+        POSSIBLE_TRANSITIONS = {
+            ('ONGOING',             'AWAITING_VALIDATION'): (False, False),
+            ('ONGOING',             'AWAITING_PAYMENT'):    (True,  False),
+            ('ONGOING',             'EXPIRED'):             (False, False),
+            ('ONGOING',             'CANCELLED'):           (False, False),
 
-			('AWAITING_VALIDATION', 'VALIDATED'):           (False, True),
-			('AWAITING_VALIDATION', 'EXPIRED'):             (False, False),
-			('AWAITING_VALIDATION', 'CANCELLED'):           (False, False),
+            ('AWAITING_VALIDATION', 'VALIDATED'):           (False, True),
+            ('AWAITING_VALIDATION', 'EXPIRED'):             (False, False),
+            ('AWAITING_VALIDATION', 'CANCELLED'):           (False, False),
 
-			('AWAITING_PAYMENT',    'PAID'):                (False, True),
-			('AWAITING_PAYMENT',    'EXPIRED'):             (False, False),
-			('AWAITING_PAYMENT',    'CANCELLED'):           (False, False),
-		}
+            ('AWAITING_PAYMENT',    'PAID'):                (False, True),
+            ('AWAITING_PAYMENT',    'EXPIRED'):             (False, False),
+            ('AWAITING_PAYMENT',    'CANCELLED'):           (False, False),
+        }
 
-		# TODO combinations_with_replacement(ALL_STATES, 2):
-		# ALL_STATES = [ name for value, name in OrderStatus.choices() ]
-		# from itertools import combinations_with_replacement
-		for key in POSSIBLE_TRANSITIONS:
-			old_status, new_status = [ getattr(OrderStatus, k) for k in key ]
-			tr = f"({old_status.name} -> {new_status.name})"
+        # TODO combinations_with_replacement(ALL_STATES, 2):
+        # ALL_STATES = [ name for value, name in OrderStatus.choices() ]
+        # from itertools import combinations_with_replacement
+        for key in POSSIBLE_TRANSITIONS:
+            old_status, new_status = [ getattr(OrderStatus, k) for k in key ]
+            tr = f"({old_status.name} -> {new_status.name})"
 
-			order.status = old_status.value
-			order.save()
-			resp = order.update_status(new_status)
+            order.status = old_status.value
+            order.save()
+            resp = order.update_status(new_status)
 
-			self.assertEqual(resp['old_status'], old_status.name, f"Wrong old status {tr}")
+            self.assertEqual(resp['old_status'], old_status.name, f"Wrong old status {tr}")
 
-			if key in POSSIBLE_TRANSITIONS:
-				redirect, generate = POSSIBLE_TRANSITIONS[key]
+            if key in POSSIBLE_TRANSITIONS:
+                redirect, generate = POSSIBLE_TRANSITIONS[key]
 
-				self.assertEqual(resp['status'], new_status.name, f"Wrong new status {tr}")
-				self.assertEqual(resp['message'], OrderStatus.MESSAGES.value[new_status.value], f"Wrong message {tr}")
-				self.assertEqual(resp['updated'], True, f"Different updated {tr}")
-				self.assertEqual(resp['redirect_to_payment'], redirect, f"Different redirect {tr}")
-				self.assertEqual(resp['tickets_generated'], generate, f"Different tickets_generated {tr}")
+                self.assertEqual(resp['status'], new_status.name, f"Wrong new status {tr}")
+                self.assertEqual(resp['message'], OrderStatus.MESSAGES.value[new_status.value], f"Wrong message {tr}")
+                self.assertEqual(resp['updated'], True, f"Different updated {tr}")
+                self.assertEqual(resp['redirect_to_payment'], redirect, f"Different redirect {tr}")
+                self.assertEqual(resp['tickets_generated'], generate, f"Different tickets_generated {tr}")
+
 
 @tag('order')
 class OrderLineViewSetTestCase(ModelViewSetTestCase):
-	model = OrderLine
-	permissions = OrderOwnerOrAdmin
+    model = OrderLine
+    permissions = OrderOwnerOrAdmin
 
-	def additionnal_setUp(self) -> None:
-		# Order is own by user for the purpose of the tests
-		self.order = self.factory.create(Order, owner=self.users['user'])
+    def additionnal_setUp(self) -> None:
+        # Order is own by user for the purpose of the tests
+        self.order = self.factory.create(Order, owner=self.users['user'])
 
-	def get_object_attributes(self, user: User=None, **kwargs) -> dict:
-		return super().get_object_attributes(order=self.order, quantity=5, **kwargs)
+    def get_object_attributes(self, user: User=None, **kwargs) -> dict:
+        return super().get_object_attributes(order=self.order, quantity=5, **kwargs)
 
-	def get_url(self, pk=None) -> str:
-		return super().get_url(pk) + "?all"
+    def get_url(self, pk=None) -> str:
+        return super().get_url(pk) + "?all"
+
 
 @tag('order')
 class OrderLineItemViewSetTestCase(ModelViewSetTestCase):
-	model = OrderLineItem
-	permissions = get_permissions_from_compact({
-		'list':     '...a', 	# Only admin can list
-		'retrieve': '.u.a', 	# Only owner and admin can retrieve
-		'create':   '...a', 	# Only admin can create
-		'update':   '...a', 	# Only admin can update
-		'delete':   '...a', 	# Only admin can delete
-	})
+    model = OrderLineItem
+    permissions = get_permissions_from_compact({
+        'list':     '...a',     # Only admin can list
+        'retrieve': '.u.a',     # Only owner and admin can retrieve
+        'create':   '...a',     # Only admin can create
+        'update':   '...a',     # Only admin can update
+        'delete':   '...a',     # Only admin can delete
+    })
 
-	def additionnal_setUp(self) -> None:
-		# Order is own by user for the purpose of the tests
-		self.order = self.factory.create(Order, owner=self.users['user'])
-		self.orderline = self.factory.create(OrderLine, order=self.order)
+    def additionnal_setUp(self) -> None:
+        # Order is own by user for the purpose of the tests
+        self.order = self.factory.create(Order, owner=self.users['user'])
+        self.orderline = self.factory.create(OrderLine, order=self.order)
 
-	def get_object_attributes(self, user: User=None, **kwargs) -> dict:
-		return super().get_object_attributes(orderline=self.orderline, **kwargs)
+    def get_object_attributes(self, user: User=None, **kwargs) -> dict:
+        return super().get_object_attributes(orderline=self.orderline, **kwargs)
 
+
+# --------------------------------------------
+#   Fields
+# --------------------------------------------
 
 @tag('field')
 class FieldViewSetTestCase(ModelViewSetTestCase):
-	model = Field
-	permissions = ManagerOrReadOnly
+    model = Field
+    permissions = ManagerOrReadOnly
+
 
 @tag('field')
 class ItemFieldViewSetTestCase(ModelViewSetTestCase):
-	model = ItemField
-	permissions = ManagerOrReadOnly
+    model = ItemField
+    permissions = ManagerOrReadOnly
+
 
 @tag('order', 'field')
 class OrderLineFieldViewSetTestCase(ModelViewSetTestCase):
-	model = OrderLineField
-	permissions = get_permissions_from_compact({
-		'list':     '...a', 	# Only admin can list
-		'retrieve': '.u.a', 	# Only owner and admin can retrieve
-		'create':   '...a', 	# Only admin can create
-		'update':   '.u.a', 	# Only admin can update
-		'delete':   '...a', 	# Only admin can delete
-	})
+    model = OrderLineField
+    permissions = get_permissions_from_compact({
+        'list':     '...a',     # Only admin can list
+        'retrieve': '.u.a',     # Only owner and admin can retrieve
+        'create':   '...a',     # Only admin can create
+        'update':   '.u.a',     # Only admin can update
+        'delete':   '...a',     # Only admin can delete
+    })
 
-	def additionnal_setUp(self) -> None:
-		self.item = self.factory.create(Item)
-		self.field = self.factory.create(Field)
-		self.itemfield = self.factory.create(ItemField, item=self.item, field=self.field, editable=True)
+    def additionnal_setUp(self) -> None:
+        self.item = self.factory.create(Item)
+        self.field = self.factory.create(Field)
+        self.itemfield = self.factory.create(ItemField, item=self.item, field=self.field, editable=True)
 
-		# Order is own by user for the purpose of the tests
-		self.order = self.factory.create(Order, owner=self.users['user'])
-		self.orderline = self.factory.create(OrderLine, order=self.order, item=self.item, quantity=1)
-		self.orderlineitem = self.factory.create(OrderLineItem, orderline=self.orderline)
+        # Order is own by user for the purpose of the tests
+        self.order = self.factory.create(Order, owner=self.users['user'])
+        self.orderline = self.factory.create(OrderLine, order=self.order, item=self.item, quantity=1)
+        self.orderlineitem = self.factory.create(OrderLineItem, orderline=self.orderline)
 
-		# Tests
-		self.assertEqual(self.orderlineitem.orderline.order.owner, self.users['user'])
-		self.assertEqual(self.orderlineitem.orderline.item, self.item)
-		self.assertEqual(self.itemfield.item, self.item)
-		self.assertEqual(self.itemfield.field, self.field)
+        # Tests
+        self.assertEqual(self.orderlineitem.orderline.order.owner, self.users['user'])
+        self.assertEqual(self.orderlineitem.orderline.item, self.item)
+        self.assertEqual(self.itemfield.item, self.item)
+        self.assertEqual(self.itemfield.field, self.field)
 
-	def get_object_attributes(self, user: User=None, **kwargs) -> dict:
-		return super().get_object_attributes(
-			orderlineitem=self.orderlineitem,
-			field=self.field,
-			**kwargs)
+    def get_object_attributes(self, user: User=None, **kwargs) -> dict:
+        return super().get_object_attributes(
+            orderlineitem=self.orderlineitem,
+            field=self.field,
+            **kwargs)
