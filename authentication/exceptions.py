@@ -12,7 +12,7 @@ class OAuthException(APIException):
     default_code = 'oauth_error'
 
     @classmethod
-    def from_response(cls, response, code: str=None) -> 'OAuthException':
+    def from_response(cls, response, code: str = None) -> 'OAuthException':
         """
         Create a OAuthException from an OAuth response
         """
@@ -44,4 +44,4 @@ class UserTypeValidationError(APIException):
     @classmethod
     def from_usertype(cls, usertype):
         return cls(f"Impossible de vérifier le type d'utilisateur {usertype},"
-                    " veuillez contactez un administrateur")
+                   " veuillez contactez un administrateur")
