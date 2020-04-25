@@ -3,96 +3,82 @@ from rest_framework.exceptions import MethodNotAllowed
 
 
 class CustomPermission(permissions.BasePermission):
-	require_authentication = False
-	allow_admin = True
-	allow_read_only = False
-	allow_create = False
-	pass_for_obj = False
+    """
+    CustomPermission class that can easily be customized
+    """
 
-	# Final default value
-	default = False
-	default_obj = False
+    require_authentication = False
+    allow_admin = True
+    allow_read_only = False
+    allow_create = False
+    pass_for_obj = False
 
-	# Customs permission check functions
-	permission_functions = []
-	object_permission_functions = []
-	check_with_or = True
+    # Final default values
+    default = False
+    default_obj = False
 
-	@property
-	def _check_functions(self):
-		return any if self.check_with_or else all
+    # Customs permission check functions
+    permission_functions = []
+    object_permission_functions = []
+    check_with_or = True
 
-	def has_permission(self, request, view):
-		# Action is not configured with as_view, ie not allowed
-		if view.action is None:
-			raise MethodNotAllowed(request.method)
+    @property
+    def _check_functions(self):
+        return any if self.check_with_or else all
 
-		# Is Authenticated option
-		if self.require_authentication and not request.user.is_authenticated:
-			return False
-		# Read Only option
-		if self.allow_read_only and request.method in permissions.SAFE_METHODS:
-			return True
+    def has_permission(self, request, view) -> bool:
+        # Action is not configured with as_view, ie not allowed
+        if view.action is None:
+            raise MethodNotAllowed(request.method)
 
-		# Allow admin option
-		if self.allow_admin and request.user.is_authenticated and request.user.is_admin:
-			return True
+        # Is Authenticated option
+        if self.require_authentication and not request.user.is_authenticated:
+            return False
+        # Read Only option
+        if self.allow_read_only and request.method in permissions.SAFE_METHODS:
+            return True
 
-		# Check all permission_functions
-		if self.permission_functions:
-			permission_gen = (func(request, view) for func in self.permission_functions)
-			return self._check_functions(permission_gen)
+        # Allow admin option
+        if self.allow_admin and request.user.is_authenticated and request.user.is_admin:
+            return True
 
-		# Allow creation or not
-		if view.action == 'create':
-			return self.allow_create
+        # Check all permission_functions
+        if self.permission_functions:
+            permission_gen = (func(request, view) for func in self.permission_functions)
+            return self._check_functions(permission_gen)
 
-		# Return True to get to object level permissions
-		if self.pass_for_obj and view.action in ('retrieve', 'update', 'partial_update', 'destroy'):
-			return True
+        # Allow creation or not
+        if view.action == 'create':
+            return self.allow_create
 
-		return self.default
+        # Return True to get to object level permissions
+        if self.pass_for_obj and view.action in ('retrieve', 'update', 'partial_update', 'destroy'):
+            return True
 
-	def has_object_permission(self, request, view, obj):
-		# Allow admin option
-		if self.allow_admin and request.user.is_authenticated and request.user.is_admin:
-			return True
+        return self.default
 
-		# Read Only option
-		if self.allow_read_only and request.method in permissions.SAFE_METHODS:
-			return True
+    def has_object_permission(self, request, view, obj) -> bool:
+        # Allow admin option
+        if self.allow_admin and request.user.is_authenticated and request.user.is_admin:
+            return True
 
-		# Check all object_permission_functions
-		if self.object_permission_functions:
-			permission_gen = (func(request, view, obj) for func in self.object_permission_functions)
-			return self._check_functions(permission_gen)
+        # Read Only option
+        if self.allow_read_only and request.method in permissions.SAFE_METHODS:
+            return True
 
-		return self.default_obj
+        # Check all object_permission_functions
+        if self.object_permission_functions:
+            permission_gen = (func(request, view, obj) for func in self.object_permission_functions)
+            return self._check_functions(permission_gen)
 
+        return self.default_obj
 
-class IsAdmin(permissions.BasePermission):
-	"""
-	Only Woolly admins have the permission
-	"""
-	def has_permission(self, request, view):
-		return request.user.is_authenticated and request.user.is_admin
 
 class IsAdminOrReadOnly(permissions.BasePermission):
-	"""
-	Only Woolly admins have the permission to modify, anyone can read
-	"""
-	def has_permission(self, request, view):
-		if request.method in permissions.SAFE_METHODS:
-			return True
-		return request.user.is_authenticated and request.user.is_admin
-
-class IsAdminOrAuthenticatedReadOnly(permissions.BasePermission):
-	"""
-	Only Woolly admins have the permission to modify, authenticated users can read
-	"""
-	def has_permission(self, request, view):
-		if not request.user.is_authenticated:
-			return False
-		if request.method in permissions.SAFE_METHODS:
-			return True
-		return request.user.is_admin
+    """
+    Only Woolly admins have the permission to modify, anyone can read
+    """
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return request.user.is_authenticated and request.user.is_admin

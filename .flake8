@@ -1,5 +1,0 @@
-[flake8]
-max-line-length = 100
-ignore = W191,E302,E117,E201,E252,E202,E221,E127,W503,E241
-exclude = .git,venv,__pycache__,vendors
-import-order-style = edited
