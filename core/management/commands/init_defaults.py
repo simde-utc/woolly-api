@@ -29,36 +29,43 @@ DEFAULTS = {
     ],
     'field': [
         {
+            'id': "first_name",
             'name': "Prénom",
             'type': "string",
             'default': "owner.first_name",
         },
         {
+            'id': "last_name",
             'name': "Nom",
             'type': "string",
             'default': "owner.last_name",
         },
         {
+            'id': "sex",
             'name': "Sexe",
             'type': "choices",
             'default': "H,F",
         },
         {
+            'id': "birthdate",
             'name': "Date de naissance",
             'type': "date",
             'default': None,
         },
         {
+            'id': "telnumber",
             'name': "Numéro de téléphone",
             'type': "tel",
             'default': None,
         },
         {
+            'id': "cas_login",
             'name': "Login CAS",
             'type': "string",
             'default': None,
         },
         {
+            'id': "is_adulte",
             'name': "Adulte ?",
             'type': "boolean",
             'default': True,

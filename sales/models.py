@@ -50,7 +50,7 @@ class Sale(models.Model):
     id          = models.SlugField(primary_key=True, max_length=64, blank=False)
     name        = models.CharField(max_length=NAME_FIELD_MAXLEN)
     description = models.CharField(max_length=DESC_FIELD_MAXLEN, blank=True)
-    association = models.ForeignKey(Association, on_delete=None, related_name='sales')
+    association = models.ForeignKey(Association, on_delete=models.DO_NOTHING, related_name='sales')
 
     # Visibility
     is_active   = models.BooleanField(default=True)
@@ -109,16 +109,18 @@ class Item(models.Model):
     # Description
     name        = models.CharField(max_length=NAME_FIELD_MAXLEN)
     description = models.CharField(max_length=DESC_FIELD_MAXLEN, blank=True)
-    sale        = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
+    sale        = models.ForeignKey(Sale,
+                                    on_delete=models.CASCADE,
+                                    related_name='items')
     group       = models.ForeignKey(ItemGroup,
                                     blank=True, null=True, default=None,
                                     on_delete=models.SET_NULL, related_name='items')
 
     # Specifications
-    is_active    = models.BooleanField(default=True)
+    usertype     = models.ForeignKey(UserType, on_delete=models.PROTECT)
     quantity     = models.PositiveSmallIntegerField(blank=True, null=True)
     max_per_user = models.PositiveSmallIntegerField(blank=True, null=True)
-    usertype     = models.ForeignKey(UserType, on_delete=models.PROTECT)
+    is_active    = models.BooleanField(default=True)
     price        = models.FloatField()
 
     # Payment
@@ -406,11 +408,13 @@ class Field(models.Model):
     """
     Defines an Item's specification
     """
-    # TODO ??? id      = models.CharField(max_length=32, primary_key=True)
+    id      = models.CharField(max_length=32, primary_key=True)
     name    = models.CharField(max_length=NAME_FIELD_MAXLEN)
     type    = models.CharField(max_length=32)
     default = models.CharField(max_length=254, blank=True, null=True)
-    items   = models.ManyToManyField(Item, through='ItemField', through_fields=('field', 'item'))
+    items   = models.ManyToManyField(Item,
+                                     through='ItemField',
+                                     through_fields=('field', 'item'))
 
     def __str__(self) -> str:
         return f"{self.name} ({self.type})"
@@ -423,8 +427,14 @@ class ItemField(models.Model):
     """
     Links an Item to a Field with additionnal options
     """
-    field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='itemfields', editable=False)
-    item  = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='itemfields', editable=False)
+    field = models.ForeignKey(Field,
+                              on_delete=models.CASCADE,
+                              related_name='itemfields',
+                              editable=False)
+    item  = models.ForeignKey(Item,
+                              on_delete=models.CASCADE,
+                              related_name='itemfields',
+                              editable=False)
     editable = models.BooleanField(default=True)
 
     def __str__(self) -> str:
@@ -438,8 +448,12 @@ class OrderLineField(models.Model):
     """
     Specifies the Field value taken by the OrderLine Item
     """
-    orderlineitem = models.ForeignKey(OrderLineItem, on_delete=models.CASCADE, related_name='orderlinefields')
-    field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name='orderlinefields')
+    orderlineitem = models.ForeignKey(OrderLineItem,
+                                      on_delete=models.CASCADE,
+                                      related_name='orderlinefields')
+    field = models.ForeignKey(Field,
+                              on_delete=models.CASCADE,
+                              related_name='orderlinefields')
     value = models.CharField(max_length=512, blank=True, null=True, editable='is_editable')
 
     def is_editable(self) -> bool:
