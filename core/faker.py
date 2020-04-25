@@ -202,6 +202,7 @@ class FakeModelFactory:
 
         if model == Field:
             return {
+                'id':       kwargs.get('id',    self.faker.word()),
                 'name':     kwargs.get('name',    self.faker.word()),
                 'type':     kwargs.get('type',    self.faker.word()),
                 'default':  kwargs.get('default', self.faker.word()),
