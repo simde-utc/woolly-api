@@ -154,6 +154,7 @@ class APIModel(Model):
         raise AttributeError(f"'{self.__class__.__name__}' has no attribute '{attr}'")
 
     def __eq__(self, other) -> bool:
+        """Use django Model comparison with support for UUID str comparison"""
         if not isinstance(other, APIModel):
             return False
         elif self._meta.concrete_model != other._meta.concrete_model:
@@ -163,6 +164,10 @@ class APIModel(Model):
         else:
             # Support UUID and string comparison
             return str(self.pk) == str(other.pk)
+
+    def __hash__(self) -> int:
+        """Need to specify hash method"""
+        return super().__hash__()
 
     @classmethod
     def field_names(cls) -> Tuple[str]:

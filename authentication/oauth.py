@@ -1,5 +1,6 @@
 from typing import Union
 
+import requests
 from authlib.common.errors import AuthlibBaseError
 from authlib.integrations.requests_client import OAuth2Session
 from django.conf import settings
@@ -73,6 +74,12 @@ class OAuthAPI:
             self.config['token'] = session.get(OAUTH_TOKEN_NAME)
         self.client = OAuth2Session(**self.config)
 
+    def __del__(self):
+        """
+        Close OAuth2 Client
+        """
+        self.client.close()
+
     def get_auth_url(self, redirection: str) -> str:
         """
         Return authorization url
@@ -135,13 +142,25 @@ class OAuthAPI:
         """
         Return data from the API if valid else raise an OAuthException
         """
-        try:
-            resp = self.client.get(self.config['base_url'] + query)
-        except AuthlibBaseError as error:
-            code = getattr(error, 'error', None)
-            raise OAuthTokenException(code=code) from error
+        if self.client.token:
+            try:
+                resp = self.client.get(self.config['base_url'] + query)
+            except AuthlibBaseError as error:
+                code = getattr(error, 'error', None)
+                raise OAuthTokenException(code=code) from error
+        else:
+            # Try vanilla request if no token is specified
+            try:
+                resp = requests.get(self.config['base_url'] + query)
+                if not resp.ok:
+                    resp.raise_for_status()
+            except requests.RequestException as error:
+                raise OAuthTokenException(
+                    message="Erreur lors de la requête, essayez avec un token valide.",
+                    code='vanilla_request_error',
+                ) from error
 
-        if resp.status_code == 200:
+        if resp.ok:
             return resp.json()
 
         raise OAuthException.from_response(resp)
