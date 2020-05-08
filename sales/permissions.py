@@ -11,15 +11,8 @@ from .models import (
 )
 
 
-def get_url_param(request, name: str) -> Any:
+def get_url_param(request, view, name: str, return_none: bool=False) -> Any:
     param_request = request.data.get(name)
-    if param_request:
-        return param_request
-    else:
-        raise InvalidRequest(f"Could not retrieve parameter '{name}' from request")
-
-    # TODO Needed ?
-    """
     param_kwargs = view.kwargs.get(f"{name}_pk")
 
     # Need one or the other or both equal
@@ -30,9 +23,10 @@ def get_url_param(request, name: str) -> Any:
             return param_request
     elif param_kwargs:
         return param_kwargs
+    elif return_none:
+        return None
 
     raise InvalidRequest(f"Could not retrieve parameter '{name}' from request")
-    """
 
 
 def get_related_model(Model, pk, *related) -> Any:
@@ -46,43 +40,60 @@ def get_related_model(Model, pk, *related) -> Any:
 
 
 def get_related_asso_id(request, view) -> str:
-    Model = view.queryset.model
-    if Model not in { Association, Sale, Item, ItemGroup, ItemField }:
-        raise NotImplementedError(f"Model {Model.__name__} is not managed")
 
     if view.action is None:
         raise MethodNotAllowed(request.method)
 
+    Model = view.queryset.model
     hasPk = 'pk' in view.kwargs
     pk = view.kwargs.get('pk')
 
     if Model is Association:
-        if view.action in {'create', 'delete'}:
-            return False
-        else:
-            return pk
+        return pk
 
     elif Model is Sale:
         if hasPk:
             return get_related_model(Sale, pk).association_id
         else:
-            return get_url_param(request, 'association')
+            return get_url_param(request, view, 'association')
 
-    elif Model is Item or Model is ItemGroup:
+    # One step from sale
+    elif Model in { Item, ItemGroup, Order }:
         if hasPk:
             return get_related_model(Model, pk, 'sale').sale.association_id
         else:
-            sale_pk = get_url_param(request, 'sale')
+            sale_pk = get_url_param(request, view, 'sale')
             return get_related_model(Sale, sale_pk).association_id
 
-    elif Model is ItemField:
+    # Multiple steps to sale
+    elif Model in { ItemField, OrderLine, OrderLineItem, OrderLineField }:
         if hasPk:
-            return get_related_model(ItemField, pk, 'item__sale').item.sale.association_id
-        else:
-            item_pk = get_url_param(request, 'item')
-            return get_related_model(Item, item_pk, 'sale').sale.association_id
+            # Get path from Model to Sale
+            path_to_sale = {
+                ItemField: ('item', 'sale'),
+                OrderLine: ('order', 'sale'),
+                OrderLineItem: ('orderline', 'order', 'sale'),
+                OrderLineField: ('orderlineitem', 'orderline', 'order', 'sale'),
+            }[Model]
 
-    raise InvalidRequest("Could not retrieve related Association")
+            # Get instance with path selected and walk to association_id
+            instance = get_related_model(Model, pk, '__'.join(path_to_sale))
+            for step in path_to_sale:
+                instance = getattr(instance, step)
+            return instance.association_id
+        else:
+            sale_pk = get_url_param(request, view, 'sale', return_none=True)
+            if sale_pk:
+                return get_related_model(Sale, sale_pk).association_id
+
+            if Model is ItemField:
+                item_pk = get_url_param(request, view, 'item')
+                return get_related_model(Item, item_pk, 'sale').sale.association_id
+            else:
+                order_pk = get_url_param(request, view, 'order')
+                return get_related_model(Order, order_pk, 'sale').sale.association_id
+
+    raise NotImplementedError(f"Model {Model.__name__} is not managed")
 
 
 def check_is_manager(request, view) -> bool:
