@@ -34,6 +34,7 @@ class CustomPermission(permissions.BasePermission):
         # Is Authenticated option
         if self.require_authentication and not request.user.is_authenticated:
             return False
+
         # Read Only option
         if self.allow_read_only and request.method in permissions.SAFE_METHODS:
             return True
@@ -76,9 +77,8 @@ class CustomPermission(permissions.BasePermission):
 
 class IsAdminOrReadOnly(permissions.BasePermission):
     """
-    Only Woolly admins have the permission to modify, anyone can read
+    Only admins have the permission to modify, anyone can read
     """
     def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return request.user.is_authenticated and request.user.is_admin
+        return (request.user.is_authenticated and request.user.is_admin) \
+            or (view.action and request.method in permissions.SAFE_METHODS)

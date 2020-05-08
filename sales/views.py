@@ -11,8 +11,7 @@ from core.viewsets import ModelViewSet, APIModelViewSet
 from core.permissions import IsAdminOrReadOnly
 from sales.exceptions import OrderValidationException
 from sales.permissions import (
-    IsManagerOrReadOnly, IsOrderOwnerOrAdmin,
-    IsOrderOwnerReadOnlyOrAdmin, IsOrderOwnerReadUpdateOrAdmin
+    IsManagerOrReadOnly, IsOwnerOrManagerReadOnly, CanOnlyReadOrUpdate
 )
 from sales.models import (
     Association, Sale, ItemGroup, Item,
@@ -36,7 +35,7 @@ class AssociationViewSet(APIModelViewSet):
     """
     queryset = Association.objects.all()
     serializer_class = AssociationSerializer
-    permission_classes = (IsManagerOrReadOnly,)
+    permission_classes = [IsManagerOrReadOnly]
 
     def get_sub_urls_filters(self, queryset) -> dict:
         """
@@ -54,7 +53,7 @@ class SaleViewSet(ModelViewSet):
     """
     queryset = Sale.objects.all()
     serializer_class = SaleSerializer
-    permission_classes = (IsManagerOrReadOnly,)
+    permission_classes = [IsManagerOrReadOnly]
 
     # TODO Check for association in data or url for create/update
 
@@ -88,7 +87,7 @@ class ItemGroupViewSet(ModelViewSet):
     """
     queryset = ItemGroup.objects.all()
     serializer_class = ItemGroupSerializer
-    permission_classes = (IsManagerOrReadOnly,)
+    permission_classes = [IsManagerOrReadOnly]
 
 
 class ItemViewSet(ModelViewSet):
@@ -97,7 +96,7 @@ class ItemViewSet(ModelViewSet):
     """
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
-    permission_classes = (IsManagerOrReadOnly,)
+    permission_classes = [IsManagerOrReadOnly]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -121,7 +120,7 @@ class OrderViewSet(ModelViewSet):
     """
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    permission_classes = (IsOrderOwnerOrAdmin,)
+    permission_classes = [IsOwnerOrManagerReadOnly]
 
     def get_sub_urls_filters(self, queryset) -> dict:
         """
@@ -211,7 +210,7 @@ class OrderLineViewSet(ModelViewSet):
     """
     queryset = OrderLine.objects.all()
     serializer_class = OrderLineSerializer
-    permission_classes = (IsOrderOwnerOrAdmin,)
+    permission_classes = [IsOwnerOrManagerReadOnly]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -289,7 +288,7 @@ class OrderLineViewSet(ModelViewSet):
 class OrderLineItemViewSet(ModelViewSet):
     queryset = OrderLineItem.objects.all()
     serializer_class = OrderLineItemSerializer
-    permission_classes = (IsOrderOwnerReadOnlyOrAdmin,)
+    permission_classes = [IsAdminOrReadOnly & IsOwnerOrManagerReadOnly]
 
 
 # --------------------------------------------
@@ -302,7 +301,7 @@ class FieldViewSet(ModelViewSet):
     """
     queryset = Field.objects.all()
     serializer_class = FieldSerializer
-    permission_classes = (IsAdminOrReadOnly,)
+    permission_classes = [IsAdminOrReadOnly]
 
     def get_sub_urls_filters(self, queryset) -> dict:
         """
@@ -320,7 +319,7 @@ class ItemFieldViewSet(ModelViewSet):
     """
     queryset = ItemField.objects.all()
     serializer_class = ItemFieldSerializer
-    permission_classes = (IsManagerOrReadOnly,)
+    permission_classes = [IsManagerOrReadOnly]
 
 
 class OrderLineFieldViewSet(ModelViewSet):
@@ -329,7 +328,7 @@ class OrderLineFieldViewSet(ModelViewSet):
     """
     queryset = OrderLineField.objects.all()
     serializer_class = OrderLineFieldSerializer
-    permission_classes = (IsOrderOwnerReadUpdateOrAdmin,)
+    permission_classes = [CanOnlyReadOrUpdate & IsOwnerOrManagerReadOnly]
 
     def partial_update(self, request, *args, **kwargs):
         kwargs['partial'] = True
@@ -355,7 +354,7 @@ class OrderLineFieldViewSet(ModelViewSet):
 
 @api_view(['GET'])
 @authentication_classes([OAuthAuthentication])
-@permission_classes([IsOrderOwnerOrAdmin])
+@permission_classes([IsOwnerOrManagerReadOnly])
 def generate_tickets(request, pk: int, **kwargs):
     # Get order
     order = Order.objects.all().prefetch_related(
