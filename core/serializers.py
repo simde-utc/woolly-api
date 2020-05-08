@@ -34,7 +34,7 @@ class ModelSerializer(serializers.ModelSerializer):
                 for key, ser in self.included_serializers.items()
             }
 
-    def get_fields(self):
+    def get_fields(self) -> dict:
         """
         Override of rest_framework.serializers.ModelSerializer.get_fields
         Change normal related field for included ones if specified in include map

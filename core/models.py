@@ -1,4 +1,4 @@
-from typing import Union, Sequence, Set, Tuple
+from typing import Any, Union, Sequence, List, Set, Tuple
 import logging
 
 from django.conf import settings
@@ -12,7 +12,7 @@ from core.helpers import filter_dict_keys, iterable_to_map
 logger = logging.getLogger(f"woolly.{__name__}")
 
 
-def fetch_data_from_api(model: Model, oauth_client: 'OAuthAPI'=None, **params):
+def fetch_data_from_api(model: Model, oauth_client: 'OAuthAPI'=None, **params) -> Any:
     """
     Fetched additional data from the OAuth API
     """
@@ -40,13 +40,13 @@ class APIQuerySet(QuerySet):
     QuerySet that can also fetch additional data from the OAuth API
     """
 
-    def fetch_api_data(self, oauth_client=None, **params) -> list:
+    def fetch_api_data(self, oauth_client=None, **params) -> Any:
         """
         Fetch data from the OAuth API
         """
         # Deals with filters
         if self.query.has_filters():
-            # Return empty list if filtered bu has no results
+            # Return empty list if filtered but has no results
             if not self:
                 return []
 
@@ -56,7 +56,11 @@ class APIQuerySet(QuerySet):
         # Fetch data
         return fetch_data_from_api(self.model, oauth_client, **params)
 
-    def get_with_api_data(self, oauth_client=None, single_result: bool=False, try_cache: bool=True, **params):
+    def get_with_api_data(self,
+                          oauth_client=None,
+                          single_result: bool=False,
+                          try_cache: bool=True,
+                          **params) -> Union['APIModel', List['APIModel']]:
         """
         Execute query and add extra data from the API
         Try to get data from cache if possible
@@ -139,7 +143,7 @@ class APIModel(Model):
     id = UUIDField(primary_key=True, editable=False)
     objects = APIManager()
     fetched_data = None
-    CACHE_TIMEOUT = settings.API_MODEL_CACHE_TIMEOUT
+    CACHE_TIMEOUT = int(settings.API_MODEL_CACHE_TIMEOUT.total_seconds())
 
     @property
     def is_synched(self) -> bool:
@@ -201,13 +205,18 @@ class APIModel(Model):
         return f"APIModel-{name}-{spec or 'all'}"
 
     @classmethod
-    def get_from_cache(cls, params: dict, single_result: bool=False, need_full_data: bool=True) -> Union['APIModel', None]:
+    def get_from_cache(cls,
+                       params: dict,
+                       single_result: bool=False,
+                       need_full_data: bool=True
+                       ) -> Union['APIModel', None]:
         """
         Try getting model instance with fetched data from
         # TODO Improve for multiple queries
         """
         key = cls._gen_key(params)
-        # logger.debug(f"[CACHE] Trying to get {cls.__name__} with key '{key}' and params {params}")
+        # logger.debug(f"[CACHE] Trying to get {cls.__name__}"
+        #              f" with key '{key}' and params {params}")
         if key in cache:
             logger.debug(f"[CACHE] Got {cls.__name__} with params {params}")
             return cache.get(key)
@@ -239,7 +248,7 @@ class APIModel(Model):
         return None
 
     @classmethod
-    def save_to_cache(cls, data: Union[Sequence, 'APIModel'], params: dict):
+    def save_to_cache(cls, data: Union[Sequence, 'APIModel'], params: dict) -> None:
         """
         Save single or multiple instances to cache
         """
@@ -278,14 +287,16 @@ class APIModel(Model):
 
         return updated_fields
 
-    def get_with_api_data(self, oauth_client=None, save: bool=True, try_cache: bool=True):
+    def get_with_api_data(self, oauth_client=None, save: bool=True, try_cache: bool=True) -> 'APIModel':
         """
         Main function
         Get and sync additional data from OAuth API
         """
         # Try cache
         if try_cache:
-            cached = self.get_from_cache({ 'pk': self.pk }, single_result=True, need_full_data=True)
+            cached = self.get_from_cache({ 'pk': self.pk },
+                                         single_result=True,
+                                         need_full_data=True)
             if cached is not None:
                 return cached
 
@@ -294,7 +305,7 @@ class APIModel(Model):
         self.save_to_cache(self, { 'pk': self.pk })
         return self
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         """
         Override to update cache on save
         """
