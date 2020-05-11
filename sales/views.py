@@ -8,10 +8,10 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from authentication.oauth import OAuthAuthentication
 from core.utils import render_to_pdf, base64_qrcode
 from core.viewsets import ModelViewSet, APIModelViewSet
-from core.permissions import IsAdminOrReadOnly
+from core.permissions import CanOnlyReadOrUpdate, IsAdmin, IsAdminOrReadOnly
 from sales.exceptions import OrderValidationException
 from sales.permissions import (
-    IsManagerOrReadOnly, IsOwnerOrManagerReadOnly, CanOnlyReadOrUpdate
+    IsOwnerOrManager, IsOwnerOrManagerReadOnly, IsManagerOrReadOnly
 )
 from sales.models import (
     Association, Sale, ItemGroup, Item,
@@ -212,6 +212,15 @@ class OrderLineViewSet(ModelViewSet):
     serializer_class = OrderLineSerializer
     permission_classes = [IsOwnerOrManagerReadOnly]
 
+    def get_sub_urls_filters(self, queryset) -> dict:
+        """
+        Simply map user__pk to owner__pk in urls filters
+        """
+        filters = super().get_sub_urls_filters(queryset)
+        if 'sale__pk' in filters:
+            filters['order__sale__pk'] = filters.pop('sale__pk')
+        return filters
+
     def get_queryset(self):
         queryset = super().get_queryset()
 
@@ -288,7 +297,7 @@ class OrderLineViewSet(ModelViewSet):
 class OrderLineItemViewSet(ModelViewSet):
     queryset = OrderLineItem.objects.all()
     serializer_class = OrderLineItemSerializer
-    permission_classes = [IsAdminOrReadOnly & IsOwnerOrManagerReadOnly]
+    permission_classes = [IsAdminOrReadOnly & IsOwnerOrManager]
 
 
 # --------------------------------------------
@@ -328,7 +337,7 @@ class OrderLineFieldViewSet(ModelViewSet):
     """
     queryset = OrderLineField.objects.all()
     serializer_class = OrderLineFieldSerializer
-    permission_classes = [CanOnlyReadOrUpdate & IsOwnerOrManagerReadOnly]
+    permission_classes = [IsAdmin | (CanOnlyReadOrUpdate & IsOwnerOrManager)]
 
     def partial_update(self, request, *args, **kwargs):
         kwargs['partial'] = True

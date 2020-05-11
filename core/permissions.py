@@ -2,6 +2,9 @@ from rest_framework import permissions
 from rest_framework.exceptions import MethodNotAllowed
 
 
+OBJECT_ACTIONS = {'retrieve', 'update', 'partial_update', 'destroy'}
+
+
 class CustomPermission(permissions.BasePermission):
     """
     CustomPermission class that can easily be customized
@@ -75,10 +78,40 @@ class CustomPermission(permissions.BasePermission):
         return self.default_obj
 
 
-class IsAdminOrReadOnly(permissions.BasePermission):
+class ReadOnly(permissions.BasePermission):
     """
-    Only admins have the permission to modify, anyone can read
+    Allow only read actions
     """
-    def has_permission(self, request, view):
-        return (request.user.is_authenticated and request.user.is_admin) \
-            or (view.action and request.method in permissions.SAFE_METHODS)
+    message = "You can only read this data"
+
+    def has_permission(self, request, view) -> bool:
+        if not view.action:
+            raise MethodNotAllowed(request.method)
+        return request.method in permissions.SAFE_METHODS
+
+
+class CanOnlyReadOrUpdate(permissions.BasePermission):
+    """
+    Can only read or update
+    """
+    message = "You can only read or update this data"
+
+    def has_permission(self, request, view) -> bool:
+        if not view.action:
+            raise MethodNotAllowed(request.method)
+        return view.action in {'retrieve', 'partial_update', 'update'}
+
+
+class IsAdmin(permissions.BasePermission):
+    """
+    Only only admin users
+    """
+    message = "You need to be an admin"
+
+    def has_permission(self, request, view) -> bool:
+        if not view.action:
+            raise MethodNotAllowed(request.method)
+        return request.user.is_authenticated and request.user.is_admin
+
+
+IsAdminOrReadOnly = ReadOnly | IsAdmin

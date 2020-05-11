@@ -3,6 +3,7 @@ from typing import Any
 from rest_framework import permissions
 from rest_framework.exceptions import MethodNotAllowed
 
+from core.permissions import ReadOnly, OBJECT_ACTIONS
 from core.exceptions import InvalidRequest
 from authentication.oauth import OAuthAPI
 from .models import (
@@ -11,7 +12,7 @@ from .models import (
 )
 
 
-def get_url_param(request, view, name: str, return_none: bool=False) -> Any:
+def get_url_param(request, view, name: str, default: Any=None) -> Any:
     param_request = request.data.get(name)
     param_kwargs = view.kwargs.get(f"{name}_pk")
 
@@ -19,24 +20,27 @@ def get_url_param(request, view, name: str, return_none: bool=False) -> Any:
     if param_request:
         if param_kwargs:
             if param_request != param_kwargs:
-                raise InvalidRequest(f"Got different parameter values for '{name}' from request")
+                raise InvalidRequest(f"Got different parameter values for '{name}' from request",
+                                     code='mismatch_params')
             return param_request
     elif param_kwargs:
         return param_kwargs
-    elif return_none:
-        return None
 
-    raise InvalidRequest(f"Could not retrieve parameter '{name}' from request")
+    return default
 
 
 def get_related_model(Model, pk, *related) -> Any:
+    if pk is None:
+        raise InvalidRequest(f"No related model", code='no_related_model')
+
     try:
         query = Model.objects
         if related:
             query = query.select_related(*related)
         return query.get(pk=pk)
     except Model.DoesNotExist:
-        raise InvalidRequest(f"Could not retrieve related {Model.__name__}")
+        raise InvalidRequest(f"Could not retrieve related {Model.__name__}",
+                             code='not_found_related_model')
 
 
 def get_related_asso_id(request, view) -> str:
@@ -82,7 +86,7 @@ def get_related_asso_id(request, view) -> str:
                 instance = getattr(instance, step)
             return instance.association_id
         else:
-            sale_pk = get_url_param(request, view, 'sale', return_none=True)
+            sale_pk = get_url_param(request, view, 'sale')
             if sale_pk:
                 return get_related_model(Sale, sale_pk).association_id
 
@@ -102,12 +106,27 @@ def check_is_manager(request, view) -> bool:
     if not request.user.is_authenticated:
         return False
 
+    # Admin are managers of everything
+    if request.user.is_admin:
+        return True
+
     # Get the related association
-    asso_id = get_related_asso_id(request, view)
+    try:
+        asso_id = get_related_asso_id(request, view)
+    except InvalidRequest as error:
+        if error.code == 'no_related_model':
+            asso_id = None
+        else:
+            raise error
+
+    # No association specified
+    if asso_id is None:
+        return False
 
     # Check that the association is real
     if not Association.objects.filter(pk=asso_id).exists():
-        raise InvalidRequest(f"Could not retrieve association '{asso_id}'")
+        raise InvalidRequest(f"Could not retrieve association '{asso_id}'",
+                             code='not_found_related_model')
 
     # Get user's associations and check if is manager
     oauth_client = OAuthAPI(session=request.session)
@@ -122,6 +141,14 @@ def check_order_ownership(request, view, obj) -> bool:
     user = request.user
     Model = type(obj)
 
+    # Need authenticated user
+    if not user.is_authenticated:
+        return False
+
+    # Admin owns the world
+    if user.is_admin:
+        return True
+
     if Model is Order:
         return user == obj.owner
     elif Model is OrderLine:
@@ -134,30 +161,40 @@ def check_order_ownership(request, view, obj) -> bool:
     raise NotImplementedError(f"Cannot check owner of object {Model.__name__}")
 
 
-class IsManagerOrReadOnly(permissions.BasePermission):
+class IsManager(permissions.BasePermission):
     """
     Allow read for everyone and check that the user
     is manager of the Association related to the target resource
 
     Used for Association, Sale, ItemGroup, Item, ItemField
     """
+    message = "You need to be the manager of this resource"
 
     def has_permission(self, request, view) -> bool:
-
-        # Allow admin
-        if request.user.is_authenticated and request.user.is_admin:
-            return True
-
-        # Allow read only
-        if request.method in permissions.SAFE_METHODS:
-            return True
-
-        # Need to be manager
+        if not view.action:
+            raise MethodNotAllowed(request.method)
         return check_is_manager(request, view)
 
+
+# Used for Association, Sale, ItemGroup, Item, ItemField
+IsManagerOrReadOnly = ReadOnly | IsManager
+
+
+class IsOwner(permissions.BasePermission):
+
+    message = "You need to be the owner of this resource"
+
+    def has_permission(self, request, view) -> bool:
+        if not view.action:
+            raise MethodNotAllowed(request.method)
+        # Allow creation and pass to object
+        return view.action in {'create', *OBJECT_ACTIONS}
+
     def has_object_permission(self, request, view, obj) -> bool:
-        # No need for object permission
-        return True
+        return check_order_ownership(request, view, obj)
+
+
+IsOwnerOrManager = IsOwner | IsManager
 
 
 class IsOwnerOrManagerReadOnly(permissions.BasePermission):
@@ -170,7 +207,6 @@ class IsOwnerOrManagerReadOnly(permissions.BasePermission):
     """
 
     def has_permission(self, request, view) -> bool:
-
         # Need to be authenticated
         if not request.user.is_authenticated:
             return False
@@ -188,13 +224,12 @@ class IsOwnerOrManagerReadOnly(permissions.BasePermission):
             return True
 
         # Pass for object action
-        if view.action in {'retrieve', 'update', 'partial_update', 'destroy'}:
+        if view.action in OBJECT_ACTIONS:
             return True
 
         return False
 
     def has_object_permission(self, request, view, obj) -> bool:
-
         # Allow admin
         if request.user.is_admin:
             return True
@@ -205,16 +240,3 @@ class IsOwnerOrManagerReadOnly(permissions.BasePermission):
 
         # Need to be owner to modify
         return check_order_ownership(request, view, obj)
-
-
-class CanOnlyReadOrUpdate(permissions.BasePermission):
-    """
-    Can only read or update
-    """
-
-    def has_permission(self, request, view) -> bool:
-        return bool(view.action)
-
-    def has_object_permission(self, request, view, obj) -> bool:
-        return request.user.is_admin \
-            or view.action in {'retrieve', 'partial_update', 'update'}

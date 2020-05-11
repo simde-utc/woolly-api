@@ -2,10 +2,11 @@ from django.shortcuts import redirect
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from core.permissions import IsAdminOrReadOnly
 from core.viewsets import ModelViewSet, APIModelViewSet
 from authentication.oauth import OAuthAPI
 from authentication.models import UserType, User
-from authentication.permissions import IsUserOrAdmin, IsAdminOrReadOnly
+from authentication.permissions import IsUserOrAdmin
 from authentication.serializers import UserSerializer, UserTypeSerializer
 
 
