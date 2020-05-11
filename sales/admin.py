@@ -58,7 +58,7 @@ class SaleAdmin(admin.ModelAdmin):
     list_editable = tuple()
 
     def get_readonly_fields(self, request, obj=None):
-        return adaptable_editability_fields(request, obj, ('association',))
+        return adaptable_editability_fields(obj, ('association',))
 
     fieldsets = (
         (None,          { 'fields': ('name', 'description', 'association', 'max_item_quantity') }),
@@ -121,7 +121,7 @@ class OrderAdmin(admin.ModelAdmin):
         return mark_safe("<span style='color: %s;'>%s</span>" % (color, order.get_status_display()))
 
     def get_readonly_fields(self, request, obj=None):
-        return adaptable_editability_fields(request, obj, ('sale', 'owner'))
+        return adaptable_editability_fields(obj, ('sale', 'owner'))
     fieldsets = (
         (None,              { 'fields': ('sale', 'owner', 'status') }),
         ('Payment',         { 'fields': ('tra_id',) }),
@@ -158,7 +158,7 @@ class OrderLineAdmin(admin.ModelAdmin):
     list_display = ('id', 'order_id', 'order_status', 'owner', 'sale_name', 'item_name', 'get_uuids', 'quantity')
 
     def get_readonly_fields(self, request, obj=None):
-        return adaptable_editability_fields(request, obj, ('order', 'item'))
+        return adaptable_editability_fields(obj, ('order', 'item'))
 
     inlines = (OrderLineItemInline,)
     fieldsets = (
@@ -188,7 +188,7 @@ class OrderLineItemAdmin(admin.ModelAdmin):
     inlines = (OrderLineFieldInline,)
 
     def get_readonly_fields(self, request, obj=None):
-        return adaptable_editability_fields(request, obj, ('orderline',), ('id',))
+        return adaptable_editability_fields(obj, ('orderline',), ('id',))
     search_fields = ('id', 'orderline__order__owner__email', 'orderline__order__sale__name')
 
 
@@ -211,7 +211,7 @@ class OrderLineFieldAdmin(admin.ModelAdmin):
     list_filter = ('field',)
 
     def get_readonly_fields(self, request, obj=None):
-        return adaptable_editability_fields(request, obj, ('orderlineitem', 'field'))
+        return adaptable_editability_fields(obj, ('orderlineitem', 'field'))
     fieldsets = (
         (None, { 'fields': ('orderlineitem', 'field', 'value') }),
     )

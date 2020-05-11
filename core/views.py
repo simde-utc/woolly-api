@@ -9,29 +9,30 @@ def api_root(request, format=None):
     Defines the clickable links displayed on the server endpoint.
     All the reachable endpoints don't appear here
     """
+    kwargs = { 'request': request, 'format': format }
     return Response({
         # Login & Users
-        'login':           reverse('login',                request=request, format=format),
-        'me':              reverse('me',                   request=request, format=format),
-        'users':           reverse('users-list',           request=request, format=format),
-        'usertypes':       reverse('usertypes-list',       request=request, format=format),
-        'associations':    reverse('associations-list',    request=request, format=format),
+        'login':           reverse('login',                **kwargs),
+        'me':              reverse('me',                   **kwargs),
+        'users':           reverse('users-list',           **kwargs),
+        'usertypes':       reverse('usertypes-list',       **kwargs),
+        'associations':    reverse('associations-list',    **kwargs),
 
         # Sales & Item
-        'sales':           reverse('sales-list',           request=request, format=format),
-        'itemgroups':      reverse('itemgroups-list',      request=request, format=format),
-        'items':           reverse('items-list',           request=request, format=format),
+        'sales':           reverse('sales-list',           **kwargs),
+        'itemgroups':      reverse('itemgroups-list',      **kwargs),
+        'items':           reverse('items-list',           **kwargs),
 
         # Orders
-        'orders':          reverse('orders-list',          request=request, format=format),
-        'orderlines':      reverse('orderlines-list',      request=request, format=format),
+        'orders':          reverse('orders-list',          **kwargs),
+        'orderlines':      reverse('orderlines-list',      **kwargs),
 
         # Fields
-        'fields':          reverse('fields-list',          request=request, format=format),
-        'itemfields':      reverse('itemfields-list',      request=request, format=format),
-        'orderlinefields': reverse('orderlinefields-list', request=request, format=format),
-        'orderlineitems':  reverse('orderlineitems-list',  request=request, format=format),
+        'fields':          reverse('fields-list',          **kwargs),
+        'itemfields':      reverse('itemfields-list',      **kwargs),
+        'orderlinefields': reverse('orderlinefields-list', **kwargs),
+        'orderlineitems':  reverse('orderlineitems-list',  **kwargs),
 
         # TODO PaymentMethods
-        # 'paymentmethods':  reverse('paymentmethods-list',    request=request, format=format),
+        # 'paymentmethods':  reverse('paymentmethods-list',  **kwargs),
     })

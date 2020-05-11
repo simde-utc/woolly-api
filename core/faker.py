@@ -188,7 +188,7 @@ class FakeModelFactory:
             return {
                 'item':     get_related_model('item',   Item),
                 'order':    get_related_model('order',  Order),
-                'quantity': kwargs.get('quantity', self.faker.random_digit()),
+                'quantity': kwargs.get('quantity', self.faker.random_digit_not_null()),
             }
 
         if model == OrderLineItem:
