@@ -1,8 +1,14 @@
-from sales.models import Order, OrderStatus
+from sales.models import Order, OrderStatus, Item
 from .base import AbstractPaymentService
 
 
 class FakePaymentService(AbstractPaymentService):
+
+    def synch_item(self, item: Item, **kwargs) -> None:
+        """
+        Adapter to synchronize an item in the payment service
+        """
+        pass
 
     def create_transaction(self, order: Order, callback_url: str, return_url: str, **kwargs) -> dict:
         """

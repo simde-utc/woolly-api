@@ -3,7 +3,7 @@ import requests
 
 from rest_framework import status
 
-from sales.models import Order, OrderStatus
+from sales.models import Order, OrderStatus, Item
 from .base import AbstractPaymentService, TransactionException
 
 
@@ -96,9 +96,15 @@ class Payutc(AbstractPaymentService):
         data = self._filter_params(params, ('tra_id', 'fun_id'))
         return self._call('WEBSALE', 'getTransactionInfo', data)
 
-    # ============================================
-    #   Transactions
-    # ============================================
+    # --------------------------------------------
+    #   Public methods
+    # --------------------------------------------
+
+    def synch_item(self, item: Item, **kwargs) -> None:
+        """
+        Adapter to synchronize an item in the payment service
+        """
+        pass
 
     def create_transaction(self, order: Order, callback_url: str, return_url: str, **kwargs) -> dict:
         """

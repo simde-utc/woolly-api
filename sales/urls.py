@@ -21,6 +21,7 @@ urlpatterns = merge_sets(
     gen_url_set([SaleViewSet, ItemViewSet]),
     gen_url_set([SaleViewSet, ItemGroupViewSet]),
     gen_url_set([SaleViewSet, OrderViewSet]),
+    gen_url_set([SaleViewSet, OrderLineViewSet]),
 
     # ItemGroups
     gen_url_set(ItemGroupViewSet),
