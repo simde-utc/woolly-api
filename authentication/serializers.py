@@ -23,6 +23,11 @@ class UserSerializer(APIModelSerializer):
         'associations': 'sales.serializers.AssociationSerializer',
     }
 
+    def to_representation(self, instance) -> dict:
+        data = super().to_representation(instance)
+        data['is_admin'] = instance.is_admin
+        return data
+
     class Meta:
         model = User
         fields = '__all__'

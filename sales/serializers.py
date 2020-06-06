@@ -37,6 +37,7 @@ class ItemSerializer(ModelSerializer):
     itemfields = RelatedField(many=True, read_only=True)
 
     quantity_left = serializers.IntegerField(read_only=True)
+    quantity_sold = serializers.IntegerField(read_only=True)
 
     included_serializers = {
         'itemfields': 'sales.serializers.ItemFieldSerializer',
@@ -181,7 +182,7 @@ class OrderLineFieldSerializer(ModelSerializer):
     # For easier access
     name     = serializers.CharField(read_only=True, source='field.name')
     type     = serializers.CharField(read_only=True, source='field.type')
-    editable = serializers.BooleanField(read_only=True, source='isEditable')
+    editable = serializers.BooleanField(read_only=True, source='is_editable')
 
     included_serializers = {
         'orderlineitem': OrderLineItemSerializer,

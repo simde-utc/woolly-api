@@ -1,5 +1,6 @@
 from typing import Any
 
+from django.db.models import QuerySet
 from rest_framework.response import Response
 from rest_framework import viewsets
 
@@ -9,14 +10,20 @@ from authentication.oauth import OAuthAPI
 class ModelViewSetMixin(object):
     """
     Supercharged DRF ModelViewSet
-    - Automatic sub urls filterings (ex: assos/1/sales)
-    - Automatic included sub resources prefetching (ex: sales?include=items,items__group)
+    - Filter nested-urls (ex: /associations/1/sales)
+    - Include nested-resources prefetching (ex: /sales?include=items,items__group)
+    - Filter on specified values (ex: /orders?filter=status__in=2,4&filter=id__gt=2)
+    - Order as specified
 
     TODO:
     - Filter permissions per objet
     - Creation with nested urls
     - Security checks
+    - Error checking from query
+    - Parse query params to the right type
     """
+
+    # Helpers
 
     def query_params_is_true(self, key: str) -> bool:
         """
@@ -28,27 +35,40 @@ class ModelViewSetMixin(object):
     def get_kwarg(self, kwarg_key: str, data_key: str, default_value: Any=None) -> Any:
         return self.kwargs.get(kwarg_key, self.request.data.get(data_key, default_value))
 
-    def get_queryset(self):
+    @staticmethod
+    def get_include_tree(query: dict) -> dict:
         """
-        Override from GenericAPIView
+        Create a include map for nested serializers from comma-separated values in query
+        query: { include: 'sub1,sub2,sub2__a,sub2__b', select: 'sub3' }
+        map: {
+            'sub1': {},
+            'sub2': {
+                'a': {},
+                'b': {},
+            },
+            'sub3': {}
+        }
         """
-        queryset = super().get_queryset()
+        include_list = []
+        if query.get('include'):
+            include_list.extend(query['include'].split(','))
+        if query.get('select'):
+            include_list.extend(query['select'].split(','))
 
-        # Prefetch included sub models
-        include_query = self.request.GET.get('include')
-        if include_query:
-            queryset = queryset.prefetch_related(*include_query.split(','))
+        if not include_list:
+            return None
 
-        # Filter according to sub urls
-        nested_url_filters = self.get_sub_urls_filters(queryset)
-        if nested_url_filters:
-            queryset = queryset.filter(**nested_url_filters)
+        include_tree = {}
+        for path in include_list:
+            current_map = include_tree
+            for step in path.split('__'):
+                if step not in current_map:
+                    current_map[step] = {}
+                current_map = current_map[step]
 
-        # TODO Filter permission ??
+        return include_tree
 
-        return queryset
-
-    def get_sub_urls_filters(self, queryset) -> dict:
+    def get_sub_urls_filters(self, queryset: QuerySet) -> dict:
         """
         Return queryset filters for sub urls
         Can be easily overriden for special naming (ie. Order.owner = User)
@@ -58,48 +78,100 @@ class ModelViewSetMixin(object):
             for key, value in self.kwargs.items()
         }
 
-    # def get_object(self):
-    #   return super().get_object()
-
     def get_serializer_context(self) -> dict:
         """
-        Pass the include_map to the serializer
+        Pass the include_tree to the serializer
         """
-        include_query = self.request.GET.get('include')
         return {
             **super().get_serializer_context(),
-            'include_map': self.get_include_map(include_query),
+            'include_tree': self.get_include_tree(self.request.GET),
         }
 
-    @staticmethod
-    def get_include_map(include_query: str) -> dict:
+    def parse_query_param_value(self, key: str, value: str) -> Any:
+        _type = str
+
+        if key.endswith('__in'):
+            value = list(map(_type, value.split(',')))
+
+        return value
+
+    # QuerySet filtering
+
+    def include_sub_models(self, queryset: QuerySet) -> QuerySet:
         """
-        Create a include map for nested serializers from query
-        query: include=sub1,sub2,sub2__a,sub2__b
-        map: {
-            'sub1': {},
-            'sub2': {
-                'a': {},
-                'b': {},
-            },
-        }
+        Prefetch data required in the query for better performance
         """
-        if not include_query:
-            return None
+        # Prefetch many data
+        include_query = self.request.GET.get('include')
+        if include_query:
+            queryset = queryset.prefetch_related(*include_query.split(','))
 
-        include_map = {}
-        for path in include_query.split(','):
-            current_map = include_map
-            for step in path.split('__'):
-                if step not in current_map:
-                    current_map[step] = {}
-                current_map = current_map[step]
+        # Select one data
+        select_query = self.request.GET.get('select')
+        if select_query:
+            queryset = queryset.select_related(*select_query.split(','))
 
-        return include_map
+        return queryset
 
-    # def handle_exception(self, exc):
-    #   """Override from APIView"""
-    #   return super().handle_exception(exc)
+    def filter_by_sub_urls(self, queryset: QuerySet) -> QuerySet:
+        """
+        Filter queryset base on url nesting
+        For example: /users/1/associations
+        """
+        nested_url_filters = self.get_sub_urls_filters(queryset)
+        if nested_url_filters:
+            queryset = queryset.filter(**nested_url_filters)
+
+        return queryset
+
+    def filter_from_query_params(self, queryset: QuerySet) -> QuerySet:
+        """
+        Filter queryset based on field and values specified
+        /orders?filter=status__in=2,4&filter=id__gt=2
+        """
+        filters_query = self.request.GET.getlist('filter')
+        if filters_query:
+            # Parse filters
+            filter_params = {}
+            for _filter in filters_query:
+                key, value = _filter.split('=', 1)
+                filter_params[key] = self.parse_query_param_value(key, value)
+
+            queryset = queryset.filter(**filter_params)
+
+        return queryset
+
+    def order_queryset(self, queryset: QuerySet) -> QuerySet:
+        """
+        Order the data as specified by the query
+        """
+        order_query = self.request.GET.get('order_by')
+        if order_query:
+            queryset = queryset.order_by(*order_query.split(','))
+
+        return queryset
+
+    def get_queryset(self) -> QuerySet:
+        """
+        Override from GenericAPIView
+        """
+        queryset = super().get_queryset()
+
+        # Prefetch included sub models
+        queryset = self.include_sub_models(queryset)
+
+        # Filter according to sub urls
+        queryset = self.filter_by_sub_urls(queryset)
+
+        # Filter according to query params
+        queryset = self.filter_from_query_params(queryset)
+
+        # TODO Filter sub permission ??
+
+        # Order
+        queryset = self.order_queryset(queryset)
+
+        return queryset
 
 
 class ModelViewSet(ModelViewSetMixin, viewsets.ModelViewSet):

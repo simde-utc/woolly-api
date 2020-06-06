@@ -23,14 +23,3 @@ class IsUserOrAdmin(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj) -> bool:
         return request.user.is_admin or obj == request.user
-
-
-class IsAdminOrReadOnly(permissions.BasePermission):
-    """
-    Everyone can read, only admin can write
-    """
-
-    def has_permission(self, request, view) -> bool:
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return request.user.is_authenticated and request.user.is_admin

@@ -33,7 +33,7 @@ MAX_ONGOING_TIME = timedelta(minutes=15)
 MAX_PAYMENT_TIME = timedelta(hours=1)
 MAX_VALIDATION_TIME = timedelta(days=30)
 
-API_MODEL_CACHE_TIMEOUT = 3600
+API_MODEL_CACHE_TIMEOUT = timedelta(minutes=30)
 
 
 # --------------------------------------------------------------------------

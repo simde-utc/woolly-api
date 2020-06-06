@@ -197,18 +197,24 @@ class OrderLineFieldViewSetTestCase(ModelViewSetTestCase):
         'list':     '...a',     # Only admin can list
         'retrieve': '.u.a',     # Only owner and admin can retrieve
         'create':   '...a',     # Only admin can create
-        'update':   '.u.a',     # Only admin can update
+        'update':   '.u.a',     # Only owner and admin can update
         'delete':   '...a',     # Only admin can delete
     })
 
     def additionnal_setUp(self) -> None:
         self.item = self.factory.create(Item)
         self.field = self.factory.create(Field)
-        self.itemfield = self.factory.create(ItemField, item=self.item, field=self.field, editable=True)
+        self.itemfield = self.factory.create(ItemField,
+                                             item=self.item,
+                                             field=self.field,
+                                             editable=True)
 
         # Order is own by user for the purpose of the tests
         self.order = self.factory.create(Order, owner=self.users['user'])
-        self.orderline = self.factory.create(OrderLine, order=self.order, item=self.item, quantity=1)
+        self.orderline = self.factory.create(OrderLine,
+                                             order=self.order,
+                                             item=self.item,
+                                             quantity=1)
         self.orderlineitem = self.factory.create(OrderLineItem, orderline=self.orderline)
 
         # Tests

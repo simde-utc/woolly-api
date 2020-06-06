@@ -132,7 +132,7 @@ class Item(models.Model):
                                     through_fields=('item', 'field'),
                                     related_name='fields')
 
-    def quantity_bought(self) -> int:
+    def quantity_sold(self) -> int:
         filters = {
             'orderlines__item__pk': self.pk,
             'status__in': OrderStatus.BOOKING_LIST.value,
@@ -147,7 +147,7 @@ class Item(models.Model):
     def quantity_left(self) -> int:
         if self.quantity is None:
             return None
-        return self.quantity - self.quantity_bought()
+        return self.quantity - self.quantity_sold()
 
     def quantity_estimation(self) -> int:
         # TODO Quantity estimation for client UI
@@ -293,14 +293,14 @@ class Order(models.Model):
 
         # Generate tickets if needed
         if resp['tickets_generated']:
-            self.create_orderlineitems_and_fields()
+            self.generate_orderlineitems_and_fields()
 
         resp['status']  = self.get_status_display()
         resp['message'] = OrderStatus.MESSAGES.value[self.status]
         return resp
 
     @transaction.atomic
-    def create_orderlineitems_and_fields(self) -> int:
+    def generate_orderlineitems_and_fields(self) -> int:
         """
         When an order has just been validated, create
         all the orderlineitems and fields required
@@ -367,7 +367,7 @@ class Order(models.Model):
         return f"N°{self.id} [{self.get_status_display()}] by {self.owner}"
 
     class Meta:
-        ordering = ('id',)
+        ordering = ('-id',)
 
 
 class OrderLine(models.Model):
