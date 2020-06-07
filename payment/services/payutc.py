@@ -1,13 +1,14 @@
-from typing import Sequence
-import requests
+import logging
 
+from django.conf import settings
 from rest_framework import status
 
-from sales.models import Order, OrderStatus, Item
+from sales.models import Sale, Order, OrderStatus, Item
 from .base import AbstractPaymentService, TransactionException
+from .payutc_client import PayutcClient, PayutcException as PayutcClientException
 
 
-PAYUTC_TRANSACTION_BASE_URL = 'https://payutc.nemopay.net/validation?tra_id='
+logger = logging.getLogger(f"woolly.{__name__}")
 
 PAYUTC_TO_ORDER_STATUS = {
     'A': OrderStatus.EXPIRED,
@@ -18,93 +19,62 @@ PAYUTC_TO_ORDER_STATUS = {
 
 class PayutcException(TransactionException):
     """
-    PayUTC transaction service specific exception
+    PayUTC service specific exception
     """
-
-    @classmethod
-    def from_response(cls, response: dict) -> 'PayutcException':
-        """
-        Create an PayutcException from an API response
-        """
-        error = response.get('error')
-        if not error:
-            return cls("Erreur inconnue", 'unknown_payutc_error')
-
-        message = error.get('message', "Une erreur inconnue est survenue avec PayUTC")
-        code = error['error']
-        details = [ f"{k}: {m}" for k, m in error.get('data', {}).items() ]
-
-        return cls(message, code, details)
+    pass
 
 
-class Payutc(AbstractPaymentService):
+class PayutcService(AbstractPaymentService):
 
-    def __init__(self, params: dict):
-        if 'app_key' not in params:
-            raise PayutcException("Le service PayUTC a besoin d'une app_key", 'no_app_key_provided')
+    def __init__(self, login: bool=False):
+        super().__init__()
+        self.client = PayutcClient(settings.PAYUTC)
 
-        self.config = {
-            'url': 'https://api.nemopay.net',
-            'username': None,
-            'password': None,
-            'systemID': 'payutc',
-            'app_key': params['app_key'],
-            'fun_id': params.get('fun_id', None),
-            'sessionID': None,
-            'logged_usr': None,
-            'loginMethod': 'payuser',
+    def _check_login(self) -> None:
+        """Check that the client is logged to the app"""
+        if not self.client.is_authenticated:
+            self.client.login_app()
+            self.client.login_user()
+            logger.info("Logged in Payutc services")
+
+    def _get_category_id(self, sale: Sale) -> int:
+        data = {
+            "name": f"Woolly - {sale.id}",
+            "fundation": sale.association.fun_id,
         }
-
-    def _filter_params(self, params: dict, keys: Sequence[str]) -> dict:
-        """
-        Filter params to only return keys
-        """
-        data = { k: params.get(k, None) for k in keys }
-        # Default values
-        if 'fun_id' in keys and data['fun_id'] is None:
-            data['fun_id'] = self.config['fun_id']
-        return data
-
-    def _call(self, service: str, method: str, data: dict) -> dict:
-        """
-        Generic API Call
-        """
-        url = f"{self.config['url']}/services/{service}/{method}" \
-            + f"?system_id={self.config['systemID']}&app_key={self.config['app_key']}"
-        if self.config['sessionID'] is not None:
-            url += f"&sessionid={self.config['sessionID']}"
-
         try:
-            response = requests.post(url, json=data, headers={ 'Content-Type': 'application/json' })
-            return response.json()
-        except Exception as error:
-            raise PayutcException("Error lors de la requête de transaction", 'payutc_request') from error
-
-    def _create_transaction(self, params: dict) -> dict:
-        """
-        API call to create a transaction
-        """
-        keys = ('items', 'mail', 'return_url', 'fun_id', 'callback_url')
-        data = self._filter_params(params, keys)
-        data['fun_id'] = str(data['fun_id'])
-        return self._call('WEBSALE', 'createTransaction', data)
-
-    def _get_transaction(self, params: dict) -> dict:
-        """
-        API call to create a transaction
-        """
-        data = self._filter_params(params, ('tra_id', 'fun_id'))
-        return self._call('WEBSALE', 'getTransactionInfo', data)
-
-    # --------------------------------------------
-    #   Public methods
-    # --------------------------------------------
+            try:
+                return self.client.get_categories(data)[0]["id"]
+            except IndexError:
+                logger.info(f"Creating category {data['name']} on fundation {data['fundation']}")
+                data["fun_id"] = data.pop("fundation")
+                return self.client.upsert_category(data)
+        except PayutcClientException as error:
+            message = "Erreur lors de la mise à jour la catégorie"
+            raise PayutcException(message, code="category_creation_error") from error
 
     def synch_item(self, item: Item, **kwargs) -> None:
         """
         Adapter to synchronize an item in the payment service
         """
-        pass
+        self._check_login()
+        sale = item.sale
+        data = {
+            "name": item.name,
+            "prix": int(item.price * 100),
+            "tva": 5.5,
+            "parent": self._get_category_id(sale),
+            "cotisant": item.usertype == "cotisant_bde",
+            "fun_id": sale.association.fun_id,
+        }
+
+        action = "Updating" if item.pk else "Creating"
+        logger.info(f"{action} item {data['name']} on fundation {data['fun_id']}")
+        try:
+            item.nemopay_id = self.client.upsert_product(data, id=item.nemopay_id)
+        except PayutcClientException as error:
+            message = "Erreur lors de la mise à jour l'article"
+            raise PayutcException(message, code="item_synch_error") from error
 
     def create_transaction(self, order: Order, callback_url: str, return_url: str, **kwargs) -> dict:
         """
@@ -113,27 +83,30 @@ class Payutc(AbstractPaymentService):
         orderlines = order.orderlines.filter(quantity__gt=0).prefetch_related('item')
         itemsArray = [ [int(orderline.item.nemopay_id), orderline.quantity] for orderline in orderlines ]
 
-        resp = self._create_transaction({
-            'fun_id': int(order.sale.association.fun_id),
-            'items': str(itemsArray),
-            'mail': order.owner.email,
-            'callback_url': callback_url,
-            'return_url': return_url,
-        })
-
-        if 'error' in resp:
-            raise PayutcException.from_response(resp)
-
-        return resp
+        try:
+            return self.client.create_transaction({
+                'fun_id': int(order.sale.association.fun_id),
+                'items': str(itemsArray),
+                'mail': order.owner.email,
+                'callback_url': callback_url,
+                'return_url': return_url,
+            })
+        except PayutcClientException as error:
+            message = "Erreur lors de la création de la transaction"
+            raise PayutcException(message, code="transaction_creation_error") from error
 
     def get_transaction_status(self, order: Order) -> OrderStatus:
         """
         Adapter to get transaction status from an order
         """
-        trans = self._get_transaction({
-            'tra_id': int(order.tra_id),
-            'fun_id': int(order.sale.association.fun_id),
-        })
+        try:
+            trans = self.client.get_transaction({
+                'tra_id': int(order.tra_id),
+                'fun_id': int(order.sale.association.fun_id),
+            })
+        except PayutcClientException as error:
+            message = "Erreur lors de la récupération de la transaction"
+            raise PayutcException(message, code="transaction_fetch_error") from error
 
         try:
             return PAYUTC_TO_ORDER_STATUS.get(trans['status'], None)
@@ -141,7 +114,7 @@ class Payutc(AbstractPaymentService):
             raise PayutcException(
                 "Le statut de la transaction est inconnue",
                 "unknown_transaction_status",
-                details=f"Status: {trans['status']}") from error
+                details=f"Status: {trans.get('status')}") from error
 
     def get_redirection_to_payment(self, order: Order) -> str:
         """
@@ -153,4 +126,4 @@ class Payutc(AbstractPaymentService):
                 'order_has_no_transaction',
                 status_code=status.HTTP_400_BAD_REQUEST)
 
-        return PAYUTC_TRANSACTION_BASE_URL + str(order.tra_id)
+        return self.client.get_payment_url(order.tra_id)

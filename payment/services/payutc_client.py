@@ -52,6 +52,21 @@ class PayutcException(Exception):
         self.config = config
         self.data = data
 
+    @classmethod
+    def from_response(cls, response: dict) -> 'PayutcException':
+        """
+        Create an PayutcException from an API response
+        """
+        error = response.get('error')
+        if not error:
+            return cls("Erreur inconnue", 'unknown_payutc_error')
+
+        message = error.get('message', "Une erreur inconnue est survenue avec PayUTC")
+        code = error['error']
+        details = [ f"{k}: {m}" for k, m in error.get('data', {}).items() ]
+
+        return cls(message, code, details)
+
 
 class PayutcClient:
     """
@@ -139,7 +154,7 @@ class PayutcClient:
     def __repr__(self) -> str:
         conf = {
             'fun_id': self.config['fun_id'],
-            'logged': self.is_loggued,
+            'authenticated': self.is_authenticated,
         }
         conf_str = ' '.join(k if v is True else f"{k}={v}" for k, v in conf.items() if v)
         return f"<PayutcClient {conf_str}>"
@@ -148,11 +163,11 @@ class PayutcClient:
     #   Configuration
     # ------------------------------------------------------------
 
-    def _get_kwargs_or_config(self, kwargs: dict, *keys) -> dict:
+    def _get_data_or_config(self, data: dict, *keys) -> dict:
         return {
-            key: kwargs.get(key, self.config.get(key))
+            key: data.get(key, self.config.get(key))
             for key in keys
-            if key in kwargs or key in self.config
+            if key in data or key in self.config
         }
 
     def _set_or_get_config(self, key: str, value: Any=None) -> Any:
@@ -185,7 +200,7 @@ class PayutcClient:
             raise NotImplementedError(f"Login method '{method}' is not implemented")
 
     @property
-    def is_loggued(self) -> bool:
+    def is_authenticated(self) -> bool:
         return bool(self.config.get('session_id'))
 
     def get_user_details(self) -> dict:
@@ -224,15 +239,19 @@ class PayutcClient:
     #   Web transactions
     # ------------------------------------------------------------
 
-    def create_transaction(self, **kwargs):
+    def create_transaction(self, data: dict) -> dict:
         keys = ('items', 'mail', 'return_url', 'fun_id', 'callback_url')
-        data = self._get_kwargs_or_config(kwargs, *keys)
-        data['fun_id'] = str(data['fun_id'])
-        return self.request('post', 'WEBSALE/createTransaction', data, api='services', **kwargs)
+        data = self._get_data_or_config(data, *keys)
+        data['fun_id'] = str(data['fun_id'])  # TODO str ??
+        data['items'] = str(data['items'])
+        resp = self.request('post', 'WEBSALE/createTransaction', data, api='services')
+        if 'error' in resp:
+            raise PayutcException.from_response(resp)
+        return resp
 
-    def get_transaction(self, **kwargs):
-        data = self._get_kwargs_or_config(kwargs, 'tra_id', 'fun_id')
-        return self.request('post', 'WEBSALE/getTransactionInfo', data, api='services', **kwargs)
+    def get_transaction(self, data: dict) -> dict:
+        data = self._get_data_or_config(data, 'tra_id', 'fun_id')
+        return self.request('post', 'WEBSALE/getTransactionInfo', data, api='services')
 
     def get_payment_url(self, tra_id: int) -> str:
         return f"https://payutc.nemopay.net/validation?tra_id={tra_id}"

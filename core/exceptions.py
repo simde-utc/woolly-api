@@ -60,11 +60,11 @@ def exception_handler(error: Exception, context: dict):
 
     # Unhandled error
     if response is None:
-        logger.critical("Unhandled error", error)
+        logger.critical("Unhandled error", error, exc_info=True)
         return None
 
+    # Handled error
     if isinstance(error, APIException):
         response.data = error.get_full_details()
-        logger.warning("Handled error", response.data)
 
     return response

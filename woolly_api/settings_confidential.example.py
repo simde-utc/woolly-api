@@ -9,7 +9,11 @@ CORS_ORIGIN_WHITELIST = (
 
 # Secret Keys
 SECRET_KEY = ''
-PAYUTC_KEY = ''
+PAYUTC = {
+    'app_key': '',
+    'mail': '',
+    'password': '',
+}
 PORTAL = {
     'id':   0,
     'key':  '',

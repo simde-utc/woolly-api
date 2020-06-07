@@ -35,13 +35,14 @@ MAX_VALIDATION_TIME = timedelta(days=30)
 
 API_MODEL_CACHE_TIMEOUT = timedelta(minutes=30)
 
+VALID_TVA = (0, 5.5, 10, 20)
 
 # --------------------------------------------------------------------------
 #       Services Configuration
 # --------------------------------------------------------------------------
 
 # Payutc & Portail des Assos config
-PAYUTC_KEY = confidentials.PAYUTC_KEY
+PAYUTC = confidentials.PAYUTC
 OAUTH = {
     'portal': {
         'client_id':        confidentials.PORTAL['id'],

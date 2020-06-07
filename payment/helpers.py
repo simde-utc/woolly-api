@@ -1,7 +1,7 @@
 from django.conf import settings
 
 from payment.services.base import AbstractPaymentService
-from payment.services.payutc import Payutc
+from payment.services.payutc import PayutcService
 # from sales.models import Order
 
 
@@ -16,4 +16,4 @@ def get_pay_service(*args, **kwargs) -> AbstractPaymentService:
         from payment.services.fake import FakePaymentService
         return FakePaymentService()
     else:
-        return Payutc({ 'app_key': settings.PAYUTC_KEY })
+        return PayutcService()
