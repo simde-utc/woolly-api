@@ -35,11 +35,18 @@ class Association(APIModel):
         if 'pk' in params:
             url += cls.pk_to_url(params['pk'])
         if 'user_pk' in params:
-            url = f"users/{params['user_pk']}/{url}"
+            # Don't filter association if user is admin
+            user_is_admin = User.objects.values_list('is_admin', flat=True) \
+                                        .get(pk=params['user_pk'])
+            if not user_is_admin:
+                url = f"users/{params['user_pk']}/{url}"
         return url
 
     def __str__(self) -> str:
         return self.shortname
+
+    class Meta:
+        ordering = ('shortname',)
 
 
 class Sale(models.Model):

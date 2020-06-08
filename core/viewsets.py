@@ -29,7 +29,7 @@ class ModelViewSetMixin(object):
         """
         Whether the request as the specified params and it is not false
         """
-        value = self.request.GET.get(key)
+        value = self.request.GET.get(key, 'false')
         return value is None or value.lower() != 'false'
 
     def get_kwarg(self, kwarg_key: str, data_key: str, default_value: Any=None) -> Any:
