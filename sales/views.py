@@ -59,20 +59,14 @@ class SaleViewSet(ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        # TODO trier par date ?
 
-        # queryset = queryset.filter(is_active=True, is_public=True)
-        if not self.request.GET.get('include_inactive', False):
+        # Filter active sales
+        if not self.query_params_is_true('include_inactive'):
             queryset = queryset.filter(is_active=True)
+
+        # Filter public sales
         if 'pk' not in self.kwargs:
             queryset = queryset.filter(is_public=True)
-
-        # TODO filtering
-        # filters = ('active', )
-        # filterQuery = self.request.GET.get('filterQuery', None)
-        # if filterQuery is not None:
-            # queryset = queryset.filter()
-            # pass
 
         return queryset
 

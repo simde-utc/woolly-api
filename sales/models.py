@@ -129,8 +129,7 @@ class Item(models.Model):
 
     fields = models.ManyToManyField('Field',
                                     through='ItemField',
-                                    through_fields=('item', 'field'),
-                                    related_name='fields')
+                                    through_fields=('item', 'field'))
 
     def quantity_sold(self) -> int:
         filters = {
@@ -138,6 +137,10 @@ class Item(models.Model):
             'status__in': OrderStatus.BOOKING_LIST.value,
         }
 
+        # TODO Use db
+        # from django.db.models import Avg, Count, Min, Sum
+        # return Sum().aggregate(quantity_sold=)
+        # self.sale.orders.filter(**filters)
         return sum(
             orderline.quantity
             for order in self.sale.orders.filter(**filters).prefetch_related('orderlines').all()
@@ -152,6 +155,16 @@ class Item(models.Model):
     def quantity_estimation(self) -> int:
         # TODO Quantity estimation for client UI
         pass
+
+    def save(self, *args, **kwargs) -> None:
+        """
+        Save item and synch it with the payment system
+        """
+        from payment.helpers import get_pay_service
+        pay_service = get_pay_service(self)
+        pay_service.synch_item(self)
+
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return f"{self.name} ({self.sale})"
@@ -409,7 +422,7 @@ class Field(models.Model):
     Defines an Item's specification
     """
     id      = models.CharField(max_length=32, primary_key=True)
-    name    = models.CharField(max_length=NAME_FIELD_MAXLEN)
+    name    = models.CharField(max_length=NAME_FIELD_MAXLEN)  # TODO label
     type    = models.CharField(max_length=32)
     default = models.CharField(max_length=254, blank=True, null=True)
     items   = models.ManyToManyField(Item,
