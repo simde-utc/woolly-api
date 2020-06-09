@@ -132,29 +132,46 @@ class Item(models.Model):
                                     through_fields=('item', 'field'))
 
     def quantity_sold(self) -> int:
+        """
+        Count item quantity sold
+        """
         filters = {
+            'sale': self.sale_id,
             'orderlines__item__pk': self.pk,
             'status__in': OrderStatus.BOOKING_LIST.value,
         }
 
-        # TODO Use db
-        # from django.db.models import Avg, Count, Min, Sum
-        # return Sum().aggregate(quantity_sold=)
-        # self.sale.orders.filter(**filters)
-        return sum(
-            orderline.quantity
-            for order in self.sale.orders.filter(**filters).prefetch_related('orderlines').all()
-            for orderline in order.orderlines.filter(item=self).all()
-        )
+        qt_sum = models.Sum('orderlines__quantity',
+                            filter=models.Q(orderlines__item__pk=self.pk))
+        return (
+            Order.objects.filter(**filters)
+            .annotate(orderline_quantity=qt_sum)
+            .aggregate(sum=models.Sum('orderline_quantity'))
+        )['sum'] or 0
 
     def quantity_left(self) -> int:
+        """
+        Get quantity left
+        """
         if self.quantity is None:
             return None
         return self.quantity - self.quantity_sold()
 
     def quantity_estimation(self) -> int:
-        # TODO Quantity estimation for client UI
-        pass
+        """
+        Quantity estimation for client UI x/3
+        """
+        if self.quantity is None:
+            return None
+        percent = self.quantity_sold() / self.quantity
+        if percent > 0.45:
+            return 3
+        elif percent > 0.2:
+            return 2
+        elif percent > 0:
+            return 1
+        else:
+            return 0
 
     def save(self, *args, **kwargs) -> None:
         """
