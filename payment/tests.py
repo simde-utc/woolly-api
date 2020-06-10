@@ -57,9 +57,9 @@ class OrderValidatorTestCase(APITestCase):
         )
 
         self.users = [
-            self.factory.create(User),   # normal
-            self.factory.create(User),   # other
-            self.factory.create(User),   # different usertype
+            self.factory.create(User),  # normal
+            self.factory.create(User),  # other
+            self.factory.create(User),  # different usertype
         ]
         self.user = self.users[0]
 
@@ -73,7 +73,13 @@ class OrderValidatorTestCase(APITestCase):
         ]
         self.usertype = self.usertypes[0]
 
-        self.itemgroup = self.factory.create(ItemGroup, quantity=400, max_per_user=5)
+        # Create items
+        rand = self.factory.faker.random_int
+        self.itemgroup = self.factory.create(
+            ItemGroup,
+            quantity=rand(min=200, max=400),
+            max_per_user=rand(min=5, max=10),
+        )
         self.items = [
             self.factory.create(
                 Item,
@@ -81,18 +87,24 @@ class OrderValidatorTestCase(APITestCase):
                 group        = self.itemgroup,
                 usertype     = self.usertypes[0],
                 is_active    = True,
-                quantity     = 300,
-                max_per_user = 7),
+                quantity     = rand(min=200, max=400),
+                max_per_user = rand(min=2, max=5),
+            ),
             self.factory.create(
                 Item,
                 sale         = self.sale,
                 group        = self.itemgroup,
                 usertype     = self.usertypes[1],
                 is_active    = True,
-                quantity     = 300,
-                max_per_user = 7),
+                quantity     = rand(min=200, max=400),
+                max_per_user = rand(min=2, max=5),
+            ),
         ]
         self.item = self.items[0]
+
+        items = [ *self.items, self.itemgroup ]
+        self.min_max_per_user = min([ item.max_per_user for item in items ])
+        self.min_quantity = min([ item.quantity for item in items ])
 
         self.order, self.orderline = self._create_order(self.user, self.item)
 
@@ -112,7 +124,8 @@ class OrderValidatorTestCase(APITestCase):
             updated_at=self.datetimes['now'],
             status=status,
         )
-        orderline = self.factory.create(OrderLine, item=item, order=order, quantity=2)
+        qt = self.factory.faker.random_int(min=2, max=min(self.min_max_per_user, self.min_quantity))
+        orderline = self.factory.create(OrderLine, item=item, order=order, quantity=qt)
         return order, orderline
 
     def _test_validation(self, should_pass, order=None, messages=None, *args, **kwargs):
@@ -198,19 +211,22 @@ class OrderValidatorTestCase(APITestCase):
         """
         Sales max quantities must be respected
         """
+        upperLimit = self.orderline.quantity
+
         # Over Sale max_item_quantity
-        self.sale.max_item_quantity = self.orderline.quantity - 1
+        self.sale.max_item_quantity = upperLimit - 1
         self.sale.save()
         self._test_validation(False)
-
         # Limit Sale max_item_quantity
-        self.sale.max_item_quantity = self.orderline.quantity
+        self.sale.max_item_quantity = upperLimit
         self.sale.save()
         self._test_validation(True)
 
         # Other users booked orders
-        order1, orderline1 = self._create_order(self.users[1], self.items[0], status=OrderStatus.AWAITING_PAYMENT.value)
-        order2, orderline2 = self._create_order(self.users[2], self.items[1], status=OrderStatus.AWAITING_PAYMENT.value)
+        order1, orderline1 = self._create_order(self.users[1], self.items[0],
+                                                status=OrderStatus.AWAITING_PAYMENT.value)
+        order2, orderline2 = self._create_order(self.users[2], self.items[1],
+                                                status=OrderStatus.AWAITING_PAYMENT.value)
         booked_orders = (order1, order2)
         upperLimit = self.orderline.quantity + orderline1.quantity + orderline2.quantity
 
@@ -220,7 +236,6 @@ class OrderValidatorTestCase(APITestCase):
         for order in booked_orders:
             self._test_validation(True, order)
         self._test_validation(False, self.order)
-
         # Limit Sale max_item_quantity
         self.sale.max_item_quantity = upperLimit
         self.sale.save()
@@ -243,6 +258,13 @@ class OrderValidatorTestCase(APITestCase):
         self.item.max_per_user = upperLimit
         self.item.save()
         self._test_validation(True)
+
+    @tag('quantities')
+    def test_item_max_per_user(self):
+        """
+        Items max_per_user must be respected
+        """
+        upperLimit = self.orderline.quantity
 
         # Over Item quantity
         self.item.quantity = upperLimit - 1
@@ -268,6 +290,13 @@ class OrderValidatorTestCase(APITestCase):
         self.itemgroup.quantity = upperLimit
         self.itemgroup.save()
         self._test_validation(True)
+
+    @tag('quantities')
+    def test_itemgroup_max_per_user(self):
+        """
+        ItemGroups max_per_user must be respected
+        """
+        upperLimit = self.orderline.quantity
 
         # Over Itemgroup max_per_user
         self.itemgroup.max_per_user = upperLimit - 1

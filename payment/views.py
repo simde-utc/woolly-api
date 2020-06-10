@@ -54,8 +54,8 @@ class PaymentView:
         # TODO Check if doesn't already have an order
 
         # 3. Create Transaction
-        pay_service = get_pay_service(order, request)
         try:
+            pay_service = get_pay_service(order, request)
             callback_url = request.build_absolute_uri(
                 reverse('order-status', kwargs={ 'pk': order.pk })
             )
