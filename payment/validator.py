@@ -17,11 +17,6 @@ class OrderValidator:
     """
 
     def __init__(self, order: Order, raise_on_error: bool=True):
-        # TODO : Optimize
-        # self.order = Order.objects.select_related('sale', 'owner') \
-        #                   .prefetch_related('orderlines', 'orderlines__item', 'sale__items', 'owner__orders') \
-        #                   .get(pk=order.pk)
-        # TODO Check if oauth not needed or find oauth in cache
         self.order = order
         self.orderlines = self.order.orderlines.select_related('item__usertype').all()
         self.owner = self.order.owner.get_with_api_data()
@@ -88,7 +83,9 @@ class OrderValidator:
         if self.order.status not in OrderStatus.BUYABLE_STATUS_LIST.value:
             self._add_error("Votre commande n'est pas payable.")
 
-        # TODO Check if expired
+        # Check if expired
+        if self.order.is_expired():
+            self._add_error("Votre commande est expirée.")
 
         # Check if owner doesn't have any previous ongoing order on the same sale
         # -- 1 QUERY
