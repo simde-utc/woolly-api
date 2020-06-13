@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework import viewsets
 
 from authentication.oauth import OAuthAPI
+from .exceptions import InvalidRequest
 
 
 class ModelViewSetMixin(object):
@@ -172,6 +173,14 @@ class ModelViewSetMixin(object):
         queryset = self.order_queryset(queryset)
 
         return queryset
+
+    def paginate_queryset(self, *args, **kwargs):
+        try:
+            return super().paginate_queryset(*args, **kwargs)
+        except AttributeError as error:
+            key = str(error).split('\'', 2)[1]
+            msg = f"Key '{key}' is not a valid field of {self.queryset.model.__name__}"
+            raise InvalidRequest(msg, code="invalid_field")
 
 
 class ModelViewSet(ModelViewSetMixin, viewsets.ModelViewSet):
