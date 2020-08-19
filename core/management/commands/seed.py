@@ -8,6 +8,7 @@ MODELS_CHAINS = {
     'itemgroup': ['item'],
     'order': ['orderline'],
     'orderline': ['orderlineitem'],
+    'orderlineitem': ['orderlinefield'],
 }
 
 
@@ -59,6 +60,8 @@ class Command(BaseCommand):
         for _ in range(number):
             # Create model
             data = self.faker.create(Model, **self.kwargs)
+            if model == 'order':
+                data.generate_orderlineitems_and_fields()
 
             # Add model to store
             self.models[model].add(data)

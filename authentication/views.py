@@ -61,8 +61,12 @@ class AuthView:
         if me.is_anonymous:
             user = None
         else:
-            include_tree = ModelViewSet.get_include_tree(request.GET)
-            user = UserSerializer(me, context={ 'include_tree': include_tree }).data
+            context = {
+                'request': request,
+                'include_tree': ModelViewSet.get_include_tree(request.GET),
+                'with': ModelViewSet.get_with_fields(request.GET),
+            }
+            user = UserSerializer(me, context=context).data
         return Response({
             'authenticated': me.is_authenticated,
             'user': user,

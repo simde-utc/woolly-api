@@ -2,6 +2,7 @@ from typing import List
 from collections import OrderedDict
 
 from django.utils.module_loading import import_string
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.relations import ManyRelatedField
 from rest_framework import serializers
 
@@ -60,15 +61,26 @@ class ModelSerializer(serializers.ModelSerializer):
         if include_tree:
             additional_fields.extend(include_tree.keys())
 
+        # Check requested fields are valid
         for field in additional_fields:
-            # Check requested field is valid
             if field not in all_fields:
                 msg = f"Field '{field}' is not a valid field of {type(self).__name__}"
                 raise InvalidRequest(msg, code="invalid_with_field")
 
             field_names.add(field)
 
-        return list(reversed(list(field_names)))
+        return list(field_names)
+
+    def check_manager_rights_on_fields(self, fields: OrderedDict) -> None:
+        """
+        Check that fields comply with manager permissions
+        """
+        is_manager = getattr(self.context["request"], "is_manager", None)
+        manager_fields = getattr(self.Meta, "manager_fields", set())
+
+        for key in fields:
+            if key in manager_fields and not is_manager:
+                raise PermissionDenied(f"Cannot use '{key}' field")
 
     def get_fields(self) -> OrderedDict:
         """
@@ -79,6 +91,7 @@ class ModelSerializer(serializers.ModelSerializer):
         fields = super().get_fields()
         include_tree = self._context.get('include_tree')
         if not include_tree:
+            self.check_manager_rights_on_fields(fields)
             return fields
 
         # Update all included fields with included serializers
@@ -101,6 +114,7 @@ class ModelSerializer(serializers.ModelSerializer):
             fields[key] = self.included_serializers[key](**field_kwargs)
 
         # Return updated fields
+        self.check_manager_rights_on_fields(fields)
         return fields
 
 
