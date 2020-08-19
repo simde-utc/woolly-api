@@ -27,7 +27,11 @@ class ItemGroupSerializer(ModelSerializer):
 
     class Meta:
         model = ItemGroup
-        fields = '__all__'      # DEBUG
+        fields = (
+            "id", "name", "description", "max_per_user", "is_active",
+            "sale", "items",
+        )
+        manager_fields = ("quantity", )
 
 
 class ItemSerializer(ModelSerializer):
@@ -48,9 +52,11 @@ class ItemSerializer(ModelSerializer):
 
     class Meta:
         model = Item
-        fields = '__all__'      # DEBUG
-        # fields = ('id', 'name', 'description', 'remaining_quantity',
-        #           'initial_quantity','sale_id', 'itemspecifications')
+        fields = (
+            "id", "name", "description", "price", "max_per_user", "is_active",
+            "fields", "itemfields", "sale", "group", "usertype",
+        )
+        manager_fields = ("quantity", "quantity_left", "quantity_sold")
 
 
 # --------------------------------------------
@@ -73,13 +79,14 @@ class SaleSerializer(ModelSerializer):
 
     class Meta:
         model = Sale
-        fields = ('id', 'name', 'description', 'association', 'is_active', 'begin_at', 'end_at')
-        manager_fields = {'orders', }
-        # fields = [
-        #     'id', 'name', 'description', 'association', 'is_active', 'is_public',
-        #     'created_at', 'begin_at', 'end_at', 'max_item_quantity', 'cgv', 'image', 'color', 
-        # ]
-        # read_only_fields = []
+        fields = (
+            "id", "name", "description", "association", "is_active",
+            "cgv", "image", "color",
+        )
+        manager_fields = (
+            "is_public", "begin_at", "end_at",
+            "max_item_quantity", "orders",
+        )
 
 
 class AssociationSerializer(APIModelSerializer):
@@ -91,8 +98,7 @@ class AssociationSerializer(APIModelSerializer):
 
     class Meta:
         model = Association
-        fields = '__all__'      # DEBUG
-        # fields = ('id', 'name', 'bank_account', 'sales', 'foundation_id')
+        fields = ("id", "shortname", "fun_id")
 
 
 # --------------------------------------------
@@ -113,8 +119,7 @@ class OrderSerializer(ModelSerializer):
 
     class Meta:
         model = Order
-        fields = '__all__'      # DEBUG
-        # fields = ('id', 'date','price', 'orderlines')
+        fields = ("id", "owner", "sale", "status", "updated_at", "orderlines")
 
 
 class OrderLineSerializer(ModelSerializer):
@@ -132,8 +137,7 @@ class OrderLineSerializer(ModelSerializer):
 
     class Meta:
         model = OrderLine
-        fields = '__all__'      # DEBUG
-        # fields = ('id', 'order', 'item', 'quantity')
+        fields = "__all__"
 
 
 class OrderLineItemSerializer(ModelSerializer):
@@ -148,7 +152,7 @@ class OrderLineItemSerializer(ModelSerializer):
 
     class Meta:
         model = OrderLineItem
-        fields = '__all__'      # DEBUG
+        fields = "__all__"
 
 
 # --------------------------------------------
@@ -164,7 +168,7 @@ class FieldSerializer(ModelSerializer):
 
     class Meta:
         model = Field
-        fields = '__all__'      # DEBUG
+        fields = ("id", "type", "name", "default")
 
 
 class ItemFieldSerializer(ModelSerializer):
@@ -178,7 +182,7 @@ class ItemFieldSerializer(ModelSerializer):
 
     class Meta:
         model = ItemField
-        fields = '__all__'      # DEBUG
+        fields = "__all__"
 
 
 class OrderLineFieldSerializer(ModelSerializer):

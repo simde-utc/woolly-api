@@ -26,7 +26,6 @@ class Association(APIModel):
     id = models.UUIDField(primary_key=True, editable=False)
     shortname = models.CharField(max_length=NAME_FIELD_MAXLEN)
     fun_id    = models.PositiveSmallIntegerField(null=True, blank=True)
-    # TODO Fetch fun_id
     # TODO Abstraire payment
 
     @classmethod
@@ -34,6 +33,8 @@ class Association(APIModel):
         url = 'assos'
         if 'pk' in params:
             url += cls.pk_to_url(params['pk'])
+
+        # TODO Ask for specific roles in associations
         if 'user_pk' in params:
             url = f"users/{params['user_pk']}/{url}"
         return url

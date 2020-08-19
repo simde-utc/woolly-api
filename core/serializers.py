@@ -75,8 +75,8 @@ class ModelSerializer(serializers.ModelSerializer):
         """
         Check that fields comply with manager permissions
         """
-        is_manager = getattr(self.context["request"], "is_manager", None)
-        manager_fields = getattr(self.Meta, "manager_fields", set())
+        is_manager = getattr(self.context.get("request"), "is_manager", None)
+        manager_fields = set(getattr(self.Meta, "manager_fields", []))
 
         for key in fields:
             if key in manager_fields and not is_manager:
