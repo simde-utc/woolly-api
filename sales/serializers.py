@@ -73,7 +73,13 @@ class SaleSerializer(ModelSerializer):
 
     class Meta:
         model = Sale
-        fields = '__all__'
+        fields = ('id', 'name', 'description', 'association', 'is_active', 'begin_at', 'end_at')
+        manager_fields = {'orders', }
+        # fields = [
+        #     'id', 'name', 'description', 'association', 'is_active', 'is_public',
+        #     'created_at', 'begin_at', 'end_at', 'max_item_quantity', 'cgv', 'image', 'color', 
+        # ]
+        # read_only_fields = []
 
 
 class AssociationSerializer(APIModelSerializer):

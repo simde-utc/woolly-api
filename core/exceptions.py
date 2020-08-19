@@ -41,7 +41,7 @@ class APIException(exceptions.APIException):
             'details': self.details,
         }
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"<{type(self).__name__} [{self.code}]>"
 
 

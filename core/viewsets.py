@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 
 from django.db.models import QuerySet
 from rest_framework.response import Response
@@ -69,6 +69,13 @@ class ModelViewSetMixin(object):
 
         return include_tree
 
+    @staticmethod
+    def get_with_fields(query: dict) -> List[str]:
+        with_fields = query.get('with')
+        if with_fields:
+            return with_fields.split(',')
+        return []
+
     def get_sub_urls_filters(self, queryset: QuerySet) -> dict:
         """
         Return queryset filters for sub urls
@@ -86,6 +93,7 @@ class ModelViewSetMixin(object):
         return {
             **super().get_serializer_context(),
             'include_tree': self.get_include_tree(self.request.GET),
+            'with': self.get_with_fields(self.request.GET),
         }
 
     def parse_query_param_value(self, key: str, value: str) -> Any:
