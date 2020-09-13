@@ -111,7 +111,7 @@ class APIQuerySet(QuerySet):
         if to_create:
             try:
                 to_create = self.bulk_create(to_create)
-                logger.debug(f"Created {len(to_create)} new {self.model.__class__.__name__}")
+                logger.debug(f"Created {len(to_create)} new {self.model.__name__}")
             except IntegrityError as error:
                 # Some filtering may not work with the database even though the data
                 # is already in the database so we simply skip trying to create

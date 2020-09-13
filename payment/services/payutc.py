@@ -26,7 +26,7 @@ class PayutcException(TransactionException):
 
 class PayutcService(AbstractPaymentService):
 
-    def __init__(self, login: bool=False):
+    def __init__(self):
         super().__init__()
         self.client = PayutcClient(settings.PAYUTC)
 
