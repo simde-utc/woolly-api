@@ -6,9 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
-from sales.exceptions import OrderValidationException
 from sales.models import Order, OrderStatus
-from payment.services.base import TransactionException
 from payment.validator import OrderValidator
 from payment.helpers import get_pay_service
 
@@ -34,44 +32,30 @@ class PaymentView:
             4. Save Transaction info and redirect
         """
         # 1. Retrieve Order
-        # TODO ajout de la limite de temps
         order = Order.objects.filter(owner__pk=request.user.pk) \
                      .filter(status__in=OrderStatus.BUYABLE_STATUS_LIST.value) \
                      .select_related('sale', 'owner') \
                      .get(pk=pk)
 
         # Lock sensitive part
-        pay_lock.acquire()
+        with pay_lock:
 
-        # 2. Verify Order
-        try:
+            # 2. Verify Order
             validator = OrderValidator(order, raise_on_error=True)
             validator.validate()
-        except OrderValidationException as error:
-            pay_lock.release()
-            raise error
 
-        # TODO Check if doesn't already have an order
-
-        # 3. Create Transaction
-        try:
+            # 3. Create Transaction
             pay_service = get_pay_service(order, request)
             callback_url = request.build_absolute_uri(
                 reverse('order-status', kwargs={ 'pk': order.pk })
             )
             return_url = request.GET['return_url']
             transaction = pay_service.create_transaction(order, callback_url, return_url)
-        except TransactionException as error:
-            pay_lock.release()
-            raise error
 
-        # 4. Save transaction id and redirect
-        try:
+            # 4. Save transaction id and redirect
             order.status = OrderStatus.AWAITING_PAYMENT.value
             order.tra_id = transaction['tra_id']
             order.save()
-        finally:
-            pay_lock.release()
 
         # Redirect to transaction url
         resp = {
