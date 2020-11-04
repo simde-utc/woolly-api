@@ -41,7 +41,7 @@ class APIException(exceptions.APIException):
             'details': self.details,
         }
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"<{type(self).__name__} [{self.code}]>"
 
 
@@ -60,8 +60,12 @@ def exception_handler(error: Exception, context: dict):
 
     # Unhandled error
     if response is None:
-        logger.critical("Unhandled error", error, exc_info=True)
+        logger.critical(f"Unhandled error {error}", exc_info=True)
         return None
+
+    response.status_code = getattr(error, "status_code", response.status_code)
+    if status.is_server_error(response.status_code):
+        logger.critical(f"Server error {error}", exc_info=True)
 
     # Handled error
     if isinstance(error, APIException):

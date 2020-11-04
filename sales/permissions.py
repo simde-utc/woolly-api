@@ -108,6 +108,7 @@ def check_is_manager(request, view) -> bool:
 
     # Admin are managers of everything
     if request.user.is_admin:
+        request.is_manager = True
         return True
 
     # Get the related association
@@ -131,7 +132,8 @@ def check_is_manager(request, view) -> bool:
     # Get user's associations and check if is manager
     oauth_client = OAuthAPI(session=request.session)
     user = request.user.get_with_api_data_and_assos(oauth_client)
-    return user.is_manager_of(asso_id)
+    request.is_manager = user.is_manager_of(asso_id)
+    return request.is_manager
 
 
 def check_order_ownership(request, view, obj) -> bool:
@@ -177,7 +179,7 @@ class IsManager(permissions.BasePermission):
 
 
 # Used for Association, Sale, ItemGroup, Item, ItemField
-IsManagerOrReadOnly = ReadOnly | IsManager
+IsManagerOrReadOnly = IsManager | ReadOnly
 
 
 class IsOwner(permissions.BasePermission):
@@ -213,18 +215,22 @@ class IsOwnerOrManagerReadOnly(permissions.BasePermission):
 
         # Allow admin
         if request.user.is_admin:
+            request.is_manager = True
             return True
 
         # Allow read only for manager
         if request.method in permissions.SAFE_METHODS and check_is_manager(request, view):
+            request.is_manager = True
             return True
 
         # Allow creation
         if view.action == 'create':
+            request.is_manager = True
             return True
 
         # Pass for object action
         if view.action in OBJECT_ACTIONS:
+            request.is_manager = True
             return True
 
         return False
@@ -232,10 +238,12 @@ class IsOwnerOrManagerReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj) -> bool:
         # Allow admin
         if request.user.is_admin:
+            request.is_manager = True
             return True
 
         # Allow read only for manager
         if request.method in permissions.SAFE_METHODS and check_is_manager(request, view):
+            request.is_manager = True
             return True
 
         # Need to be owner to modify

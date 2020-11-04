@@ -85,6 +85,7 @@ class OrderValidator:
 
         # Check if expired
         if self.order.is_expired():
+            self.order.update_status()
             self._add_error("Votre commande est expirée.")
 
         # Check if owner doesn't have any previous ongoing order on the same sale

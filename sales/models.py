@@ -26,7 +26,6 @@ class Association(APIModel):
     id = models.UUIDField(primary_key=True, editable=False)
     shortname = models.CharField(max_length=NAME_FIELD_MAXLEN)
     fun_id    = models.PositiveSmallIntegerField(null=True, blank=True)
-    # TODO Fetch fun_id
     # TODO Abstraire payment
 
     @classmethod
@@ -34,6 +33,8 @@ class Association(APIModel):
         url = 'assos'
         if 'pk' in params:
             url += cls.pk_to_url(params['pk'])
+
+        # TODO Ask for specific roles in associations
         if 'user_pk' in params:
             # Don't filter association if user is admin
             user_is_admin = User.objects.values_list('is_admin', flat=True) \
@@ -186,7 +187,7 @@ class Item(models.Model):
         """
         from payment.helpers import get_pay_service
         pay_service = get_pay_service(self)
-        pay_service.synch_item(self)
+        pay_service.sync_item(self)
 
         super().save(*args, **kwargs)
 

@@ -1,10 +1,11 @@
-from typing import Any
+from typing import Any, List
 
 from django.db.models import QuerySet
 from rest_framework.response import Response
 from rest_framework import viewsets
 
 from authentication.oauth import OAuthAPI
+from .exceptions import InvalidRequest
 
 
 class ModelViewSetMixin(object):
@@ -68,6 +69,13 @@ class ModelViewSetMixin(object):
 
         return include_tree
 
+    @staticmethod
+    def get_with_fields(query: dict) -> List[str]:
+        with_fields = query.get('with')
+        if with_fields:
+            return with_fields.split(',')
+        return []
+
     def get_sub_urls_filters(self, queryset: QuerySet) -> dict:
         """
         Return queryset filters for sub urls
@@ -85,6 +93,7 @@ class ModelViewSetMixin(object):
         return {
             **super().get_serializer_context(),
             'include_tree': self.get_include_tree(self.request.GET),
+            'with': self.get_with_fields(self.request.GET),
         }
 
     def parse_query_param_value(self, key: str, value: str) -> Any:
@@ -172,6 +181,14 @@ class ModelViewSetMixin(object):
         queryset = self.order_queryset(queryset)
 
         return queryset
+
+    def paginate_queryset(self, *args, **kwargs):
+        try:
+            return super().paginate_queryset(*args, **kwargs)
+        except AttributeError as error:
+            key = str(error).split('\'', 2)[1]
+            msg = f"Key '{key}' is not a valid field of {self.queryset.model.__name__}"
+            raise InvalidRequest(msg, code="invalid_field")
 
 
 class ModelViewSet(ModelViewSetMixin, viewsets.ModelViewSet):
