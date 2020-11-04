@@ -80,12 +80,12 @@ class SaleSerializer(ModelSerializer):
     class Meta:
         model = Sale
         fields = (
-            "id", "name", "description", "association", "is_active",
+            "id", "name", "description", "association",
+            "is_active", "begin_at", "end_at",
             "cgv", "image", "color",
         )
         manager_fields = (
-            "is_public", "begin_at", "end_at",
-            "max_item_quantity", "orders",
+            "is_public", "max_item_quantity", "orders",
         )
 
 
@@ -119,7 +119,10 @@ class OrderSerializer(ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ("id", "owner", "sale", "status", "updated_at", "orderlines")
+        fields = (
+            "id", "owner", "sale", "status",
+            "created_at", "updated_at", "orderlines",
+        )
 
 
 class OrderLineSerializer(ModelSerializer):
@@ -137,7 +140,7 @@ class OrderLineSerializer(ModelSerializer):
 
     class Meta:
         model = OrderLine
-        fields = "__all__"
+        fields = ("id", "item", "order", "quantity")
 
 
 class OrderLineItemSerializer(ModelSerializer):
@@ -152,7 +155,7 @@ class OrderLineItemSerializer(ModelSerializer):
 
     class Meta:
         model = OrderLineItem
-        fields = "__all__"
+        fields = ("id", "orderline")
 
 
 # --------------------------------------------
@@ -182,7 +185,7 @@ class ItemFieldSerializer(ModelSerializer):
 
     class Meta:
         model = ItemField
-        fields = "__all__"
+        fields = ("id", "field", "item", "editable")
 
 
 class OrderLineFieldSerializer(ModelSerializer):
@@ -201,4 +204,4 @@ class OrderLineFieldSerializer(ModelSerializer):
 
     class Meta:
         model = OrderLineField
-        fields = '__all__'      # DEBUG
+        fields = ("id", "orderlineitem", "field", "value")
