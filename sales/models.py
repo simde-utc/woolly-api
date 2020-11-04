@@ -180,7 +180,7 @@ class Item(models.Model):
         """
         from payment.helpers import get_pay_service
         pay_service = get_pay_service(self)
-        pay_service.synch_item(self)
+        pay_service.sync_item(self)
 
         super().save(*args, **kwargs)
 

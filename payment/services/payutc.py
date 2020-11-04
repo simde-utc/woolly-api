@@ -1,4 +1,5 @@
 import logging
+from math import ceil
 
 from django.conf import settings
 from rest_framework import status
@@ -35,7 +36,7 @@ class PayutcService(AbstractPaymentService):
         if not self.client.is_authenticated:
             self.client.login_app()
             self.client.login_user()
-            logger.info("Logged in Payutc services")
+            logger.debug("Logged in Payutc services")
 
     def _get_category_id(self, sale: Sale) -> int:
         data = {
@@ -53,7 +54,7 @@ class PayutcService(AbstractPaymentService):
             message = "Erreur lors de la mise à jour la catégorie"
             raise PayutcException(message, code="category_creation_error") from error
 
-    def synch_item(self, item: Item, **kwargs) -> None:
+    def sync_item(self, item: Item, **kwargs) -> None:
         """
         Adapter to synchronize an item in the payment service
         """
@@ -61,7 +62,7 @@ class PayutcService(AbstractPaymentService):
         sale = item.sale
         data = {
             "name": item.name,
-            "prix": int(item.price * 100),
+            "prix": ceil(item.price * 100),
             "tva": 5.5,
             "parent": self._get_category_id(sale),
             "cotisant": item.usertype == "cotisant_bde",

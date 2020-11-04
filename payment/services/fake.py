@@ -4,7 +4,7 @@ from .base import AbstractPaymentService
 
 class FakePaymentService(AbstractPaymentService):
 
-    def synch_item(self, item: Item, **kwargs) -> None:
+    def sync_item(self, item: Item, **kwargs) -> None:
         """
         Adapter to synchronize an item in the payment service
         """
