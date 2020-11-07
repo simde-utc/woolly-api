@@ -4,7 +4,9 @@ Woolly is the online shop of all the clubs of the Université de Technologie de 
 
 ## Prerequisites
 
-First of all, you will need [python 3.8.5](https://www.python.org/downloads/). It is easier to install it with [pyenv](https://github.com/pyenv/pyenv): `pyenv install 3.8.5`. Then install [pipenv](https://github.com/pypa/pipenv).
+You will need to install:
+- [pyenv](https://github.com/pyenv/pyenv): to manage Python versions
+- [pipenv](https://github.com/pypa/pipenv): to manage dependencies
 
 ## Installation
 
