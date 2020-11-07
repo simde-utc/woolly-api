@@ -7,7 +7,7 @@ from marshmallow.validate import OneOf, Email
 
 # Read .env if any
 env = Env(expand_vars=True)
-env.read_env(env.path("DOTENV", ".env"))
+env.read_env(env.path("DOTENV", ".env"), override=False)
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
