@@ -23,6 +23,7 @@ class OAuthException(APIException):
             details = message
             code = code or 'unauthenticated'
             message = "Requête OAuth non authentifié"  # TODO Better message
+            return OAuthTokenException(message, code, details)
 
         return cls(message, code, details)
 
