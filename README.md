@@ -60,42 +60,78 @@ If you have trouble accessing your database from the container, replace `localho
 
 ## Deployment
 
+For deployment it is easier to install the virtual environment in the same folder:
+```bash
+export PIPENV_VENV_IN_PROJECT="enabled"
+pipenv install --deploy
+```
+
 Generate all static files with:
 ```bash
 pipenv run python manage.py collectstatic
 ```
 
-Check this deployment checklist: https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
-Deploy server using: https://docs.djangoproject.com/en/3.1/howto/deployment/wsgi/
+Read Django instructions here: https://docs.djangoproject.com/en/3.1/howto/deployment/
 
-Here, for deployment with use Apache to run the server. Run the following commands:
+In the following configuration, `/path_to_woolly` corresponds to the absolute file path to where you installed the Woolly API git repository and `/url_to_woolly` to the base url where you want to deploy the API.
+
+### Deploy static files with Apache
+
+Add this to a Apache config file (like `/etc/apache2/apache2.conf`):
+```ini
+Alias /url_to_woolly/static /path_to_woolly/static
+<Directory /path_to_woolly/static>
+    Require all granted
+</Directory>
+```
+
+### Deploy app using mod_wsgi and Apache
+
+Documentation: https://docs.djangoproject.com/en/3.1/howto/deployment/wsgi/modwsgi/
+
+First, install mod_wsgi and restart apache:
 ```bash
-# Install mod_wsgi
 sudo apt-get install libapache2-mod-wsgi-py3
-# Restart apache for mod_wsgi to be effective
 sudo systemctl restart apache2
 ```
 
-In an Apache config file (like `/etc/apache2/apache2.conf`), replace `BASE_FOLDER` with the path to where you installed Woolly:
+In the Apache config:
 ```ini
 ServerName YOUR_SERVER_NAME
-WSGIScriptAlias / BASE_FOLDER/woolly_api/wsgi.py
-WSGIDaemonProcess woolly-api python-home=BASE_FOLDER/venv python-path=BASE_FOLDER
+WSGIScriptAlias /url_to_woolly /path_to_woolly/woolly_api/wsgi.py
+WSGIDaemonProcess woolly-api python-home=/path_to_woolly/.venv python-path=/path_to_woolly
 WSGIProcessGroup woolly-api
 WSGIPassAuthorization On
 
-<Directory BASE_FOLDER>
+<Directory /path_to_woolly>
     <Files wsgi.py>
         Require all granted
     </Files>
 </Directory>
 ```
-And restart Apache:
+
+And reload Apache configuration:
 ```bash
-sudo systemctl restart apache2
+sudo systemctl reload apache2
 ```
 
-You have to restart Apache each time you modify your application for the changes to be applied.
+You have to reload Apache each time you modify your application for the changes to be applied.
+
+### Deploy app using ProxyPass and Apache
+
+If you are running Djanog behind a reverse proxy you might need to add the following lines to your `.env`:
+```
+RUN_THROUGH_PROXY=True
+BASE_URL=/url_to_woolly
+```
+
+Then in the Apache config:
+```ini
+ProxyPreserveHost On
+ProxyPassMatch ^/url_to_woolly/static !
+ProxyPass /url_to_woolly http://localhost:8444
+ProxyPassReverse /url_to_woolly http://localhost:8444
+```
 
 ## Need help ?
 

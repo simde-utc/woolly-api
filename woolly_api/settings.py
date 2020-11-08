@@ -48,7 +48,7 @@ OAUTH = {
     'portal': {
         'client_id':        env.str("PORTAL_ID"),
         'client_secret':    env.str("PORTAL_KEY"),
-        'redirect_uri':     env.url("PORTAL_CALLBACK"),
+        'redirect_uri':     env.str("PORTAL_CALLBACK"),
         'base_url':         'https://assos.utc.fr/api/v1/',
         'authorize_url':    'https://assos.utc.fr/oauth/authorize',
         'access_token_url': 'https://assos.utc.fr/oauth/token',
@@ -82,6 +82,10 @@ DEBUG = STAGE in {"dev", "test"}
 
 SECRET_KEY = env.str("SECRET_KEY")
 
+# Base url
+BASE_URL = env.str("BASE_URL", None)
+FORCE_SCRIPT_NAME = BASE_URL
+
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", ["assos.utc.fr"])
 HTTPS_ENABLED = env.bool("HTTPS_ENABLED", STAGE == "prod")
 SECURE_SSL_REDIRECT = HTTPS_ENABLED
@@ -101,6 +105,9 @@ CORS_ORIGIN_ALLOW_ALL = DEBUG
 CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_WHITELIST = env.list("CORS_ORIGIN_WHITELIST", [ f"https://{url}" for url in ALLOWED_HOSTS ])
 
+if env.bool("RUN_THROUGH_PROXY", False):
+    USE_X_FORWARDED_HOST = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # --------------------------------------------------------------------------
 #       Django REST Configuration
@@ -200,7 +207,7 @@ TIME_ZONE = 'Europe/Paris'
 #       Static Files & Templates
 # --------------------------------------------------------------------------
 
-STATIC_URL = '/static/'
+STATIC_URL = f'{BASE_URL}/static/' if BASE_URL else '/static/'
 STATIC_ROOT = make_path('static/')
 
 TEMPLATES = [
