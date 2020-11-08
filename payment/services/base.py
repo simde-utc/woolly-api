@@ -54,7 +54,7 @@ class AbstractPaymentService(ABC):
         pass
 
     @abstractmethod
-    def get_redirection_to_payment(self, order: Order) -> str:
+    def get_redirection_to_payment(self, order: Order, callback_url: str, return_url: str) -> str:
         """
         Get the redirection url to the order payment
         """
