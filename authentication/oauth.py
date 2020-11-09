@@ -95,18 +95,40 @@ class OAuthAPI:
         """
         Get token, user informations, store these and redirect
         """
-        # Get code and state from request
-        # TODO Checks
-        code = request.GET['code']
-        state = request.GET['state']
+        state = request.GET.get('state')
+        error = request.GET.get('error')
+        code = request.GET.get('code')
 
-        # Get token from code
+        if not state:
+            raise OAuthException(
+                message="Réponse OAuth incorrecte",
+                code="invalid_oauth_response",
+                details="No state returned"
+            )
+
+        if error or not code:
+            message = None
+            if error == 'access_denied':
+                message = "L'accès aux données a été refusé"
+
+            redirection = cache.get(state)
+            cache.delete(state)
+            if redirection:
+                return redirection
+
+            raise OAuthTokenException(
+                message=message,
+                code="oauth_callback_error",
+                details=error,
+            )
+
         try:
+            # Get token from code
             token = self.client.fetch_access_token(self.config['access_token_url'], code=code)
         except AuthlibBaseError as error:
             raise OAuthException(
-                "Impossible de récuperer le Token OAuth",
-                "fetch_access_token_error",
+                message="Impossible de récuperer le Token OAuth",
+                code="fetch_access_token_error",
                 details=str(error)
             ) from error
 
@@ -126,7 +148,7 @@ class OAuthAPI:
         """
         Logout the user from Woolly and redirect to the provider's logout
         """
-        # Revoke user token ??? POSSIBLE TODO
+        # TODO Revoke user token ??? POSSIBLE
         # token = request.session.get(OAUTH_TOKEN_NAME)
         # if token:
         #   self.client.revoke_token(url, token)
@@ -157,7 +179,7 @@ class OAuthAPI:
             except requests.RequestException as error:
                 raise OAuthTokenException(
                     message="Erreur lors de la requête, essayez avec un token valide.",
-                    code='vanilla_request_error',
+                    code="vanilla_request_error",
                 ) from error
 
         if resp.ok:

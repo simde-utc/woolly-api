@@ -16,7 +16,7 @@ class FakePaymentService(AbstractPaymentService):
         """
         return {
             'tra_id': 1,
-            'url': f"fake_url/{order.id}/?callback={callback_url}&return={return_url}",
+            'url': self.get_redirection_to_payment(order, callback_url, return_url),
         }
 
     def get_transaction_status(self, order: Order) -> OrderStatus:
@@ -25,8 +25,8 @@ class FakePaymentService(AbstractPaymentService):
         """
         return OrderStatus.PAID
 
-    def get_redirection_to_payment(self, order: Order) -> str:
+    def get_redirection_to_payment(self, order: Order, callback_url: str, return_url: str) -> str:
         """
         Get the redirection url to the order payment
         """
-        return f"fake_url/{order.id}"
+        return return_url

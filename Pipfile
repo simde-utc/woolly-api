@@ -1,0 +1,25 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+Faker = "*"
+flake8 = "*"
+pre-commit = "*"
+
+[packages]
+django-cors-headers = ">=3.2.1,<4"
+django-extensions = ">=2.2.9,<3"
+djangorestframework = ">=3.11.0,<4"
+psycopg2-binary = ">=2.8.5,<3"
+qrcode = ">=6.1,<7"
+requests = ">=2.23.0,<3"
+xhtml2pdf = ">=0.2.4,<1"
+Authlib = ">=0.14.1,<1"
+Django = ">=3.0.7,<4"
+PyMySQL = ">=0.9.3,<1"
+environs = {extras = ["django"], version = ">=9.1.0,<10"}
+
+[requires]
+python_version = "3.8"

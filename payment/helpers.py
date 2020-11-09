@@ -12,7 +12,7 @@ def get_pay_service(*args, **kwargs) -> AbstractPaymentService:
     # TODO Select pay service
     # if request is not None:
     #     pay_service = request.data.get('pay_service')
-    if settings.TEST_MODE:
+    if settings.STAGE == "test":
         from payment.services.fake import FakePaymentService
         return FakePaymentService()
     else:

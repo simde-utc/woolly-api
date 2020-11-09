@@ -21,7 +21,7 @@ class UserType(models.Model):
         """
         if not isinstance(user, User):
             raise ValueError("Provided user must be an instance of authentication.User")
-        if not settings.TEST_MODE and not getattr(user, 'fetched_data', None):
+        if settings.STAGE != "test" and not getattr(user, 'fetched_data', None):
             raise ValueError("User full data must be fetched first")
         try:
             return eval(self.validation, {}, { 'user': user })

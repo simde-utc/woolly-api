@@ -77,7 +77,11 @@ class PaymentView:
 
         # Return the response
         if resp.pop('redirect_to_payment', False):
-            resp['redirect_url'] = pay_service.get_redirection_to_payment(order)
+            callback_url = request.build_absolute_uri(
+                reverse('order-status', kwargs={ 'pk': order.pk })
+            )
+            return_url = request.GET.get('return_url', '')
+            resp['redirect_url'] = pay_service.get_redirection_to_payment(order, callback_url, return_url)
 
         return Response(resp, status=status.HTTP_200_OK)
 

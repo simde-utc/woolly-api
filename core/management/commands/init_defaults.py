@@ -2,7 +2,14 @@ from typing import List
 
 from django.core.management.base import BaseCommand, CommandError
 
-from core.faker import MODELS_MAP
+from authentication.models import UserType
+from sales.models import Field
+
+
+MODELS_MAP = {
+    'usertype': UserType,
+    'field': Field,
+}
 
 DEFAULTS = {
     'usertype': [
