@@ -36,6 +36,7 @@ VALID_TVA = {0, 5.5, 10, 20}
 #       Services Configuration
 # --------------------------------------------------------------------------
 
+
 # PayUTC Payment services
 PAYUTC = {
     'app_key': env.str("PAYUTC_APP_KEY"),
@@ -65,13 +66,20 @@ DATABASES = {
 }
 
 # Email server
-email = env.dj_email_url("EMAIL_URL")
-EMAIL_HOST = email["EMAIL_HOST"]
-EMAIL_PORT = email["EMAIL_PORT"]
-EMAIL_HOST_USER = email["EMAIL_HOST_USER"]
-EMAIL_HOST_PASSWORD = email["EMAIL_HOST_PASSWORD"]
-EMAIL_USE_SSL = email["EMAIL_USE_SSL"]
-EMAIL_USE_TLS = email["EMAIL_USE_TLS"]
+# email = env.dj_email_url("EMAIL_URL")
+# EMAIL_HOST = email["EMAIL_HOST"]
+# EMAIL_PORT = email["EMAIL_PORT"]
+# EMAIL_HOST_USER = email["EMAIL_HOST_USER"]
+# EMAIL_HOST_PASSWORD = email["EMAIL_HOST_PASSWORD"]
+# EMAIL_USE_SSL = email["EMAIL_USE_SSL"]
+# EMAIL_USE_TLS = email["EMAIL_USE_TLS"]
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST_USER = env.str("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env.str("EMAIL_HOST_PASSWORD")
+FEEDBACK_EMAILS = env.list("FEEDBACK_EMAILS")
 
 # --------------------------------------------------------------------------
 #       Debug & Security
