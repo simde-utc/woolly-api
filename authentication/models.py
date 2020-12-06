@@ -156,9 +156,7 @@ class User(AbstractBaseUser, APIModel):
             assos = oauth_client.fetch_resource(f"{user_uri}/assos")
 
         # Attach asso by id
-        # FIXME Set comprehension not working, invalid character in identifier
-        # self.assos = { asso['id'] for asso in assos }
-        self.assos = set(str(asso['id']) for asso in assos)
+        self.assos = { str(asso['id']) for asso in assos }
 
     # Control methods
 

@@ -136,16 +136,15 @@ class ModelViewSetMixin(object):
     def filter_from_query_params(self, queryset: QuerySet) -> QuerySet:
         """
         Filter queryset based on field and values specified
-        /orders?filter=status__in=2,4&filter=id__gt=2
+        /orders?filter[status__in]=2,4&filter[id__gt]=2
         """
-        filters_query = self.request.GET.getlist('filter')
-        if filters_query:
-            # Parse filters
-            filter_params = {}
-            for _filter in filters_query:
-                key, value = _filter.split('=', 1)
-                filter_params[key] = self.parse_query_param_value(key, value)
-
+        # Parse filters
+        filter_params = {
+            key[7:-1]: self.parse_query_param_value(key[7:-1], value)
+            for key, value in self.request.GET.items()
+            if key.startswith("filter[") and key.endswith("]")
+        }
+        if filter_params:
             queryset = queryset.filter(**filter_params)
 
         return queryset

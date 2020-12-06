@@ -371,7 +371,7 @@ def generate_tickets(request, pk: int, **kwargs):
         raise OrderValidationException(
             "La commande n'est pas valide", 'unvalid_order_tickets',
             details=f"Status: {order.get_status_display()}",
-            status=status.HTTP_400_BAD_REQUEST)
+            status_code=status.HTTP_400_BAD_REQUEST)
 
     # Process tickets
     tickets = []

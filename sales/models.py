@@ -83,7 +83,7 @@ class Sale(models.Model):
         return f"{self.name} par {self.association}"
 
     class Meta:
-        ordering = ('-created_at',)
+        ordering = ('-begin_at',)
         indexes = [
             models.Index(fields=('-created_at',)),
         ]
