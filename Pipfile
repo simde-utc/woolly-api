@@ -6,7 +6,7 @@ verify_ssl = true
 [dev-packages]
 Faker = "*"
 flake8 = "*"
-pre-commit = "*"
+# pre-commit = "*"
 
 [packages]
 django-cors-headers = ">=3.2.1,<4"

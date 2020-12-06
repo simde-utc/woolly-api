@@ -12,9 +12,9 @@ from .payutc_client import PayutcClient, PayutcException as PayutcClientExceptio
 logger = logging.getLogger(f"woolly.{__name__}")
 
 PAYUTC_TO_ORDER_STATUS = {
-    'A': OrderStatus.EXPIRED,
-    'V': OrderStatus.PAID,
-    'W': OrderStatus.AWAITING_PAYMENT,
+    "A": OrderStatus.EXPIRED,
+    "V": OrderStatus.PAID,
+    "W": OrderStatus.AWAITING_PAYMENT,
 }
 
 
@@ -22,7 +22,22 @@ class PayutcException(TransactionException):
     """
     PayUTC service specific exception
     """
-    pass
+
+    @classmethod
+    def from_client(cls, error: PayutcClientException, **error_defaults) -> "PayutcException":
+        """
+        Create a PayutcException from PayutcClientException
+        """
+        params = error_defaults.copy()
+        if getattr(error, "response", None) is not None:
+            if getattr(error.response, "status_code", None) is not None:
+                params["status_code"] = error.response.status_code
+            try:
+                params["message"] = error.response.json()["detail"]
+            except (ValueError, KeyError):
+                pass
+
+        return cls(**params)
 
 
 class PayutcService(AbstractPaymentService):
@@ -51,8 +66,11 @@ class PayutcService(AbstractPaymentService):
                 data["fun_id"] = data.pop("fundation")
                 return self.client.upsert_category(data)
         except PayutcClientException as error:
-            message = "Erreur lors de la mise à jour la catégorie"
-            raise PayutcException(message, code="category_creation_error") from error
+            error_defaults = {
+                "code": "category_creation_error",
+                "message": "Erreur lors de la mise à jour la catégorie",
+            }
+            raise PayutcException.from_client(error, **error_defaults) from error
 
     def sync_item(self, item: Item, **kwargs) -> None:
         """
@@ -74,27 +92,33 @@ class PayutcService(AbstractPaymentService):
         try:
             item.nemopay_id = self.client.upsert_product(data, id=item.nemopay_id)
         except PayutcClientException as error:
-            message = "Erreur lors de la mise à jour l'article"
-            raise PayutcException(message, code="item_synch_error") from error
+            error_defaults = {
+                "code": "item_synch_error",
+                "message": "Erreur lors de la mise à jour l'article",
+            }
+            raise PayutcException.from_client(error, **error_defaults) from error
 
     def create_transaction(self, order: Order, callback_url: str, return_url: str, **kwargs) -> dict:
         """
         Adapter to create transaction from an order
         """
-        orderlines = order.orderlines.filter(quantity__gt=0).prefetch_related('item')
+        orderlines = order.orderlines.filter(quantity__gt=0).prefetch_related("item")
         itemsArray = [ [int(orderline.item.nemopay_id), orderline.quantity] for orderline in orderlines ]
 
         try:
             return self.client.create_transaction({
-                'fun_id': int(order.sale.association.fun_id),
-                'items': str(itemsArray),
-                'mail': order.owner.email,
-                'callback_url': callback_url,
-                'return_url': return_url,
+                "fun_id": int(order.sale.association.fun_id),
+                "items": str(itemsArray),
+                "mail": order.owner.email,
+                "callback_url": callback_url,
+                "return_url": return_url,
             })
         except PayutcClientException as error:
-            message = "Erreur lors de la création de la transaction"
-            raise PayutcException(message, code="transaction_creation_error") from error
+            error_defaults = {
+                "code": "transaction_creation_error",
+                "message": "Erreur lors de la création de la transaction",
+            }
+            raise PayutcException.from_client(error, **error_defaults) from error
 
     def get_transaction_status(self, order: Order) -> OrderStatus:
         """
@@ -102,15 +126,18 @@ class PayutcService(AbstractPaymentService):
         """
         try:
             trans = self.client.get_transaction({
-                'tra_id': int(order.tra_id),
-                'fun_id': int(order.sale.association.fun_id),
+                "tra_id": int(order.tra_id),
+                "fun_id": int(order.sale.association.fun_id),
             })
         except PayutcClientException as error:
-            message = "Erreur lors de la récupération de la transaction"
-            raise PayutcException(message, code="transaction_fetch_error") from error
+            error_defaults = {
+                "code": "transaction_fetch_error",
+                "message": "Erreur lors de la récupération de la transaction",
+            }
+            raise PayutcException.from_client(error, **error_defaults) from error
 
         try:
-            return PAYUTC_TO_ORDER_STATUS.get(trans['status'], None)
+            return PAYUTC_TO_ORDER_STATUS.get(trans["status"], None)
         except KeyError as error:
             raise PayutcException(
                 "Le statut de la transaction est inconnue",
@@ -123,8 +150,9 @@ class PayutcService(AbstractPaymentService):
         """
         if not order.tra_id:
             raise PayutcException(
-                "La commande n'a pas de transaction enregistrée",
-                'order_has_no_transaction',
-                status_code=status.HTTP_400_BAD_REQUEST)
+                message="La commande n'a pas de transaction enregistrée",
+                code="order_has_no_transaction",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
 
         return self.client.get_payment_url(order.tra_id)
