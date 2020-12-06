@@ -5,6 +5,8 @@ from rest_framework.pagination import PageNumberPagination
 from django.core.mail import send_mail
 from django.conf import settings
 from datetime import datetime
+from django.http import HttpResponse
+
 class Pagination(PageNumberPagination):
 
     page_size_query_param = 'page_size'
@@ -19,10 +21,14 @@ class Pagination(PageNumberPagination):
 @api_view(['POST'])
 def feedback(request, format=None):
     data = request.data
+    if len(data['message']) < 2:
+        return HttpResponse(status=500)
+
+    subject = "[WOOLLY][FeedBack] - " + data['reason'] + " - " + data['sender']['name']
     message = 'Utilisateur : ' + data['sender']['name'] + '\n' + 'ID : ' + data['sender']['id'] + '\n' +  'Email : ' + data['sender']['email'] + '\n' + 'Date : ' + datetime.now().strftime("%d/%m/%Y, %H:%M:%S") + '\n' + 'Raison : ' + data['reason'] + '\n \n' + 'Message :' + '\n' + data['message']
     message = message + '\n\nCe message a été généré automatiquement, merci de ne pas y répondre'
     email_from = settings.EMAIL_HOST_USER
-    send_mail(data['subject'], message, email_from, settings.FEEDBACK_EMAILS )
+    send_mail(subject, message, email_from, settings.FEEDBACK_EMAILS )
     return Response(data)
 
 @api_view(['GET'])
