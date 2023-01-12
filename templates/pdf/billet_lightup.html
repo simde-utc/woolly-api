@@ -3,15 +3,22 @@
 <html>
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-	<title>Commande Woolly</title>
-	<link rel="stylesheet" href="{% static 'css/order_pdf.css' %}">
+	<title>Commande Woolly - Compiègne en Lumières</title>
+	<link rel="stylesheet" href="{% static 'css/lightup.css' %}">
+	<style type="text/css">
+		@page {
+			background-image: url("{% static 'billet_lightup.png' %}");
+			background-size: cover;
+			size: a4 portrait;
+		}
+	</style>
 </head>
 
 <body>
 	{% for ticket in tickets %}
-	<table class="ticket multiple">
+	<table class="ticket pagebreak">
 		<tr>
-			<td class="info" width="65%" style="vertical-align: top;">
+			<td class="info" width="65%">
 				<p class="item">{{ ticket.item.name }}</p>
 				<p class="sale">{{ order.sale.name }}</p>
 
@@ -20,8 +27,8 @@
 					<p class="name">{{ ticket.nom }} {{ ticket.prenom }}</p>
 				</div>
 			</td>
-			<td width="35%" style="vertical-align: top;" align="right">
-				<img class="qr" src="data:image/png;base64, {{ ticket.qr_code }}"/>
+			<td width="35%" class="qr-div" align="right">
+				<img class="qr" src="data:image/png;base64, {{ ticket.qr_code }}" height="2000" width="2000" />
 				<p class="code">{{ ticket.uuid }}</p>
 			</td>
 		</tr>

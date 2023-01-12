@@ -1,0 +1,60 @@
+<!-- {% load static %} -->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title>Commande Woolly</title>
+	<link rel="stylesheet" href="{% static 'css/order_comedmus.css' %}">
+	<!-- <link rel="stylesheet" href="css/order_comedmus.css"> -->
+</head>
+
+<body>
+	<!-- {% for ticket in tickets %} -->
+	<div class="ticket">
+		<div class="qr-wrapper">
+			<img class="qr" src="data:image/png;base64, {{ ticket.qr_code }}" />
+			<p class="code">{{ ticket.uuid }}</p>
+		</div>
+		<div class="infos">
+			<p class="item">{{ ticket.item.name }}</p>
+			<p class="sale">{{ order.sale.name }}</p>
+			<p>Au théâtre impérial de Compiègne</p>
+			<img class="titre" src="{% static 'images/comedmus_title.png' %}">
+		</div>
+		<div class="conditions">
+			<p>Placement libre - Billet à conserver</p>
+			<p>Ce billet ne peut être ni repris ni échangé</p>
+			<p>Un billet incorrectement complété est invalide</p>
+		</div>
+		<div class="price">{{ ticket.item.price }}€</div>
+		<div class="client">
+			<div class="nom">{{ ticket.nom }}</div>
+			<div class="prenom">{{ ticket.prenom }}</div>
+		</div>
+
+
+		<img class="nuage" src="{% static 'images/comedmus_cloud.png' %}">
+		<!-- <table class="ticket multiple">
+			<tr>
+				<td class="info" width="65%" style="vertical-align: top;">
+					<p class="item">{{ ticket.item.name }}</p>
+					<p class="sale">{{ order.sale.name }}</p>
+
+					<div class="details">
+						<p class="price">Prix : {{ ticket.item.price }}€</p>
+						<p class="name">{{ ticket.nom }} {{ ticket.prenom }}</p>
+					</div>
+				</td>
+				<td width="35%" style="vertical-align: top;" align="right">
+					<img class="qr" src="data:image/png;base64, {{ ticket.qr_code }}"/>
+					<p class="code">{{ ticket.uuid }}</p>
+				</td>
+			</tr>
+		</table> -->
+
+	</div>
+	<!-- {% endfor %} -->
+</body>
+
+</html>

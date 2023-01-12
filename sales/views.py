@@ -16,7 +16,6 @@ from django.shortcuts import render
 from io import BytesIO
 import base64
 
-
 # ============================================
 # 	Association
 # ============================================
@@ -301,24 +300,31 @@ class OrderLineViewSet(views.ModelViewSet):
 			msg = "La commande n'accepte plus de changement."
 			return errorResponse(msg, [msg], status.HTTP_400_BAD_REQUEST)
 
+		try:
+			quantity = int(request.data.get('quantity', 0))
+			assert quantity >= 0
+		except (ValueError, AssertionError) as error:
+			msg = "La quantité d'article à acheter doit être positive ou nulle."
+			return errorResponse(msg, [msg], status.HTTP_400_BAD_REQUEST)
+
 		# Try to retrieve a similar OrderLine...
 		try:
 			orderline = OrderLine.objects.get(order=request.data['order']['id'], item=request.data['item']['id'])
 			# TODO ajout de la vérification de la limite de temps
-			serializer = OrderLineSerializer(orderline, data={'quantity': request.data['quantity']}, partial=True)
+			serializer = OrderLineSerializer(orderline, data={'quantity': quantity}, partial=True)
 
 			# Delete empty OrderLines
-			if request.data['quantity'] <= 0:
+			if quantity <= 0:
 				orderline.delete()
 				return Response(serializer.initial_data, status=status.HTTP_205_RESET_CONTENT)
 		# ...or create a new one
 		except OrderLine.DoesNotExist as err:
-			if request.data['quantity'] > 0:
+			if quantity > 0:
 				# Configure Order
 				serializer = self.get_serializer(data={
 					'order': request.data['order'],
 					'item': request.data['item'],
-					'quantity': request.data['quantity'],
+					'quantity': quantity,
 				})
 			# If no quantity, then no OrderLine
 			else:
@@ -470,10 +476,12 @@ class GeneratePdf(View):
 				# Process QRCode
 				qr_buffer = BytesIO()
 				code = data_to_qrcode(orderlineitem.id)
-				code.save(qr_buffer)
+				code.save(qr_buffer, format="PNG")
 				qr_code = base64.b64encode(qr_buffer.getvalue()).decode("utf-8")
 
 				# Add Nom et Prénom to orderline
+				first_name = None
+				last_name = None
 				for orderlinefield in orderlineitem.orderlinefields.all():
 					if orderlinefield.field.name == 'Nom':
 						first_name = orderlinefield.value
@@ -481,6 +489,11 @@ class GeneratePdf(View):
 					if orderlinefield.field.name == 'Prénom':
 						last_name = orderlinefield.value
 				
+				if first_name == None:
+					first_name = order.owner.first_name
+				if last_name == None:
+					last_name = order.owner.last_name
+
 				# Add a ticket with this data
 				tickets.append({
 					'nom': first_name,
@@ -489,6 +502,7 @@ class GeneratePdf(View):
 					'item': orderline.item,
 					'uuid': orderlineitem.id,
 				})
+
 		data = {
 			'tickets': tickets,
 			'order': order
@@ -496,6 +510,9 @@ class GeneratePdf(View):
 
 		# Render template
 		template = 'pdf/template_order.html'
+		if order.sale.pk == 20:
+			template = 'pdf/billet_lightup.html'
+
 		if request.GET.get('type', 'pdf') == 'html':
 			response = render(request, template, data)
 		else:

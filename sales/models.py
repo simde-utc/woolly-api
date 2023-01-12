@@ -71,6 +71,8 @@ class Sale(models.Model):
 
 	max_item_quantity = models.IntegerField(blank=True, null=True)
 	max_payment_date  = models.DateTimeField()
+	
+	cgv = models.CharField(max_length=1000, default="https://assos.utc.fr/woolly/cgv.pdf")
 
 	# TODO v2
 	# paymentmethods = models.ManyToManyField(PaymentMethod)
@@ -165,13 +167,23 @@ class OrderStatus(Enum):
 	EXPIRED = 5
 	CANCELLED = 6
 
-	# Helpers, not real choices
-	CANCELLABLE_LIST = (NOT_PAID, AWAITING_VALIDATION)
-	# NOT_CANCELLED_LIST = (AWAITING_VALIDATION, VALIDATED, NOT_PAID, PAID) 
-	NOT_CANCELLED_LIST = (PAID, VALIDATED) 
-	BUYABLE_STATUS_LIST = (ONGOING, AWAITING_VALIDATION, NOT_PAID) 
+	# NEW ONES
+	BUYABLE_STATUS_LIST = (ONGOING, AWAITING_VALIDATION, NOT_PAID)
+	BOOKING_LIST = (AWAITING_VALIDATION, VALIDATED, NOT_PAID, PAID)
 	VALIDATED_LIST = (VALIDATED, PAID)
 	CANCELLED_LIST = (EXPIRED, CANCELLED)
+	AWAITING_LIST = (NOT_PAID, AWAITING_VALIDATION)
+	CANCELLABLE_LIST = AWAITING_LIST
+	STABLE_LIST = (PAID, VALIDATED, EXPIRED, CANCELLED)
+
+
+	# Helpers, not real choices
+	# CANCELLABLE_LIST = (NOT_PAID, AWAITING_VALIDATION)
+	# NOT_CANCELLED_LIST = (AWAITING_VALIDATION, VALIDATED, NOT_PAID, PAID) 
+	NOT_CANCELLED_LIST = (PAID, VALIDATED) 
+	# BUYABLE_STATUS_LIST = (ONGOING, AWAITING_VALIDATION, NOT_PAID) 
+	# VALIDATED_LIST = (VALIDATED, PAID)
+	# CANCELLED_LIST = (EXPIRED, CANCELLED)
 
 	# Used for Django choices, return only choices whose value is int
 	@classmethod

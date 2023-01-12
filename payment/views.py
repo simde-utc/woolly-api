@@ -19,6 +19,12 @@ from .services.payutc import Payutc
 from woolly_api.settings import PAYUTC_KEY, PAYUTC_TRANSACTION_BASE_URL
 from authentication.auth import JWTAuthentication
 
+import logging
+from threading import Lock
+from .validator import OrderValidator, OrderValidationException
+
+pay_lock = Lock()
+
 
 # TODO
 class PaymentView:
@@ -28,6 +34,16 @@ class PaymentView:
 @authentication_classes((JWTAuthentication,))
 # @permission_classes((IsOwner,))
 def pay(request, pk):
+	pay_lock.acquire()
+	try:
+		resp = _pay(request, pk)
+		pay_lock.release()
+		return resp
+	except Exception as error:
+		pay_lock.release()
+		raise error
+
+def _pay(request, pk):
 	"""
 	Permet le paiement d'une order
 	Étapes:
@@ -50,9 +66,11 @@ def pay(request, pk):
 		return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 	# 2. Verify Order
-	errors = verifyOrder(order, request.user)
-	if len(errors) > 0:
-		return orderErrorResponse(errors)
+	try:
+		validator = OrderValidator(order, raise_on_error=True)
+		validator.validate()
+	except OrderValidationException as error:
+		return orderErrorResponse([str(error)])
 
 	# 3. Process orderlines
 	orderlines = order.orderlines.filter(quantity__gt=0).prefetch_related('item').all()
@@ -159,17 +177,25 @@ def verifyOrder(order, user):
 	# print("quantityByGroup")
 	# print(quantityByGroup)
 
+
 	# Check group max per user
 	for orderline in order.orderlines.filter(quantity__gt=0).all():
 		if not orderline.item.is_active:
 				errors.append("L'item {} n'est pas disponible." \
 					.format(orderline.item.name))			
+
 		if orderline.item.group is not None:
+
 			quantityByGroup[orderline.item.group.pk] = quantityByGroup.get(orderline.item.group.pk, 0) + orderline.quantity
 			if orderline.item.group.max_per_user is not None and \
 				quantityByGroup[orderline.item.group.pk] > orderline.item.group.max_per_user:
 				errors.append("Vous ne pouvez pas prendre plus de {} {} par personne." \
 					.format(orderline.item.group.max_per_user, orderline.item.group.name))
+			if orderline.item.group.quantity is not None and \
+				quantityByGroup[orderline.item.group.pk] > orderline.item.group.quantity:
+				errors.append("Vous ne pouvez pas prendre plus de {} {} par personne." \
+					.format(orderline.item.group.quantity, orderline.item.group.name))
+
 
 	# Checkpoint
 	if len(errors) > 0:
@@ -198,15 +224,16 @@ def verifyOrder(order, user):
 	# Check for each orderlines
 	for orderline in order.orderlines.filter(quantity__gt=0).all():
 
-		# Verif max_per_user // quantity
-		if orderline.quantity > orderline.item.max_per_user:
-			errors.append("Vous ne pouvez prendre que {} {} par personne." \
-				.format(orderline.item.max_per_user, orderline.item.name))
+		if orderline.item.max_per_user:
+			# Verif max_per_user // quantity
+			if orderline.quantity > orderline.item.max_per_user:
+				errors.append("Vous ne pouvez prendre que {} {} par personne." \
+					.format(orderline.item.max_per_user, orderline.item.name))
 
-		# Verif max_per_user // user orders
-		if quantityByUser.get(orderline.item.pk, 0) + orderline.quantity > orderline.item.max_per_user:
-			errors.append("Vous avez déjà pris {} {} sur un total de {} par personne." \
-				.format(quantityByUser.get(orderline.item.pk, 0), orderline.item.name, orderline.item.max_per_user))
+			# Verif max_per_user // user orders
+			if quantityByUser.get(orderline.item.pk, 0) + orderline.quantity > orderline.item.max_per_user:
+				errors.append("Vous avez déjà pris {} {} sur un total de {} par personne." \
+					.format(quantityByUser.get(orderline.item.pk, 0), orderline.item.name, orderline.item.max_per_user))
 
 		# Verify quantity left // sale orders
 		if orderline.item.quantity != None:
@@ -239,7 +266,10 @@ def updateOrderStatus(order, transaction):
 	elif transaction['status'] == 'V':
 		if order.status == OrderStatus.NOT_PAID.value:
 			createOrderLineItemsAndFields(order)
-			sendConfirmationMail(order)
+			try:
+				sendConfirmationMail(order)
+			except:
+				pass
 		order.status = OrderStatus.PAID.value
 		order.save()
 		resp = {
@@ -261,14 +291,16 @@ def getFieldDefaultValue(default, order):
 	return {
 		'owner.first_name': order.owner.first_name,
 		'owner.last_name': order.owner.last_name,
-	}[default]
+	}.get(default, default)
 
 def createOrderLineItemsAndFields(order):
 
 	# Create OrderLineItems
 	orderlines = order.orderlines.filter(quantity__gt=0).prefetch_related('item', 'orderlineitems').all()
+	total = 0
 	for orderline in orderlines:
 		qte = orderline.quantity - len(orderline.orderlineitems.all())
+		total += qte
 		while qte > 0:
 			orderlineitem = OrderLineItemSerializer(data = {
 				'orderline': {
@@ -296,6 +328,8 @@ def createOrderLineItemsAndFields(order):
 				orderlinefield.save()
 			qte -= 1
 
+	return total
+
 
 def orderErrorResponse(errors):
 	return errorResponse('Erreur lors de la vérification de la commande.', errors, status.HTTP_400_BAD_REQUEST)
@@ -304,23 +338,52 @@ def orderErrorResponse(errors):
 
 def sendConfirmationMail(order):
 	# TODO : généraliser
-	nb_places = reduce(lambda acc, orderline: acc + orderline.quantity, order.orderlines.all(), 0)
-	message = "Bonjour " + order.owner.get_full_name() + ",\n\n" \
-			+ "Nous vous confirmons avoir cotisé pour " + str(nb_places) + " place(s) " \
-			+ "pour participer à la course de baignoires le dimanche 30 septembre.\n" \
-			+ "Vous êtes désormais officiellement inscrit comme participant à la course !\n" \
-			+ "Téléchargez vos billets ici : http://assos.utc.fr/baignoirutc/billetterie/commandes/" + str(order.pk) + "\n\n" \
-			+ "Rendez vous le 30 septembre !!"
+	if order.sale_id == 15:
+		link_order = "https://assos.utc.fr/comedmus/billetterie/commandes/" + str(order.pk)
+		subject = "Woolly - Confirmation de commande pour la Comédie Musicale"
+		message = "Bonjour " + order.owner.get_full_name() + ",\n\n" \
+						+ "Votre commande n°" + str(order.pk) + " vient d'être confirmée.\n" \
+						+ "Vous avez commandé:\n" \
+						+ "".join([ " - " + str(ol.quantity) + " " + ol.item.name + "\n" for ol in order.orderlines.all() ]) \
+						+ "Vous pouvez télécharger vos billets ici : " + link_order + "\n\n" \
+						+ "Merci d'avoir utilisé Woolly"
+	else:
+		link_order = ""
+		subject = "Woolly - Confirmation de commande"
+		message = "Bonjour " + order.owner.get_full_name() + ",\n\n" \
+						+ "Votre commande n°" + str(order.pk) + " vient d'être confirmée.\n" \
+						+ "Vous avez commandé:\n" \
+						+ "".join([ " - " + str(ol.quantity) + " " + ol.item.name + "\n" for ol in order.orderlines.all() ])
+		if link_order:
+			message += "Vous pouvez télécharger vos billets ici : " + link_order + "\n"
+		message += "\nMerci d'avoir utilisé Woolly"
 
-	email = EmailMessage(
-		subject = "Confirmation Côtisation - Baignoires dans l'Oise",
-		body = message,
-		from_email = "sales@woolly.etu-utc.fr", # "woolly@assos.utc.fr",
-		to = [order.owner.email],
-		reply_to = ["baignoirutc@assos.utc.fr"],
-	)
-	email.send()
+	try:
+		MAIL_ASSOS = {
+			13: 'escaput@assos.utc.fr',
+		}
+		if order.sale_id in MAIL_ASSOS:
+			EmailMessage(
+				subject = "Woolly - Nouvelle commande",
+				body = message,
+				from_email = "woolly@assos.utc.fr",
+				to = [ MAIL_ASSOS[order.sale_id] ],
+				reply_to = ["simde@assos.utc.fr"],
+			).send()
+	except:
+		pass
 
+	try:
+		email = EmailMessage(
+			subject = subject,
+			body = message,
+			from_email = "woolly@assos.utc.fr",
+			to = [order.owner.email],
+			reply_to = ["simde@assos.utc.fr"],
+		)
+		email.send()
+	except:
+		pass
 
 	# if order.status in OrderStatus.BUYABLE_STATUS_LIST.value:
 		# Check on Weezevent if 

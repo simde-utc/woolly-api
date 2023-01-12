@@ -58,7 +58,7 @@ ALLOWED_HOSTS = confidentials.ALLOWED_HOSTS
 
 # CSRF_COOKIE_SECURE = True
 # SECURE_BROWSER_XSS_FILTER = True
-# SECURE_SSL_REDIRECT = True
+SECURE_SSL_REDIRECT = confidentials.HTTPS_ENABLED
 
 SESSION_COOKIE_SECURE = confidentials.HTTPS_ENABLED
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
@@ -76,7 +76,7 @@ CORS_ALLOW_METHODS = (
 
 # necessary in addition to the whitelist for protected requests
 CORS_ALLOW_CREDENTIALS = True
-CSRF_COOKIE_HTTPONLY = True  # Useful ??
+CSRF_COOKIE_HTTPONLY = False  # Useful ??
 CSRF_USE_SESSIONS = False  # Useful ??
 CSRF_TRUSTED_ORIGINS = confidentials.ALLOWED_HOSTS
 
@@ -135,10 +135,10 @@ VIEWSET = {
 # Database : https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 DATABASES = {
 	'default': confidentials.DATABASE,
-	'sqlite': {
-		'ENGINE': 'django.db.backends.sqlite3',
-		'NAME': 'db.sqlite3',
-	}
+#	'sqlite': {
+#		'ENGINE': 'django.db.backends.sqlite3',
+#		'NAME': 'db.sqlite3',
+#	}
 }
 
 INSTALLED_APPS = [
@@ -214,7 +214,7 @@ TIME_ZONE = 'Europe/Paris'
 # 		Static Files & Templates
 # --------------------------------------------------------------------------
 
-STATIC_URL = '/static/'
+STATIC_URL = '/woolly/api/static/'
 STATIC_ROOT = make_path('static/')
 # STATICFILES_DIRS = (
 # 	make_path('assets/'),
@@ -284,7 +284,12 @@ LOGGING = {
 	'loggers': {
 		'django': {
 			'handlers': ['console', 'file'],
-			'level': 'WARNING',
+			'level': 'DEBUG',
+			'propagate': True,
+		},
+		'custom': {
+			'handlers': ['console', 'file'],
+			'level': 'DEBUG',
 			'propagate': True,
 		},
 	},

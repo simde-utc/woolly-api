@@ -48,7 +48,7 @@ def find_or_create_user(user_infos):
 		madeChanges = True
 
 	# Admin
-	if user.is_admin != user_infos['types']['admin']:
+	if not user.is_admin and user.is_admin != user_infos['types']['admin']:
 		user.is_admin = user_infos['types']['admin']
 		madeChanges = True
 

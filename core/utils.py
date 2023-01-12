@@ -1,5 +1,7 @@
 import os
 import qrcode
+import logging
+
 from io import BytesIO
 
 from xhtml2pdf import pisa
@@ -27,6 +29,7 @@ def render_to_pdf(template_src, context_dict={}):
 	html = template.render(context_dict)
 	result = BytesIO()
 	pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result, link_callback=fetch_assets)
+
 	if not pdf.err:
 		return HttpResponse(result.getvalue(), content_type='application/pdf')
 	return None
@@ -37,6 +40,7 @@ def fetch_assets(uri, rel):
 	`uri` is the href attribute from the html link element.
 	`rel` gives a relative path, but it's not used here.
 	"""
+	path="notexising"
 	if settings.MEDIA_URL and uri.startswith(settings.MEDIA_URL):
 		path = os.path.join(settings.MEDIA_ROOT, uri.replace(settings.MEDIA_URL, ""))
 	elif settings.STATIC_URL and uri.startswith(settings.STATIC_URL):
@@ -47,6 +51,9 @@ def fetch_assets(uri, rel):
 			if os.path.exists(path):
 				break
 	elif uri.startswith("http://") or uri.startswith("https://"):
+		path = uri
+
+	if uri.startswith("data:image"):
 		path = uri
 	return path
 
@@ -60,4 +67,4 @@ def data_to_qrcode(data):
 	# Remove all - in uuid to comply to Weezevent
 	qrc.add_data(str(data).replace("-", ""))
 	qrc.make(fit=True)
-	return qrc.make_image()
+	return qrc.make_image(fill='black', back_color='white')
