@@ -37,6 +37,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='user',
             name='usertype',
-            field=models.ForeignKey(default=4, on_delete=None, related_name='users', to='authentication.UserType'),
+            field=models.ForeignKey(default=4, on_delete=models.DO_NOTHING, related_name='users', to='authentication.UserType'),
         ),
     ]

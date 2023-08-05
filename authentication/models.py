@@ -65,7 +65,7 @@ class User(AbstractBaseUser):
 	birthdate = models.DateField(default=datetime.date.today)
 
 	# Relations
-	usertype = models.ForeignKey(UserType, on_delete=None, null=False, default=4, related_name='users')
+	usertype = models.ForeignKey(UserType, on_delete=models.DO_NOTHING ,null=False, default=4, related_name='users')
 	# associations = models.ManyToManyField('sales.Association', through='sales.AssociationMember')
 
 	# Rights

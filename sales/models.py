@@ -3,7 +3,6 @@ from authentication.models import User, UserType
 from enum import Enum
 from functools import reduce
 import uuid
-from core.helpers import custom_editable_fields
 
 # ============================================
 # 	Association & Member
@@ -58,7 +57,7 @@ class Sale(models.Model):
 	# Description
 	name 		= models.CharField(max_length=200)
 	description = models.CharField(max_length=1000)
-	association = models.ForeignKey(Association, on_delete=None, related_name='sales') # editable=False
+	association = models.ForeignKey(Association, on_delete=models.DO_NOTHING, related_name='sales') # editable=False
 	
 	# Visibility
 	is_active 	= models.BooleanField(default=True)

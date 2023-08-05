@@ -1,4 +1,5 @@
-from authlib.specs.rfc7519 import JWTError
+import logging
+
 from .models import User, UserType
 from .serializers import UserSerializer
 
@@ -12,7 +13,7 @@ def get_jwt_from_request(request):
 	if not jwt or jwt == '':
 		return None
 	if jwt[:7] != 'Bearer ':
-		raise JWTError("Authorization header doesn't begin with 'Bearer '")
+		raise Exception("Invalid JWT format. (Bearer missing)")
 	return jwt[7:]		# substring : Bearer ...
 
 

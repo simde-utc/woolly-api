@@ -1,11 +1,15 @@
+import logging
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
 from django.utils.translation import gettext as _
 from django.forms import ValidationError
 from rest_framework import authentication
 from rest_framework import exceptions
-from .services import JWTClient
+
+from woolly_api.settings import JWT_SECRET_KEY
 from .helpers import get_jwt_from_request
+from joserfc.jwt import decode as decode_jwt
 
 UserModel = get_user_model()
 
@@ -22,10 +26,8 @@ class JWTAuthentication(authentication.BaseAuthentication):
 		if jwt is None:
 			return None
 
-		# Get user id
-		jwtClient = JWTClient()
 		try:
-			claims = jwtClient.get_claims(jwt)
+			claims = decode_jwt(jwt, JWT_SECRET_KEY).claims
 			user_id = claims['data']['user_id']
 		except:
 			return None
@@ -34,10 +36,9 @@ class JWTAuthentication(authentication.BaseAuthentication):
 
 		# Try logging user
 		try:
-			user = UserModel.objects.get(id=user_id)
+			return UserModel.objects.get(id=user_id) , None
 		except UserModel.DoesNotExist:
 			raise exceptions.AuthenticationFailed("User does not exist.")
-		return (user, None)
 
 
 class AdminSiteBackend(ModelBackend):
@@ -45,7 +46,7 @@ class AdminSiteBackend(ModelBackend):
 	Authenticate User from email - password, used in the admin site
 	"""
 
-	def authenticate(self, request, username=None, password=None):
+	def authenticate(self, request, username=None, password=None, **kwargs):
 		# Try to fetch user
 		try:
 			user = UserModel.objects.get(**{ UserModel.USERNAME_FIELD: username })

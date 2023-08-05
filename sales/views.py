@@ -466,9 +466,11 @@ class GeneratePdf(View):
 						.prefetch_related('orderlines', 'orderlines__orderlineitems', 'orderlines__item',
 							'orderlines__orderlineitems__orderlinefields', 'orderlines__orderlineitems__orderlinefields__field') \
 						.get(pk=order_pk)
+			print(order)
 		except Order.DoesNotExist as e:
 			return errorResponse('La commande est introuvable', [], httpStatus = status.HTTP_404_NOT_FOUND)
-
+		except Exception as e:
+    			print (traceback.format_exc())
 		# Process tickets
 		tickets = list()
 		for orderline in order.orderlines.all():
@@ -507,7 +509,7 @@ class GeneratePdf(View):
 			'tickets': tickets,
 			'order': order
 		}
-
+		print(data)
 		# Render template
 		template = 'pdf/template_order.html'
 		if order.sale.pk == 20:
@@ -520,5 +522,4 @@ class GeneratePdf(View):
 			response = HttpResponse(pdf, content_type='application/pdf')
 			if request.GET.get('action', 'download') != 'view':
 				response['Content-Disposition'] = 'attachment;filename="commande_' + order.sale.name + '_' + order_pk + '.pdf"'
-				
 		return response

@@ -78,7 +78,7 @@ CORS_ALLOW_METHODS = (
 CORS_ALLOW_CREDENTIALS = True
 CSRF_COOKIE_HTTPONLY = False  # Useful ??
 CSRF_USE_SESSIONS = False  # Useful ??
-CSRF_TRUSTED_ORIGINS = confidentials.ALLOWED_HOSTS
+CSRF_TRUSTED_ORIGINS = confidentials.CSRF_ALLOWED_HOSTS
 
 
 # --------------------------------------------------------------------------
@@ -104,7 +104,7 @@ REST_FRAMEWORK = {
 		'core.utils.BrowsableAPIRendererWithoutForms',		# For performance testing
 		'rest_framework.renderers.JSONRenderer',
 	),
-	'DEFAULT_METADATA_CLASS': 'rest_framework_json_api.metadata.JSONAPIMetadata',
+	# 'DEFAULT_METADATA_CLASS': 'rest_framework_json_api.metadata.JSONAPIMetadata',
 	'EXCEPTION_HANDLER': 'rest_framework_json_api.exceptions.exception_handler',
 	'TEST_REQUEST_RENDERER_CLASSES': (
 		'rest_framework_json_api.renderers.JSONRenderer',
@@ -151,6 +151,7 @@ INSTALLED_APPS = [
 	'django.contrib.messages',
 	# Django REST
 	'rest_framework',
+	'rest_framework_json_api',
 	'corsheaders',
 	'django_extensions',
 	# Woolly
@@ -237,7 +238,6 @@ TEMPLATES = [
 		},
 	},
 ]
-
 
 # --------------------------------------------------------------------------
 # 		Logging

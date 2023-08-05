@@ -2,17 +2,14 @@ from django.contrib.sessions.backends.db import SessionStore
 from django.utils.crypto import get_random_string
 from django.core.cache import cache
 
-from authlib.specs.rfc7519 import JWT, JWTError
 from authlib.client import OAuth2Session, OAuthException
 import time
 
 from woolly_api.settings import DEBUG, JWT_SECRET_KEY, JWT_TTL, OAUTH as OAuthConfig
 from .helpers import get_jwt_from_request, find_or_create_user
-from .models import User, UserType
-from .serializers import UserSerializer
+from joserfc.jwt import decode as decode_jwt, encode as encode_jwt
 
-
-class JWTClient(JWT):
+class JWTClient:
 	"""
 	Authentification des utilisateurs entre le front et Woolly API
 	Methods:
@@ -44,20 +41,18 @@ class JWTClient(JWT):
 		Return the JSON content of a JWT
 		"""
 		try:
-			self.validate(jwt)
-			return self.claims
-		except JWTError as error:
+			return decode_jwt(jwt, JWT_SECRET_KEY)
+		except:
 			return {
-				'error': 'JWTError',
-				'message': str(error)
+				'error': 'InvalidJWT',
+				'message': 'JWT is invalid'
 			}
 
 	def validate(self, jwt):
 		"""
 		Stock claims if jwt is valid, else raise a JWTError
 		"""
-		self.claims = self.decode(jwt, JWT_SECRET_KEY)
-		self.claims.validate()
+		self.claims = decode_jwt(jwt, JWT_SECRET_KEY)
 
 	def create_jwt(self, user_id, session_key):
 		"""
@@ -77,7 +72,7 @@ class JWTClient(JWT):
 				'session': 	session_key,
 			}
 		}
-		token = self.encode(header, payload, JWT_SECRET_KEY).decode('utf-8')
+		token = encode_jwt(header, payload, JWT_SECRET_KEY)
 		return {
 			'token_type': 'Bearer',
 			'token': token,

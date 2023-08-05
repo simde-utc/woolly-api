@@ -159,7 +159,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='sale',
             name='association',
-            field=models.ForeignKey(on_delete=None, related_name='sales', to='sales.Association'),
+            field=models.ForeignKey(on_delete=models.DO_NOTHING, related_name='sales', to='sales.Association'),
         ),
         migrations.AlterField(
             model_name='sale',

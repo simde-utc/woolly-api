@@ -3,7 +3,7 @@ from rest_framework import status
 
 from rest_framework_json_api.relations import ResourceRelatedField
 from woolly_api.settings import VIEWSET
-from django.conf.urls import re_path
+from django.urls import re_path
 
 def errorResponse(message, errors = tuple(), httpStatus = status.HTTP_400_BAD_REQUEST):
 	resp = {

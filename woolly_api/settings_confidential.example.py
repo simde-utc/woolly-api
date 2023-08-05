@@ -4,6 +4,10 @@ ALLOWED_HOSTS = (
 	'assos.utc.fr',
 	'localhost',
 )
+CSRF_ALLOWED_HOSTS= (
+	'https://assos.utc.fr',
+)
+
 HTTPS_ENABLED = True
 
 # Secret Keys
