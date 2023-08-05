@@ -1,9 +1,7 @@
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from rest_framework_json_api import views
-from authlib.specs.rfc7519 import JWTError
 
-from rest_framework.permissions import AllowAny
 from .permissions import *
 
 from .serializers import UserSerializer, UserTypeSerializer
@@ -134,6 +132,6 @@ class JWTView:
 		try:
 			cls.jwtClient.validate(jwt)
 			valid = True
-		except JWTError as error:
+		except:
 			valid = False
 		return JsonResponse({ 'valid': valid })

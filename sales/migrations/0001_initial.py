@@ -120,7 +120,7 @@ class Migration(migrations.Migration):
                 ('end_at', models.DateTimeField()),
                 ('max_item_quantity', models.IntegerField(null=True)),
                 ('max_payment_date', models.DateTimeField()),
-                ('association', models.ForeignKey(editable=False, on_delete=None, related_name='sales', to='sales.Association')),
+                ('association', models.ForeignKey(editable=False, on_delete=models.DO_NOTHING, related_name='sales', to='sales.Association')),
             ],
         ),
         migrations.AddField(

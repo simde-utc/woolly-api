@@ -1,5 +1,5 @@
 from rest_framework.urlpatterns import format_suffix_patterns
-from django.conf.urls import url, include
+from django.urls import re_path, include
 
 from core.helpers import gen_url_set, merge_sets
 from woolly_api.settings import VIEWSET
@@ -70,7 +70,7 @@ urlpatterns = merge_sets(
 # Addtionnal API endpoints for Authentication
 urlpatterns += [
 	# Generation du PDF
-	url(r'^orders/(?P<order_pk>[0-9]+)/pdf/$', GeneratePdf.as_view()),
+	re_path(r'^orders/(?P<order_pk>[0-9]+)/pdf/$', GeneratePdf.as_view()),
 ]
 
 

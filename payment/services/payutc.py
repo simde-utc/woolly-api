@@ -52,6 +52,9 @@ class Payutc:
 		keys = ('items', 'mail', 'return_url', 'fun_id', 'callback_url')
 		data = self.filterParams(params, keys)
 		data['fun_id'] = str(data['fun_id'])
+		print(json.dumps(data))
+		f = open("/tmp/test.json", "a")
+		f.write(json.dumps(data))
 		return self.genericApiCall("WEBSALE", "createTransaction", data)
 
 	def getTransactionInfo(self, params):
@@ -81,3 +84,4 @@ class Payutc:
 
 	def cas(self, params): # permet de connecter un utilisateur
 		return self.genericApiCall("WEBSALE", "loginCas2", {"service": params["service"], "ticket": params["ticket"]})
+

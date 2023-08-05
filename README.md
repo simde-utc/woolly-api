@@ -1,110 +1,154 @@
 # Woolly - API
 
-Woolly is the online shop of all the [associations of the Université de Technologie de Compiègne](https://assos.utc.fr).
+Woolly is the online shop of all the clubs of the Université de Technologie de Compiègne: https://assos.utc.fr/woolly/.
 
+## Prerequisites
+
+You will need to install:
+- [pyenv](https://github.com/pyenv/pyenv): to manage Python versions
+- [pipenv](https://github.com/pypa/pipenv): to manage dependencies
 
 ## Installation
 
-### Prerequisites
-
-First of all, you need to set up the environment.
-You will need [Python version 3](https://www.python.org/downloads/) and [pip (a Python packages manager)](https://pypi.org/project/pip/).
-
-
-Then we will set up the virtual environment with `virtualenv`.
-```sh
-pip install virtualenv
+Simply run the following commands to install all dependencies for deployment and development:
+```bash
+make init
+make init-dev
 ```
 
-Create the `venv` folder :
-On Linux :
-```sh
-virtualenv -p python3 "venv"        # python3 is the name of python executable
-```
-On Windows :
-```sh
-virtualenv "venv"
-```
+Now copy `example.env` to `.env` and fill the secrets within.
 
-Now activate the virtual environment. You have to do this everytime you want to work with Woolly and don't see the `(venv)` on the left of your terminal prompt.
-```sh
-# On Linux :
-source venv/bin/activate
-# On Windows :
-venv\Scripts\activate
-```
-
-
-### Installation
-
-With the virtual environment activated, install all the required librairies :
-```sh
-pip install -r requirements.txt
-```
-
-
-Now ask a responsible person for the `settings_confidential.py` file containing the foreign APIs identification keys. The file is to be placed next to the `settings.py` file. There is a placeholder file called `settings_confidential.example.py`, you can copy and fill it. 
-
-
-Create your database named `woolly`, set charset to UTF-8 with :
+Make sure the database you are using is set to UTF-8 with:
 ```sql
-ALTER DATABASE `woolly` CHARACTER SET utf8;
+ALTER DATABASE woolly CHARACTER SET utf8;
 ```
 
-Then you need to migrate, and initialize the database :
-```sh
-python manage.py migrate
-python manage.py loaddata usertypes
+Finally you need to migrate models into the database:
+```bash
+make db-migrate
 ```
 
-You also need to generate all static files :
-```sh
-python manage.py collectstatic
+## Development
+
+You can launch the development server on http://localhost:8000 with:
+```bash
+make run
 ```
 
-Finally, you can launch the server.
-```sh
-python manage.py runserver
+You can find [the documentation of the API here](./documentation/api.md).
+
+## Using Docker
+
+If you are using [Docker](https://docker.com/) you can skip Installation and Development, but you will still need to copy and fill your `.env` file.
+
+Build the docker image with:
+```bash
+make build
 ```
 
-You can now play with the server on http://localhost:8000
+Run it with:
+```bash
+docker run --rm -it --env-file .env -p 8000:8000 woolly-api:dev
+```
 
-You can find (the documentation of the API here)[./documentation/api.md].
+You can run other commands with:
+```bash
+docker run --rm -it --env-file .env -p 8000:8000 woolly-api:dev <command>
+```
 
+If you have trouble accessing your database from the container, replace `localhost` by `host.docker.internal` in `DATABASE_URL`.
 
 ## Deployment
 
-Check this deployment checklist : https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
+For deployment it is easier to install the virtual environment in the same folder:
+```bash
+export PIPENV_VENV_IN_PROJECT="enabled"
+pipenv install --deploy
+```
 
-Deploy server using : https://docs.djangoproject.com/en/2.1/howto/deployment/wsgi/
+Generate all static files with:
+```bash
+pipenv run python manage.py collectstatic
+```
 
-Here, on deployment with use Apache to run the server.
-Install `mod_wsgi` : `sudo apt-get install libapache2-mod-wsgi-py3`
-Restart apache for mod_wsgi to be effective : `sudo systemctl restart apache2`
+Read Django instructions here: https://docs.djangoproject.com/en/3.1/howto/deployment/
 
-In an Apache config file (like `/etc/apache2/apache2.conf`), replace `BASE_FOLDER` with the path to where you installed Woolly :
+In the following configuration, `/path_to_woolly` corresponds to the absolute file path to where you installed the Woolly API git repository and `/url_to_woolly` to the base url where you want to deploy the API.
+
+### Deploy static files with Apache
+
+Add this to a Apache config file (like `/etc/apache2/apache2.conf`):
+```ini
+Alias /url_to_woolly/static /path_to_woolly/static
+<Directory /path_to_woolly/static>
+    Require all granted
+</Directory>
+```
+
+### Deploy app using mod_wsgi and Apache
+
+Documentation: https://docs.djangoproject.com/en/3.1/howto/deployment/wsgi/modwsgi/
+
+First, install mod_wsgi and restart apache:
+```bash
+sudo apt-get install libapache2-mod-wsgi-py3
+sudo systemctl restart apache2
+```
+
+In the Apache config:
 ```ini
 ServerName YOUR_SERVER_NAME
-WSGIScriptAlias / BASE_FOLDER/woolly_api/wsgi.py
-WSGIDaemonProcess woolly-api python-home=BASE_FOLDER/venv python-path=BASE_FOLDER 
+WSGIScriptAlias /url_to_woolly /path_to_woolly/woolly_api/wsgi.py
+WSGIDaemonProcess woolly-api python-home=/path_to_woolly/.venv python-path=/path_to_woolly
 WSGIProcessGroup woolly-api
 WSGIPassAuthorization On
 
-<Directory BASE_FOLDER>
+<Directory /path_to_woolly>
     <Files wsgi.py>
         Require all granted
     </Files>
 </Directory>
 ```
-And restart Apache : `sudo systemctl restart apache2`.
 
-You have to restart Apache each time you modify your application for the changes to be applied.
+And reload Apache configuration:
+```bash
+sudo systemctl reload apache2
+```
+
+You have to reload Apache each time you modify your application for the changes to be applied.
+
+### Deploy app using ProxyPass and Apache
+
+If you are running Djanog behind a reverse proxy you might need to add the following lines to your `.env`:
+```
+RUN_THROUGH_PROXY=True
+BASE_URL=/url_to_woolly
+```
+
+Then in the Apache config:
+```ini
+ProxyPreserveHost On
+ProxyPassMatch ^/url_to_woolly/static !
+ProxyPass /url_to_woolly http://localhost:8444
+ProxyPassReverse /url_to_woolly http://localhost:8444
+```
 
 ## Need help ?
 
-Don't forget to check the `./documentation/` folder for more documentation on Woolly.
+Here are some useful commands:
+```bash
+# Activate the pipenv environment
+pipenv shell
+# Run a interactive shell to interact with Woolly
+python manage.py shell_plus
+# Check the defined models
+python manage.py inspectdb
+# Check all TODOs, FIXME, ...
+python manage.py notes
+```
+
+Don't forget to check the [./documentation/](./documentation/) folder for more documentation on Woolly.
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE.md](LICENSE.md) file for details
-
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](./LICENSE) file for details

@@ -1,0 +1,23 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+qrcode = ">=5.1"
+xhtml2pdf = ">=0.2.7"
+django = "==4.2.4"
+djangorestframework = "==3.14.0"
+django-cors-headers = "*"
+djangorestframework-jsonapi = "*"
+pymysql = ">=0.8.0"
+requests = ">=2.20.0"
+authlib = "==0.6"
+faker = "==0.8.15"
+django-extensions = "==3.2.3"
+joserfc = "==0.6.0"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"
